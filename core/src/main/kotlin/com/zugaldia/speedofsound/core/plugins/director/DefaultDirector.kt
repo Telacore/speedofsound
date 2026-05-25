@@ -155,7 +155,7 @@ class DefaultDirector(
             llmResult.isSuccess -> llmResult.getOrNull()?.text
             else -> {
                 val error = llmResult.exceptionOrNull() ?: Exception("Unknown error")
-                log.error("LLM failed: ${error.message}. Raw transcription was: $rawTranscription.")
+                log.error("LLM failed: ${error.message}.")
                 emitEvent(DirectorEvent.PipelineError(PipelineStage.POLISHING, error))
                 null
             }
