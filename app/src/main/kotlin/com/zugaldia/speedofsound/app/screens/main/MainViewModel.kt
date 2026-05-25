@@ -363,7 +363,7 @@ class MainViewModel(
     }
 
     private fun onPipelineCompleted(event: DirectorEvent.PipelineCompleted) {
-        logger.info("Pipeline completed: $event")
+        logger.info("Pipeline completed.")
         if (event.finalResult.isBlank()) {
             hideAndReset()
             return
