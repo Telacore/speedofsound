@@ -6,27 +6,27 @@
 #
 # IMPORTANT: After updating any dependency version, regenerate the Flatpak sources files with `make flatpak-sources`
 #
-anthropic = "2.18.0"
+anthropic = "2.34.0"
 buildconfig = "6.0.9"
 clikt = "5.1.0"
 commonsCompress = "1.28.0"
-detekt = "2.0.0-alpha.2"
-flatpakGradleGenerator = "1.7.0"
-googleGenai = "1.45.0"
+detekt = "2.0.0-alpha.3"
+flatpakGradleGenerator = "1.8.0"
+googleGenai = "1.55.0"
 javaGi = "0.15.0"
 kotlin = "2.3.20"
-kotlinxCoroutines = "1.10.2"
+kotlinxCoroutines = "1.11.0"
 kotlinxDatetime = "0.7.1"
-kotlinxSerializationJSON = "1.10.0"
+kotlinxSerializationJSON = "1.11.0"
 kover = "0.9.8"
-ktor = "3.4.2"
+ktor = "3.5.0"
 log4j = "2.25.3"
-onnx = "1.24.3"
+onnx = "1.26.0"
 onnxExtensions = "0.13.0"
-openai = "4.30.0"
+openai = "4.37.0"
 shadow = "9.4.1"
-stargate = "0.5.1"
-versionsPlugin = "0.53.0"
+stargate = "0.6.0"
+versionsPlugin = "0.54.0"
 
 [libraries]
 anthropic = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }

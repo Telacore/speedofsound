@@ -1,9 +1,9 @@
-VERSION = v1.12.33
+VERSION = v1.13.2
 
 # Expected SHA256 checksums (update these from the checksum.txt file)
-CHECKSUM_JAR = e1829d0c043be3cec15dbcd93ea631b145fd6fbe5e92fac3d1b6774ddcfb1e30
-CHECKSUM_AARCH64 = f099840f58e0fadfe4312d342ea7740396b3f48d5cab4c3bd5afb7828e605ae8
-CHECKSUM_X64 = dec2cd424d6236c0ace38fd9c260da7acd5dd227f0010ce9446fcbcbf55b784f
+CHECKSUM_JAR = 772f04285e57f854b60847c5e5b8b93debaee68fdec644fb49c331c18a083443
+CHECKSUM_AARCH64 = ed11e9caff63d73fac03e3ecc026dac645a2a340b4a0f5b9076d4ab3e1c7b39e
+CHECKSUM_X64 = 6b9e96bc9d13ca9080eeb65010d5c3cbed1b29848a3b890ad62e2c7f31072eb7
 
 download-checksum:
 	@echo "Downloading checksum.txt file."
