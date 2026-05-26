@@ -12,7 +12,7 @@ import com.zugaldia.stargate.sdk.globalshortcuts.ShortcutActivation
 import com.zugaldia.stargate.sdk.notification.NotificationPriority
 import com.zugaldia.stargate.sdk.remotedesktop.DeviceType
 import com.zugaldia.stargate.sdk.remotedesktop.InputState
-import com.zugaldia.stargate.sdk.remotedesktop.PersistMode
+import com.zugaldia.stargate.sdk.PersistMode
 import com.zugaldia.stargate.sdk.remotedesktop.StartResponse
 import com.zugaldia.stargate.sdk.session.CreateSessionResponse
 import com.zugaldia.stargate.sdk.session.SessionClosedEvent
