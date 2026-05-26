@@ -21,11 +21,6 @@ val SUPPORTED_OPENAI_TEXT_MODELS = mapOf(
         name = "GPT 5.4 Nano",
         provider = LlmProvider.OPENAI
     ),
-    ChatModel.GPT_5_2_PRO.asString() to TextModel(
-        id = ChatModel.GPT_5_2_PRO.asString(),
-        name = "GPT 5.2 Pro",
-        provider = LlmProvider.OPENAI
-    ),
 )
 
 data class OpenAiLlmOptions(
