@@ -262,6 +262,11 @@ class MainViewModel(
     }
 
     private fun refreshSettings(key: String) {
+        if (hasFatalStartupError && key != KEY_TEXT_OUTPUT_METHOD) {
+            logger.warn("Ignoring settings change '{}' while startup is in error state", key)
+            return
+        }
+
         when (key) {
             KEY_DEFAULT_LANGUAGE -> onPrimaryLanguageSelected()
             KEY_SECONDARY_LANGUAGE -> onSecondaryLanguageUpdated()
