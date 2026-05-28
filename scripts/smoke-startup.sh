@@ -7,6 +7,7 @@
 # - Gradle task completes.
 # - The process does not fail with a hard JVM exit in startup code.
 # - Expected startup logs are emitted, including the app entrypoint.
+# - Optional hard-fail when startup logs contain a known fatal startup error.
 #
 # Usage:
 #   ./scripts/smoke-startup.sh
@@ -23,6 +24,8 @@ OUT_FILE="${SMOKE_LOG_FILE:-$TMP_DIR/startup.log}"
 trap 'if [[ -z "${SMOKE_LOG_FILE:-}" ]]; then rm -rf "$TMP_DIR"; fi' EXIT
 
 TIMEOUT_SECONDS="${SMOKE_TIMEOUT:-${1:-20}}"
+SMOKE_FAIL_ON_FATAL="${SMOKE_FAIL_ON_FATAL:-false}"
+NORMALIZED_SMOKE_FAIL_ON_FATAL="${SMOKE_FAIL_ON_FATAL,,}"
 
 export SOS_DISABLE_GIO_STORE=true
 export SOS_DISABLE_GSTREAMER=false
@@ -60,6 +63,11 @@ if grep -q "Process finished with exit code" "$OUT_FILE"; then
 fi
 
 if grep -q "A fatal error was encountered during startup" "$OUT_FILE"; then
+  if [[ "$NORMALIZED_SMOKE_FAIL_ON_FATAL" == "true" || "$NORMALIZED_SMOKE_FAIL_ON_FATAL" == "1" || "$NORMALIZED_SMOKE_FAIL_ON_FATAL" == "yes" ]]; then
+    echo "Startup smoke failed: fatal startup error detected."
+    cat "$OUT_FILE"
+    exit 1
+  fi
   echo "Startup smoke warning: startup hit a fatal startup error path"
   echo "See log: $OUT_FILE"
 fi

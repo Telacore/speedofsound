@@ -42,11 +42,13 @@ jobs:
         env:
           GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
           SMOKE_TIMEOUT: 20
+          SMOKE_FAIL_ON_FATAL: "true"
         run: make smoke-startup
       - name: Run Cinnamon-compat startup smoke check
         env:
           GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
           SMOKE_TIMEOUT: 25
+          SMOKE_FAIL_ON_FATAL: "true"
         run: make smoke-startup-cinnamon
       - name: Check
         env:

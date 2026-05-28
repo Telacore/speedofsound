@@ -39,11 +39,7 @@ export SOS_DISABLE_GIO_STORE=true
 export SOS_DISABLE_GSTREAMER=false
 export SMOKE_TIMEOUT
 export SMOKE_LOG_FILE
+export SMOKE_FAIL_ON_FATAL=true
 
 printf 'Running Cinnamon-compat startup smoke with timeout=%ss...\n' "$SMOKE_TIMEOUT"
 ./scripts/smoke-startup.sh "$SMOKE_TIMEOUT"
-
-if rg -q "A fatal error was encountered during startup" "$SMOKE_LOG_FILE"; then
-  echo "Cinnamon-compat smoke failed: unexpected startup fatal error"
-  exit 1
-fi
