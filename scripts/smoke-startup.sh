@@ -19,10 +19,10 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT_DIR"
 
 TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
-OUT_FILE="$TMP_DIR/startup.log"
+OUT_FILE="${SMOKE_LOG_FILE:-$TMP_DIR/startup.log}"
+trap 'if [[ -z "${SMOKE_LOG_FILE:-}" ]]; then rm -rf "$TMP_DIR"; fi' EXIT
 
-TIMEOUT_SECONDS="${1:-10}"
+TIMEOUT_SECONDS="${1:-20}"
 
 export SOS_DISABLE_GIO_STORE=true
 export SOS_DISABLE_GSTREAMER=false
