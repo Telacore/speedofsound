@@ -96,6 +96,14 @@ class MainViewModel(
 
     private val asrProviderManager = AsrProviderManager(registry, settingsClient)
     private val llmProviderManager = LlmProviderManager(registry, settingsClient)
+    private var activeRemoteDesktopStatus: RemoteDesktopStatus = if (
+        settingsClient.getPortalsRestoreToken().isBlank()
+    ) {
+        RemoteDesktopStatus.NeedToken
+    } else {
+        RemoteDesktopStatus.Ready
+    }
+    private var didAutoFallbackToClipboard = false
 
     private val viewModelJob = SupervisorJob()
     private val viewModelScope = CoroutineScope(Dispatchers.Default + viewModelJob)
@@ -131,6 +139,13 @@ class MainViewModel(
                 llmProviderManager.activateSelectedProvider()
                 activateSelectedTextOutput()
                 registry.setActiveById(AppPluginCategory.DIRECTOR, DefaultDirector.ID)
+                if (
+                    !portalsClient.isPortalAvailable &&
+                    settingsClient.getTextOutputMethod() != TEXT_OUTPUT_METHOD_CLIPBOARD
+                ) {
+                    switchToClipboardFallback("Desktop portal is not available for this session.")
+                    updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
+                }
                 portalsSessionManager.initialize(viewModelScope)
                 GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                     state.updateStage(AppStage.IDLE)
@@ -221,8 +236,12 @@ class MainViewModel(
         }
         viewModelScope.launch {
             portalsSessionManager.remoteDesktopStatus.collect { status ->
+                if (status == RemoteDesktopStatus.NotSupported) {
+                    switchToClipboardFallback("Remote desktop portal is not supported on this system.")
+                }
+                activeRemoteDesktopStatus = status
                 GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                    state.updateRemoteDesktopStatus(status)
+                    updateRemoteDesktopStatusUi(status)
                     false // Return false for one-shot execution
                 }
             }
@@ -277,7 +296,10 @@ class MainViewModel(
                 llmProviderManager.refreshProviderConfiguration()
             }
 
-            KEY_TEXT_OUTPUT_METHOD -> activateSelectedTextOutput()
+            KEY_TEXT_OUTPUT_METHOD -> {
+                activateSelectedTextOutput()
+                updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
+            }
 
             KEY_TYPING_DELAY_MS -> portalTextOutput.updateOptions(
                 portalTextOutput.getOptions().copy(typingDelayMs = settingsClient.getTypingDelayMs().toLong())
@@ -303,6 +325,25 @@ class MainViewModel(
             PortalTextOutput.ID
         }
         registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, pluginId)
+    }
+
+    private fun switchToClipboardFallback(reason: String) {
+        if (didAutoFallbackToClipboard) return
+        if (settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_CLIPBOARD) return
+
+        logger.warn("Falling back to Clipboard output: {}", reason)
+        didAutoFallbackToClipboard = true
+        settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
+        activateSelectedTextOutput()
+    }
+
+    private fun updateRemoteDesktopStatusUi(status: RemoteDesktopStatus) {
+        val uiStatus = if (settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+            RemoteDesktopStatus.Ready
+        } else {
+            status
+        }
+        state.updateRemoteDesktopStatus(uiStatus)
     }
 
     fun startPortalsSession(token: String? = null) {

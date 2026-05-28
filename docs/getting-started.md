@@ -37,8 +37,9 @@ time you launch Speed of Sound.
 ![Remote Desktop Permissions Dialog](assets/screenshots/remote-desktop-permissions-dark.png#only-dark)
 
 Under the hood, Speed of Sound uses the [XDG Desktop Portal](https://flatpak.github.io/xdg-desktop-portal/) standard
-to simulate keyboard input. This is supported by all major desktop environments, including GNOME and KDE,
-and works on both X11 and Wayland.
+to simulate keyboard input. This is supported by many desktop environments, including GNOME and KDE,
+and is designed for both X11 and Wayland. If your desktop lacks a compatible remote-desktop portal backend,
+the app can still use a Clipboard fallback on X11.
 
 ## 3. Set up a shortcut
 

@@ -85,9 +85,9 @@ language and switch between the two using the `Left Shift` and `Right Shift` key
 **Output** — Two settings control how transcribed text is delivered to the active application:
 
 - **Text output method** — Choose between **Keyboard simulation** (default), which simulates keyboard input character by
-  character via the XDG Remote Desktop Portal, and **Clipboard**, which copies the text to the clipboard and pastes it
-  with `Ctrl+V` (also via the portal). The clipboard method is a useful fallback when the portal method drops or
-  reorders characters, or when dictating in non-Latin scripts where keystroke simulation does not work correctly.
+  character via the XDG Remote Desktop Portal, and **Clipboard**, which copies the text to the clipboard and uses
+  `Ctrl+V` to paste it. Clipboard output works well on X11 and is useful when the portal method drops or reorders
+  characters, or when dictating in non-Latin scripts where keystroke simulation does not work correctly.
 
 - **Append space after transcription** — Automatically inserts a trailing space after each result, which is useful
   when dictating consecutive sentences independently.

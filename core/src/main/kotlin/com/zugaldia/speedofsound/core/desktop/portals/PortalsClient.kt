@@ -18,6 +18,7 @@ import com.zugaldia.stargate.sdk.session.CreateSessionResponse
 import com.zugaldia.stargate.sdk.session.SessionClosedEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -28,15 +29,24 @@ import kotlin.time.Duration.Companion.milliseconds
 private const val SHORTCUT_ID = "$APPLICATION_SHORT-trigger"
 private const val SHORTCUT_DESCRIPTION = "Start or stop voice typing"
 
+@Suppress("TooManyFunctions")
 class PortalsClient {
 
     private val logger = LoggerFactory.getLogger(PortalsClient::class.java)
-    private val portal = DesktopPortal.connect()
+    private val portal: DesktopPortal? = runCatching { DesktopPortal.connect() }
+        .onFailure { error -> logger.error("Failed to connect to Desktop Portal: {}", error.message) }
+        .getOrNull()
     private var shortcutsSessionHandle: DBusPath? = null
     private val shortcutsSessionMutex = Mutex()
 
+    private fun portalUnavailableError(): IllegalStateException =
+        IllegalStateException("Desktop portal is unavailable on this system")
+
+    val isPortalAvailable: Boolean
+        get() = portal != null
+
     val sessionClosedEvents: Flow<SessionClosedEvent>
-        get() = portal.remoteDesktop.observeSessionClosed()
+        get() = portal?.remoteDesktop?.observeSessionClosed() ?: emptyFlow()
 
     /**
      * Registers the application with the XDG Registry portal.
@@ -44,7 +54,7 @@ class PortalsClient {
      * as sandboxed apps are registered automatically.
      */
     suspend fun registerApplication() =
-        portal.registry.register(APPLICATION_ID)
+        (portal?.registry?.register(APPLICATION_ID) ?: Result.failure(portalUnavailableError()))
             .onSuccess { logger.info("Registered application ID: {}", APPLICATION_ID) }
             .onFailure { logger.warn("Failed to register application ID: {} ({})", APPLICATION_ID, it.message) }
 
@@ -55,11 +65,11 @@ class PortalsClient {
      * attempt to restore the session without prompting the user for authorization again.
      */
     suspend fun startRemoteDesktopSession(restoreToken: String?): Result<StartResponse> =
-        portal.remoteDesktop.startSession(
+        portal?.remoteDesktop?.startSession(
             types = setOf(DeviceType.KEYBOARD),
             restoreToken = restoreToken,
             persistMode = PersistMode.UNTIL_REVOKED
-        )
+        ) ?: Result.failure(portalUnavailableError())
 
     /**
      * Sends a desktop notification via the XDG Notification portal.
@@ -76,8 +86,22 @@ class PortalsClient {
         id: String = generateUniqueId(),
         title: String = APPLICATION_NAME,
         priority: NotificationPriority = NotificationPriority.NORMAL
-    ) = runCatching { portal.notification.addNotification(id = id, title = title, body = body, priority = priority) }
-        .onFailure { error -> logger.error("Failed to send notification: ${error.message}") }
+    ) {
+        val activePortal = portal ?: run {
+            logger.warn("Desktop portal is unavailable, cannot show notification.")
+            return
+        }
+
+        runCatching {
+            activePortal.notification.addNotification(
+                id = id,
+                title = title,
+                body = body,
+                priority = priority,
+            )
+        }
+            .onFailure { error -> logger.error("Failed to send notification: {}", error.message) }
+    }
 
     /**
      * Opens a URI in the user's preferred application via the XDG OpenURI portal.
@@ -85,7 +109,7 @@ class PortalsClient {
      * @param uri The URI to open (e.g. "https://example.com").
      */
     suspend fun openUri(uri: String) =
-        portal.openUri.openUri(uri)
+        (portal?.openUri?.openUri(uri) ?: Result.failure(portalUnavailableError()))
             .onFailure { error -> logger.error("Failed to open URI: ${error.message}") }
 
     /**
@@ -101,7 +125,8 @@ class PortalsClient {
             return@withLock Result.success(CreateSessionResponse(existingHandle))
         }
 
-        portal.globalShortcuts.createSession()
+        return@withLock (portal?.globalShortcuts?.createSession()
+            ?: Result.failure(portalUnavailableError()))
             .onSuccess { response -> shortcutsSessionHandle = response.sessionHandle }
     }
 
@@ -111,7 +136,7 @@ class PortalsClient {
      * Filters activations to only the application's shortcut ID and only when activated (not released).
      */
     fun observeShortcutActivated(): Flow<ShortcutActivation> =
-        portal.globalShortcuts.activations()
+        (portal?.globalShortcuts?.activations() ?: emptyFlow())
             .filter { it.shortcutId == SHORTCUT_ID && it.activated }
 
     /**
@@ -120,7 +145,7 @@ class PortalsClient {
      * Version 2 or higher indicates support for [configureGlobalShortcuts].
      */
     val globalShortcutsVersion: Int
-        get() = runCatching { portal.globalShortcuts.version }.getOrDefault(0)
+        get() = runCatching { portal?.globalShortcuts?.version ?: 0 }.getOrDefault(0)
 
     /**
      * Opens the system dialog for configuring the application's global shortcuts.
@@ -130,7 +155,8 @@ class PortalsClient {
     fun configureGlobalShortcuts(): Result<Unit> {
         val handle = shortcutsSessionHandle
             ?: return Result.failure(IllegalStateException("No active global shortcuts session"))
-        return portal.globalShortcuts.configureShortcuts(handle)
+        return portal?.globalShortcuts?.configureShortcuts(handle)
+            ?: Result.failure(portalUnavailableError())
     }
 
     /**
@@ -139,7 +165,8 @@ class PortalsClient {
     suspend fun listGlobalShortcuts(): Result<List<BoundShortcut>> {
         val handle = shortcutsSessionHandle
             ?: return Result.failure(IllegalStateException("No active global shortcuts session"))
-        return portal.globalShortcuts.listShortcuts(handle)
+        return portal?.globalShortcuts?.listShortcuts(handle)
+            ?: Result.failure(portalUnavailableError())
     }
 
     /**
@@ -153,7 +180,8 @@ class PortalsClient {
             description = SHORTCUT_DESCRIPTION,
             preferredTrigger = APPLICATION_SHORTCUT_TRIGGER
         )
-        return portal.globalShortcuts.bindShortcuts(handle, listOf(shortcut))
+        return portal?.globalShortcuts?.bindShortcuts(handle, listOf(shortcut))
+            ?: Result.failure(portalUnavailableError())
     }
 
     /**
@@ -164,10 +192,11 @@ class PortalsClient {
      * Increase this if characters are dropped or appear out of order (or like a slower typing effect).
      */
     suspend fun typeText(text: List<Int>, delayMs: Long): Result<Unit> = runCatching {
+        val remoteDesktop = portal?.remoteDesktop ?: throw portalUnavailableError()
         logger.info("Typing ${text.size} characters.")
         for (key in text) {
-            portal.remoteDesktop.notifyKeyboardKeySym(key, InputState.PRESSED).getOrThrow()
-            portal.remoteDesktop.notifyKeyboardKeySym(key, InputState.RELEASED).getOrThrow()
+            remoteDesktop.notifyKeyboardKeySym(key, InputState.PRESSED).getOrThrow()
+            remoteDesktop.notifyKeyboardKeySym(key, InputState.RELEASED).getOrThrow()
             if (delayMs > 0) delay(delayMs.milliseconds)
         }
     }
@@ -179,9 +208,10 @@ class PortalsClient {
      * @param keySymbol X11 key symbol for the key to press while the modifier is held.
      */
     fun typeKeyCombination(modifierKeySymbol: Int, keySymbol: Int): Result<Unit> = runCatching {
-        portal.remoteDesktop.notifyKeyboardKeySym(modifierKeySymbol, InputState.PRESSED).getOrThrow()
-        portal.remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.PRESSED).getOrThrow()
-        portal.remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.RELEASED).getOrThrow()
-        portal.remoteDesktop.notifyKeyboardKeySym(modifierKeySymbol, InputState.RELEASED).getOrThrow()
+        val remoteDesktop = portal?.remoteDesktop ?: throw portalUnavailableError()
+        remoteDesktop.notifyKeyboardKeySym(modifierKeySymbol, InputState.PRESSED).getOrThrow()
+        remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.PRESSED).getOrThrow()
+        remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.RELEASED).getOrThrow()
+        remoteDesktop.notifyKeyboardKeySym(modifierKeySymbol, InputState.RELEASED).getOrThrow()
     }
 }

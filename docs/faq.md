@@ -17,10 +17,12 @@ On-device remains the recommended starting point for everyone.
 
 ## Does it work on Wayland? How about X11?
 
-Yes to both. Under the hood, Speed of Sound uses [XDG Desktop Portals](https://flatpak.github.io/xdg-desktop-portal/docs/)
-for keyboard input, which works on both X11 and Wayland (powered by the [Stargate library](https://github.com/zugaldia/stargate/)
-by the same author). On the first launch you will be prompted to grant the app permission to type on your behalf.
-You need to approve that prompt for dictation to work.
+Generally yes. Under the hood, Speed of Sound uses [XDG Desktop Portals](https://flatpak.github.io/xdg-desktop-portal/docs/)
+for keyboard input, which is designed for both X11 and Wayland (powered by the
+[Stargate library](https://github.com/zugaldia/stargate/) by the same author).
+On desktops without a compatible remote-desktop backend, Speed of Sound can still continue in some environments using
+the Clipboard fallback (primarily on X11). On first launch, when supported, you will be prompted to grant permission
+to type on your behalf.
 
 ## Why does the app ask for permission to type on my behalf?
 
