@@ -39,7 +39,6 @@ import com.zugaldia.speedofsound.core.plugins.recorder.JvmRecorder
 import com.zugaldia.speedofsound.core.plugins.recorder.RecorderEvent
 import com.zugaldia.speedofsound.core.plugins.textoutput.TextOutputPlugin
 import com.zugaldia.speedofsound.core.plugins.textoutput.TextOutputRequest
-import kotlin.system.exitProcess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -96,6 +95,8 @@ class MainViewModel(
 
     private val asrProviderManager = AsrProviderManager(registry, settingsClient)
     private val llmProviderManager = LlmProviderManager(registry, settingsClient)
+    private var startupErrorMessage: String = ""
+    private var hasFatalStartupError = false
     private var activeRemoteDesktopStatus: RemoteDesktopStatus = if (
         settingsClient.getPortalsRestoreToken().isBlank()
     ) {
@@ -152,13 +153,17 @@ class MainViewModel(
                     false
                 }
             } catch (e: FatalStartupException) {
-                logger.error("A fatal error was encountered during startup.", e)
-                exitProcess(1)
+                handleFatalStartupError(e)
             }
         }
     }
 
     fun onTriggerAction() {
+        if (hasFatalStartupError) {
+            logger.warn("Ignoring trigger action because startup failed: {}", startupErrorMessage)
+            return
+        }
+
         // Safeguard: only proceed if we're in IDLE (to start) or LISTENING (to stop) state
         val currentStage = state.currentStage()
         if (currentStage != AppStage.IDLE && currentStage != AppStage.LISTENING) {
@@ -461,6 +466,19 @@ class MainViewModel(
     private fun hideAndReset() {
         state.emitPipelineCompleted() // Signals the main window to hide
         state.updateStage(AppStage.IDLE)
+    }
+
+    private fun handleFatalStartupError(error: FatalStartupException) {
+        hasFatalStartupError = true
+        startupErrorMessage = error.message ?: "Unknown fatal startup error"
+        logger.error("A fatal error was encountered during startup: {}", error.message)
+        GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+            state.updateAsrModel("ASR unavailable")
+            state.updateLlmModel(llmProviderManager.getCurrentProviderName())
+            state.updateStage(AppStage.IDLE)
+            false
+        }
+        portalsClient.showNotification("Speed of Sound could not start. ${error.message}")
     }
 
     fun shutdown() {
