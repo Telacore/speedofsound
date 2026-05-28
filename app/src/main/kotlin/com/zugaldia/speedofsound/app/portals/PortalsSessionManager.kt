@@ -92,6 +92,7 @@ class PortalsSessionManager(
                         settingsClient.setPortalsRestoreToken(newToken)
                     }
                     collectPortalsEvents(scope)
+                    logger.info("Remote desktop session started successfully")
                     _remoteDesktopStatus.value = RemoteDesktopStatus.Ready
                     _isSessionDisconnected.value = false
                 }.onFailure { error ->

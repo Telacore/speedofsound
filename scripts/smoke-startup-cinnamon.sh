@@ -7,7 +7,7 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$ROOT_DIR"
 
-SMOKE_TIMEOUT="${SMOKE_TIMEOUT:-25}"
+SMOKE_TIMEOUT="${SMOKE_TIMEOUT:-${1:-25}}"
 SMOKE_FORCE_REMOTE_SESSION="${SMOKE_FORCE_REMOTE_SESSION:-false}"
 NORMALIZED_SMOKE_FORCE_REMOTE_SESSION="${SMOKE_FORCE_REMOTE_SESSION,,}"
 RUNTIME_HOME="$(mktemp -d)"
@@ -50,7 +50,8 @@ export SOS_DISABLE_GIO_STORE=true
 export SOS_DISABLE_GSTREAMER=false
 export SMOKE_TIMEOUT
 export SMOKE_LOG_FILE
-export SMOKE_FAIL_ON_FATAL=true
+SMOKE_FAIL_ON_FATAL="${SMOKE_FAIL_ON_FATAL:-true}"
+export SMOKE_FAIL_ON_FATAL
 
 printf 'Running Cinnamon-compat startup smoke with timeout=%ss...\n' "$SMOKE_TIMEOUT"
 ./scripts/smoke-startup.sh "$SMOKE_TIMEOUT"
@@ -59,6 +60,12 @@ if [[ "$NORMALIZED_SMOKE_FORCE_REMOTE_SESSION" == "true" || "$NORMALIZED_SMOKE_F
   if ! grep -Fq "Trying to restore previous session: smoke-restore-token" "$SMOKE_LOG_FILE" \
     && ! grep -Fq "Starting a new session" "$SMOKE_LOG_FILE"; then
     echo "Cinnamon-compat smoke failed: remote session was not started in forced mode."
+    exit 1
+  fi
+
+  if ! (grep -Fq "Remote desktop session started successfully" "$SMOKE_LOG_FILE" \
+      || grep -Fq "Remote desktop portal is not supported on this system." "$SMOKE_LOG_FILE"); then
+    echo "Cinnamon-compat smoke failed: remote desktop session did not resolve to supported or fallback states."
     exit 1
   fi
 fi

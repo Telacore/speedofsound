@@ -1,6 +1,11 @@
 APP_ID = io.speedofsound.SpeedOfSound
 export GRADLE_OPTS = --enable-native-access=ALL-UNNAMED
 
+SMOKE_TIMEOUT ?= 20
+SMOKE_TIMEOUT_CINNAMON ?= 25
+SMOKE_FAIL_ON_FATAL ?= false
+SMOKE_FORCE_REMOTE_SESSION ?= false
+
 .PHONY: clean run run-light run-dark build shadow-build shadow-run check resources \
 	meson-clean meson-setup meson-build meson-install uninstall install \
 	flatpak-sources flatpak-linter flatpak-build flatpak-bundle flatpak-run flatpak-remove desktop-validate \
@@ -35,10 +40,13 @@ check:
 	./gradlew check
 
 smoke-startup:
+	SMOKE_FAIL_ON_FATAL="$(SMOKE_FAIL_ON_FATAL)" \
 	./scripts/smoke-startup.sh $(SMOKE_TIMEOUT)
 
 smoke-startup-cinnamon:
-	./scripts/smoke-startup-cinnamon.sh $(SMOKE_TIMEOUT)
+	SMOKE_FORCE_REMOTE_SESSION="$(SMOKE_FORCE_REMOTE_SESSION)" \
+	SMOKE_FAIL_ON_FATAL="$(SMOKE_FAIL_ON_FATAL)" \
+	./scripts/smoke-startup-cinnamon.sh $(SMOKE_TIMEOUT_CINNAMON)
 
 resources:
 	rm -f app/src/main/resources/speedofsound.gresource
