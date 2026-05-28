@@ -47,7 +47,7 @@ jobs:
         env:
           GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
           SMOKE_TIMEOUT: 25
-        run: ./scripts/smoke-startup-cinnamon.sh
+        run: make smoke-startup-cinnamon
       - name: Check
         env:
           GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
