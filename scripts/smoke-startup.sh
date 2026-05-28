@@ -22,7 +22,7 @@ TMP_DIR="$(mktemp -d)"
 OUT_FILE="${SMOKE_LOG_FILE:-$TMP_DIR/startup.log}"
 trap 'if [[ -z "${SMOKE_LOG_FILE:-}" ]]; then rm -rf "$TMP_DIR"; fi' EXIT
 
-TIMEOUT_SECONDS="${1:-20}"
+TIMEOUT_SECONDS="${SMOKE_TIMEOUT:-${1:-20}}"
 
 export SOS_DISABLE_GIO_STORE=true
 export SOS_DISABLE_GSTREAMER=false
