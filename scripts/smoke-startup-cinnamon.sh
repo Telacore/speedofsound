@@ -70,4 +70,9 @@ if [[ "$NORMALIZED_SMOKE_FORCE_REMOTE_SESSION" == "true" || "$NORMALIZED_SMOKE_F
     echo "Cinnamon-compat smoke failed: remote desktop session did not resolve to supported or fallback states."
     exit 1
   fi
+
+  if grep -Fq "Failed to start portals session" "$SMOKE_LOG_FILE"; then
+    echo "Cinnamon-compat smoke failed: unexpected portal startup error occurred."
+    exit 1
+  fi
 fi
