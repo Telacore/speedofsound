@@ -419,12 +419,28 @@ class MainViewModel(
         if (settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_CLIPBOARD) return
 
         logger.warn("Falling back to Clipboard output: {}", reason)
-        settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
-        activateSelectedTextOutput()
-        GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-            updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
-            false
+        runCatching {
+            settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
+                .takeIf { !it }
+                ?.let {
+                    logger.warn(
+                        "Could not persist text output method preference; continuing with runtime fallback"
+                    )
+                }
+            activateSelectedTextOutput()
         }
+            .onFailure { error ->
+                logger.error("Failed to switch to clipboard fallback: {}", error.message)
+                portalsClient.showNotification(
+                    "Could not switch to clipboard output: ${error.message ?: "Unknown error"}"
+                )
+            }
+            .onSuccess {
+                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                    updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
+                    false
+                }
+            }
     }
 
     private fun updateRemoteDesktopStatusUi(status: RemoteDesktopStatus) {

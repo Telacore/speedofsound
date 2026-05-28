@@ -118,6 +118,9 @@ class PortalsSessionManager(
             portalsClient.sessionClosedEvents.collect { event ->
                 logger.warn("Remote desktop portal session has been closed: $event")
                 _isSessionDisconnected.value = true
+                if (_remoteDesktopStatus.value != RemoteDesktopStatus.NotSupported) {
+                    _remoteDesktopStatus.value = RemoteDesktopStatus.NeedToken
+                }
             }
         }
     }
