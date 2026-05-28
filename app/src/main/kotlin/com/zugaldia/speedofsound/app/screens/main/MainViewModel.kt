@@ -105,8 +105,6 @@ class MainViewModel(
     } else {
         RemoteDesktopStatus.Ready
     }
-    private var didAutoFallbackToClipboard = false
-
     private val viewModelJob = SupervisorJob()
     private val viewModelScope = CoroutineScope(Dispatchers.Default + viewModelJob)
     private var currentPipelineJob: Job? = null
@@ -418,11 +416,9 @@ class MainViewModel(
     }
 
     private fun switchToClipboardFallback(reason: String) {
-        if (didAutoFallbackToClipboard) return
         if (settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_CLIPBOARD) return
 
         logger.warn("Falling back to Clipboard output: {}", reason)
-        didAutoFallbackToClipboard = true
         settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
         activateSelectedTextOutput()
     }
