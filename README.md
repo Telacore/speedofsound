@@ -80,3 +80,9 @@ work. You can also use GitHub emoji reactions on issues to vote for the ones tha
 which helps with prioritization.
 
 If you find Speed of Sound useful, consider [sponsoring this work](https://github.com/sponsors/zugaldia).
+
+## Development workflow
+
+- `./gradlew check` runs the standard project checks.
+- `make smoke-startup` runs a lightweight startup smoke-check for regression coverage, useful when hard exit paths are touched.
+- Run with a custom timeout via `SMOKE_TIMEOUT=30 make smoke-startup`.

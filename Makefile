@@ -7,6 +7,7 @@ export GRADLE_OPTS = --enable-native-access=ALL-UNNAMED
 	snapcraft-clean snapcraft-pack snapcraft-lint snap-install snap-remove \
 	jpackage-deb jpackage-rpm jpackage-app-image appimage \
 	actionlint \
+	smoke-startup \
 	docs-serve docs-build
 
 clean:
@@ -32,6 +33,9 @@ shadow-run: shadow-build
 
 check:
 	./gradlew check
+
+smoke-startup:
+	./scripts/smoke-startup.sh $(SMOKE_TIMEOUT)
 
 resources:
 	rm -f app/src/main/resources/speedofsound.gresource
