@@ -421,6 +421,10 @@ class MainViewModel(
         logger.warn("Falling back to Clipboard output: {}", reason)
         settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
         activateSelectedTextOutput()
+        GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+            updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
+            false
+        }
     }
 
     private fun updateRemoteDesktopStatusUi(status: RemoteDesktopStatus) {
