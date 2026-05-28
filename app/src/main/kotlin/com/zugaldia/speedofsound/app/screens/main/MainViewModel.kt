@@ -339,7 +339,16 @@ class MainViewModel(
 
     private fun refreshTextOutputMethodSetting() {
         runCatching { activateSelectedTextOutput() }
-            .onSuccess { updateRemoteDesktopStatusUi(activeRemoteDesktopStatus) }
+            .onSuccess {
+                if (
+                    settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_PORTAL &&
+                    activeRemoteDesktopStatus == RemoteDesktopStatus.NotSupported
+                ) {
+                    switchToClipboardFallback("Remote desktop portal is not supported on this system.")
+                    return@onSuccess
+                }
+                updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
+            }
             .onFailure { error ->
                 logger.error("Failed to switch text output method: {}", error.message)
                 portalsClient.showNotification(
