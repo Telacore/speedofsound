@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 
+private const val REMOTE_DESKTOP_INTERFACE = "org.freedesktop.portal.remotedesktop"
+
 class PortalsSessionManager(
     private val portalsClient: PortalsClient,
     private val settingsClient: SettingsClient,
@@ -98,7 +100,7 @@ class PortalsSessionManager(
                 }.onFailure { error ->
                     val response = (error as? PortalRequestException)?.response
                     val isCancelled = response == RequestResponse.CANCELLED
-                    val isMissingRemoteDesktopInterface = isMissingRemoteDesktopInterface(error)
+                    val isMissingRemoteDesktopInterface = isMissingRemoteDesktopPortalInterface(error)
                     when {
                         isMissingRemoteDesktopInterface -> {
                             logger.warn(
@@ -162,15 +164,6 @@ class PortalsSessionManager(
         }
     }
 
-    private fun isMissingRemoteDesktopInterface(error: Throwable): Boolean {
-        val message = error.message?.lowercase() ?: return false
-        return message.contains("keine derartige schnittstelle") ||
-            (message.contains("no such interface") &&
-                message.contains("org.freedesktop.portal.remotedesktop")) ||
-            (message.contains("does not implement interface") &&
-                message.contains("org.freedesktop.portal.remotedesktop"))
-    }
-
     fun shutdown() {
         logger.info("Shutting down portals session manager")
         portalsEventsJob?.cancel()
@@ -178,4 +171,12 @@ class PortalsSessionManager(
         startSessionJob?.cancel()
         startSessionJob = null
     }
+}
+
+internal fun isMissingRemoteDesktopPortalInterface(error: Throwable): Boolean {
+    val message = error.message?.lowercase() ?: return false
+    return message.contains("keine derartige schnittstelle") ||
+        message.contains("kein zugehöriges objekt") ||
+        (message.contains("no such interface") && message.contains(REMOTE_DESKTOP_INTERFACE)) ||
+        (message.contains("does not implement interface") && message.contains(REMOTE_DESKTOP_INTERFACE))
 }
