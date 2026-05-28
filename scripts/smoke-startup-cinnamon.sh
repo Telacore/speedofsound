@@ -71,6 +71,12 @@ if [[ "$NORMALIZED_SMOKE_FORCE_REMOTE_SESSION" == "true" || "$NORMALIZED_SMOKE_F
     exit 1
   fi
 
+  if grep -Fq "Remote desktop portal is not supported on this system." "$SMOKE_LOG_FILE" \
+    && ! grep -Fq "Falling back to Clipboard output: Remote desktop portal is not supported on this system." "$SMOKE_LOG_FILE"; then
+    echo "Cinnamon-compat smoke failed: unsupported portal fallback did not switch to clipboard output."
+    exit 1
+  fi
+
   if grep -Fq "Failed to start portals session" "$SMOKE_LOG_FILE"; then
     echo "Cinnamon-compat smoke failed: unexpected portal startup error occurred."
     exit 1

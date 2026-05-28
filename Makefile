@@ -8,6 +8,7 @@ SMOKE_FORCE_REMOTE_SESSION ?= false
 SMOKE_TIMEOUT_CI ?= 60
 SMOKE_FAIL_ON_FATAL_CI ?= true
 SMOKE_FORCE_REMOTE_SESSION_CI ?= true
+SMOKE_TIMEOUT_CI_MIN ?= 60
 
 .PHONY: clean run run-light run-dark build shadow-build shadow-run check resources \
 	meson-clean meson-setup meson-build meson-install uninstall install \
@@ -65,17 +66,25 @@ smoke-help:
 	"    Force fatal fail: $(SMOKE_FAIL_ON_FATAL)" \
 	"  make smoke-startup-ci" \
 	"    Timeout:  $(SMOKE_TIMEOUT_CI) seconds" \
+	"    Cinnamon timeout minimum: $(SMOKE_TIMEOUT_CI_MIN) seconds" \
 	"    Force fatal fail: $(SMOKE_FAIL_ON_FATAL_CI)" \
 	""
 
 smoke-startup-ci:
 	@echo "Running CI startup smoke checks with timeout $(SMOKE_TIMEOUT_CI) and fatal-on-error $(SMOKE_FAIL_ON_FATAL_CI)."
+	@ci_run_id=$$(date +%s)-$$RANDOM; \
+	ci_cinnamon_timeout="$(SMOKE_TIMEOUT_CI)"; \
+	if [ "$$ci_cinnamon_timeout" -lt "$(SMOKE_TIMEOUT_CI_MIN)" ]; then \
+	  ci_cinnamon_timeout="$(SMOKE_TIMEOUT_CI_MIN)"; \
+	fi; \
 	SMOKE_TIMEOUT="$(SMOKE_TIMEOUT_CI)" \
 	SMOKE_FAIL_ON_FATAL="$(SMOKE_FAIL_ON_FATAL_CI)" \
-	$(MAKE) smoke-startup
+	SMOKE_LOG_FILE="/tmp/speedofsound-smoke-startup-$$ci_run_id-main.log" \
+	$(MAKE) smoke-startup && \
 	SMOKE_FORCE_REMOTE_SESSION="$(SMOKE_FORCE_REMOTE_SESSION_CI)" \
-	SMOKE_TIMEOUT_CINNAMON="$(SMOKE_TIMEOUT_CI)" \
+	SMOKE_TIMEOUT_CINNAMON="$$ci_cinnamon_timeout" \
 	SMOKE_FAIL_ON_FATAL="$(SMOKE_FAIL_ON_FATAL_CI)" \
+	SMOKE_LOG_FILE="/tmp/speedofsound-smoke-startup-$$ci_run_id-cinnamon.log" \
 	$(MAKE) smoke-startup-cinnamon
 
 resources:

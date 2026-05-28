@@ -88,5 +88,7 @@ If you find Speed of Sound useful, consider [sponsoring this work](https://githu
 - Run with a custom timeout via `SMOKE_TIMEOUT=30 make smoke-startup`.
 - `make smoke-startup-cinnamon` adds an additional startup smoke path that exercises the Cinnamon-compatible remote-desktop portal path.
   - Use `SMOKE_FORCE_REMOTE_SESSION=true` to force portal startup behavior even when the text output method is set to clipboard in the profile.
+  - In this mode, the run verifies the startup session attempts to restore a portal session and either starts the remote session or cleanly falls back to clipboard output when the desktop portal is unsupported.
   - Timeout for both smoke checks defaults to `60` seconds.
-  - `make smoke-startup-ci` runs both startup smoke checks with CI-oriented defaults and is used by GitHub Actions.
+- `make smoke-startup-ci` runs both startup smoke checks with CI-oriented defaults and is used by GitHub Actions.
+  - CI canaries use a single run identifier for both logfiles and enforce a minimum Cinnamon timeout via `SMOKE_TIMEOUT_CI_MIN` (defaults to `60` seconds).
