@@ -54,7 +54,7 @@ SMOKE_FAIL_ON_FATAL="${SMOKE_FAIL_ON_FATAL:-true}"
 export SMOKE_FAIL_ON_FATAL
 
 printf 'Running Cinnamon-compat startup smoke with timeout=%ss...\n' "$SMOKE_TIMEOUT"
-./scripts/smoke-startup.sh "$SMOKE_TIMEOUT"
+SMOKE_PRESERVE_RUNTIME="true" ./scripts/smoke-startup.sh "$SMOKE_TIMEOUT"
 
 if [[ "$NORMALIZED_SMOKE_FORCE_REMOTE_SESSION" == "true" || "$NORMALIZED_SMOKE_FORCE_REMOTE_SESSION" == "1" || "$NORMALIZED_SMOKE_FORCE_REMOTE_SESSION" == "yes" ]]; then
   if ! grep -Fq "Trying to restore previous session: smoke-restore-token" "$SMOKE_LOG_FILE" \
