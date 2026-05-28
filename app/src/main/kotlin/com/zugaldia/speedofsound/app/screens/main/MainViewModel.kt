@@ -28,6 +28,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.KEY_TYPING_DELAY_MS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_CLIPBOARD
+import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL
 import com.zugaldia.speedofsound.core.languageFromIso2
 import com.zugaldia.speedofsound.core.FatalStartupException
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
