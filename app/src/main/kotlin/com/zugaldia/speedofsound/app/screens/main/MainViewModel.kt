@@ -261,62 +261,120 @@ class MainViewModel(
         when (key) {
             KEY_DEFAULT_LANGUAGE -> onPrimaryLanguageSelected()
             KEY_SECONDARY_LANGUAGE -> onSecondaryLanguageUpdated()
-            KEY_CUSTOM_CONTEXT -> director.updateOptions(
-                director.getOptions().copy(customContext = settingsClient.getCustomContext())
-            )
-
-            KEY_CUSTOM_VOCABULARY -> director.updateOptions(
-                director.getOptions().copy(customVocabulary = settingsClient.getCustomVocabulary())
-            )
-
-            KEY_TEXT_PROCESSING_ENABLED -> {
-                director.updateOptions(
-                    director.getOptions().copy(enableTextProcessing = settingsClient.getTextProcessingEnabled())
-                )
-                updateModelLabels()
-            }
-
-            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID -> {
-                asrProviderManager.activateSelectedProvider()
-                updateModelLabels()
-            }
-
-            KEY_VOICE_MODEL_PROVIDERS -> {
-                asrProviderManager.refreshProviderConfiguration()
-                updateModelLabels()
-            }
-
-            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID -> {
-                llmProviderManager.activateSelectedProvider()
-                updateModelLabels()
-            }
-
-            KEY_TEXT_MODEL_PROVIDERS -> {
-                llmProviderManager.refreshProviderConfiguration()
-                updateModelLabels()
-            }
-
-            KEY_CREDENTIALS -> {
-                asrProviderManager.refreshProviderConfiguration()
-                llmProviderManager.refreshProviderConfiguration()
-            }
-
             KEY_TEXT_OUTPUT_METHOD -> {
                 activateSelectedTextOutput()
                 updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
             }
-
-            KEY_TYPING_DELAY_MS -> portalTextOutput.updateOptions(
-                portalTextOutput.getOptions().copy(typingDelayMs = settingsClient.getTypingDelayMs().toLong())
-            )
-
-            KEY_SANITIZE_SPECIAL_CHARS -> portalTextOutput.updateOptions(
-                portalTextOutput.getOptions().copy(sanitizeSpecialChars = settingsClient.getSanitizeSpecialChars())
-            )
+            KEY_TYPING_DELAY_MS -> refreshTypingDelaySetting()
+            KEY_SANITIZE_SPECIAL_CHARS -> refreshSanitizeSpecialCharsSetting()
+            KEY_TEXT_PROCESSING_ENABLED -> refreshTextProcessingSetting()
+            KEY_CUSTOM_CONTEXT -> refreshCustomContextSetting()
+            KEY_CUSTOM_VOCABULARY -> refreshCustomVocabularySetting()
+            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, KEY_VOICE_MODEL_PROVIDERS -> refreshAsrSetting(key)
+            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, KEY_TEXT_MODEL_PROVIDERS -> refreshLlmSetting(key)
+            KEY_CREDENTIALS -> refreshCredentials()
         }
     }
 
+    private fun refreshTypingDelaySetting() {
+        portalTextOutput.updateOptions(
+            portalTextOutput.getOptions().copy(
+                typingDelayMs = settingsClient.getTypingDelayMs().toLong()
+            )
+        )
+    }
+
+    private fun refreshSanitizeSpecialCharsSetting() {
+        portalTextOutput.updateOptions(
+            portalTextOutput.getOptions().copy(
+                sanitizeSpecialChars = settingsClient.getSanitizeSpecialChars()
+            )
+        )
+    }
+
+    private fun refreshTextProcessingSetting() {
+        director.updateOptions(
+            director.getOptions().copy(enableTextProcessing = settingsClient.getTextProcessingEnabled())
+        )
+        updateModelLabels()
+    }
+
+    private fun refreshCustomContextSetting() {
+        director.updateOptions(
+            director.getOptions().copy(customContext = settingsClient.getCustomContext())
+        )
+    }
+
+    private fun refreshCustomVocabularySetting() {
+        director.updateOptions(
+            director.getOptions().copy(customVocabulary = settingsClient.getCustomVocabulary())
+        )
+    }
+
+    private fun refreshAsrSetting(key: String) {
+        val asrResult = when (key) {
+            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID -> runCatching {
+                asrProviderManager.activateSelectedProvider()
+            }
+
+            else -> runCatching {
+                asrProviderManager.refreshProviderConfiguration()
+            }
+        }
+
+        asrResult.onSuccess { updateModelLabels() }
+            .onFailure { error ->
+                logger.error("Failed to apply ASR settings after {} change: {}", key, error.message)
+                if (error is FatalStartupException) {
+                    handleFatalStartupError(error)
+                }
+            }
+    }
+
+    private fun refreshLlmSetting(key: String) {
+        val llmResult = when (key) {
+            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID -> runCatching {
+                llmProviderManager.activateSelectedProvider()
+            }
+
+            else -> runCatching {
+                llmProviderManager.refreshProviderConfiguration()
+            }
+        }
+
+        llmResult.onSuccess { updateModelLabels() }
+            .onFailure { error ->
+                logger.error("Failed to apply LLM settings after {} change: {}", key, error.message)
+                portalsClient.showNotification(
+                    "Could not apply LLM setting '$key': ${error.message ?: "Unknown error"}"
+                )
+            }
+    }
+
+    private fun refreshCredentials() {
+        runCatching { asrProviderManager.refreshProviderConfiguration() }
+            .onFailure { error ->
+                logger.error("Failed to refresh ASR provider configuration: {}", error.message)
+                if (error is FatalStartupException) {
+                    handleFatalStartupError(error)
+                }
+            }
+        runCatching { llmProviderManager.refreshProviderConfiguration() }
+            .onFailure { error ->
+                logger.error("Failed to refresh LLM provider configuration: {}", error.message)
+                portalsClient.showNotification(
+                    "Could not refresh LLM provider configuration: " +
+                        "${error.message ?: "Unknown error"}"
+                )
+            }
+    }
+
     private fun updateModelLabels() {
+        if (hasFatalStartupError) {
+            state.updateAsrModel("ASR unavailable")
+            state.updateLlmModel(llmProviderManager.getCurrentProviderName())
+            return
+        }
         val asrModelName = asrProviderManager.getCurrentProviderName()
         val llmModelName = llmProviderManager.getCurrentProviderName()
         state.updateAsrModel(asrModelName)
@@ -469,9 +527,24 @@ class MainViewModel(
     }
 
     private fun handleFatalStartupError(error: FatalStartupException) {
+        if (hasFatalStartupError) return
         hasFatalStartupError = true
         startupErrorMessage = error.message ?: "Unknown fatal startup error"
         logger.error("A fatal error was encountered during startup: {}", error.message)
+        runCatching { registry.shutdownAll() }
+            .onFailure { shutdownError ->
+                logger.error(
+                    "Failed to clean up plugins after startup failure: {}",
+                    shutdownError.message
+                )
+            }
+        runCatching { portalsSessionManager.shutdown() }
+            .onFailure { shutdownError ->
+                logger.error(
+                    "Failed to clean up portal session manager: {}",
+                    shutdownError.message
+                )
+            }
         GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
             state.updateAsrModel("ASR unavailable")
             state.updateLlmModel(llmProviderManager.getCurrentProviderName())
