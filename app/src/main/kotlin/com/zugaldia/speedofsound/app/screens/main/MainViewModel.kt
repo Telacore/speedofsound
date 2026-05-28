@@ -524,17 +524,31 @@ class MainViewModel(
             }
 
             val preparedTextOutput = textOutput.prepareText(request)
+            val postHideDelayMs = settingsClient.getPostHideDelayMs()
             if (preparedTextOutput.isFailure) {
                 val error = preparedTextOutput.exceptionOrNull()
-                logger.error("Failed to prepare text: ${error?.message}")
-                portalsClient.showNotification(body = "Failed to prepare text: ${error?.message ?: "Unknown error"}")
-                GLib.idleAdd(GLib.PRIORITY_DEFAULT) { hideAndReset(); false }
+                if (textOutput is PortalTextOutput) {
+                    logger.warn("Portal prepare failed, attempting clipboard fallback: {}", error?.message)
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) { hideAndReset(); false }
+                    if (postHideDelayMs > 0) delay(postHideDelayMs.toLong().milliseconds)
+                    outputTextWithFallback(request, isClipboardPreparedAhead)
+                        .onFailure { fallbackError ->
+                            logger.error("Error outputting text after portal prepare failure: ${fallbackError.message}")
+                            portalsClient.showNotification(
+                                body = "Failed to output text: ${fallbackError.message ?: "Unknown error"}"
+                            )
+                        }
+                } else {
+                    logger.error("Failed to prepare text: ${error?.message}")
+                    portalsClient.showNotification(
+                        body = "Failed to prepare text: ${error?.message ?: "Unknown error"}"
+                    )
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) { hideAndReset(); false }
+                }
                 return@launch
             }
 
             GLib.idleAdd(GLib.PRIORITY_DEFAULT) { hideAndReset(); false }
-
-            val postHideDelayMs = settingsClient.getPostHideDelayMs()
             if (postHideDelayMs > 0) delay(postHideDelayMs.toLong().milliseconds)
 
             outputTextWithFallback(request, isClipboardPreparedAhead)
