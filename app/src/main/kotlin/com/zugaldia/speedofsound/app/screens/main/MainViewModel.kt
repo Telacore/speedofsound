@@ -503,19 +503,21 @@ class MainViewModel(
         viewModelScope.launch {
             // Clipboard (and similar focus-dependent operations) must be set while this window
             // still owns focus, before hiding, otherwise Wayland rejects the clipboard write.
-            textOutput.prepareText(request)
-                .onFailure { error ->
-                    logger.error("Failed to prepare text: ${error.message}")
-                    portalsClient.showNotification(body = "Failed to prepare text: ${error.message ?: "Unknown error"}")
-                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) { hideAndReset(); false }
-                    return@launch
-                }
+            val preparedTextOutput = textOutput.prepareText(request)
+            if (preparedTextOutput.isFailure) {
+                val error = preparedTextOutput.exceptionOrNull()
+                logger.error("Failed to prepare text: ${error?.message}")
+                portalsClient.showNotification(body = "Failed to prepare text: ${error?.message ?: "Unknown error"}")
+                GLib.idleAdd(GLib.PRIORITY_DEFAULT) { hideAndReset(); false }
+                return@launch
+            }
 
             GLib.idleAdd(GLib.PRIORITY_DEFAULT) { hideAndReset(); false }
 
             val postHideDelayMs = settingsClient.getPostHideDelayMs()
             if (postHideDelayMs > 0) delay(postHideDelayMs.toLong().milliseconds)
-            textOutput.outputText(request)
+
+            outputTextWithFallback(request)
                 .onFailure { error ->
                     logger.error("Error outputting text: ${error.message}")
                     portalsClient.showNotification(body = "Failed to output text: ${error.message ?: "Unknown error"}")
@@ -541,6 +543,25 @@ class MainViewModel(
     private fun hideAndReset() {
         state.emitPipelineCompleted() // Signals the main window to hide
         state.updateStage(AppStage.IDLE)
+    }
+
+    private suspend fun outputTextWithFallback(request: TextOutputRequest): Result<Unit> {
+        val primaryTextOutput = registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? TextOutputPlugin<*>
+            ?: return Result.failure(IllegalStateException("No text output plugin active"))
+
+        return primaryTextOutput.outputText(request).recoverCatching { error ->
+            if (primaryTextOutput is PortalTextOutput) {
+                logger.warn("Portal output failed, falling back to clipboard: {}", error.message)
+                runCatching {
+                    switchToClipboardFallback("Remote desktop portal output failed; using clipboard fallback.")
+                    val clipboardTextOutput = registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? ClipboardTextOutput
+                        ?: throw IllegalStateException("Clipboard text output plugin unavailable")
+                    clipboardTextOutput.prepareText(request).getOrThrow()
+                    clipboardTextOutput.outputText(request).getOrThrow()
+                }.getOrThrow()
+            }
+            throw error
+        }
     }
 
     private fun handleFatalStartupError(error: FatalStartupException) {
