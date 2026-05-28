@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 
@@ -125,13 +126,17 @@ class PortalsSessionManager(
     private fun collectPortalsEvents(scope: CoroutineScope) {
         portalsEventsJob?.cancel()
         portalsEventsJob = scope.launch {
-            portalsClient.sessionClosedEvents.collect { event ->
-                logger.warn("Remote desktop portal session has been closed: $event")
-                _isSessionDisconnected.value = true
-                if (_remoteDesktopStatus.value != RemoteDesktopStatus.NotSupported) {
-                    _remoteDesktopStatus.value = RemoteDesktopStatus.NeedToken
+            portalsClient.sessionClosedEvents
+                .catch { error ->
+                    logger.warn("Remote desktop session closed event stream failed: {}", error.message, error)
                 }
-            }
+                .collect { event ->
+                    logger.warn("Remote desktop portal session has been closed: $event")
+                    _isSessionDisconnected.value = true
+                    if (_remoteDesktopStatus.value != RemoteDesktopStatus.NotSupported) {
+                        _remoteDesktopStatus.value = RemoteDesktopStatus.NeedToken
+                    }
+                }
         }
     }
 
