@@ -154,6 +154,10 @@ class MainViewModel(
                 }
             } catch (e: FatalStartupException) {
                 handleFatalStartupError(e)
+            } catch (e: IllegalStateException) {
+                handleFatalStartupError(
+                    FatalStartupException("Unexpected startup error: ${e.message}")
+                )
             }
         }
     }
@@ -261,10 +265,7 @@ class MainViewModel(
         when (key) {
             KEY_DEFAULT_LANGUAGE -> onPrimaryLanguageSelected()
             KEY_SECONDARY_LANGUAGE -> onSecondaryLanguageUpdated()
-            KEY_TEXT_OUTPUT_METHOD -> {
-                activateSelectedTextOutput()
-                updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
-            }
+            KEY_TEXT_OUTPUT_METHOD -> refreshTextOutputMethodSetting()
             KEY_TYPING_DELAY_MS -> refreshTypingDelaySetting()
             KEY_SANITIZE_SPECIAL_CHARS -> refreshSanitizeSpecialCharsSetting()
             KEY_TEXT_PROCESSING_ENABLED -> refreshTextProcessingSetting()
@@ -328,6 +329,17 @@ class MainViewModel(
                 if (error is FatalStartupException) {
                     handleFatalStartupError(error)
                 }
+            }
+    }
+
+    private fun refreshTextOutputMethodSetting() {
+        runCatching { activateSelectedTextOutput() }
+            .onSuccess { updateRemoteDesktopStatusUi(activeRemoteDesktopStatus) }
+            .onFailure { error ->
+                logger.error("Failed to switch text output method: {}", error.message)
+                portalsClient.showNotification(
+                    "Failed to switch text output method: ${error.message ?: "Unknown error"}"
+                )
             }
     }
 
