@@ -31,6 +31,9 @@ private const val SHORTCUT_DESCRIPTION = "Start or stop voice typing"
 
 @Suppress("TooManyFunctions")
 class PortalsClient {
+    companion object {
+        private const val KEY_SYMBOL_HEX_RADIX = 16
+    }
 
     private val logger = LoggerFactory.getLogger(PortalsClient::class.java)
     private val portal: DesktopPortal? = runCatching { DesktopPortal.connect() }
@@ -194,9 +197,21 @@ class PortalsClient {
     suspend fun typeText(text: List<Int>, delayMs: Long): Result<Unit> = runCatching {
         val remoteDesktop = portal?.remoteDesktop ?: throw portalUnavailableError()
         logger.info("Typing ${text.size} characters.")
-        for (key in text) {
-            remoteDesktop.notifyKeyboardKeySym(key, InputState.PRESSED).getOrThrow()
-            remoteDesktop.notifyKeyboardKeySym(key, InputState.RELEASED).getOrThrow()
+        for ((index, keySymbol) in text.withIndex()) {
+            runCatching {
+                remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.PRESSED).getOrThrow()
+                remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.RELEASED).getOrThrow()
+            }.onFailure { error ->
+                // Ensure key state is consistent if a key press/release sequence fails.
+                runCatching {
+                    remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.RELEASED).getOrThrow()
+                }
+                throw IllegalStateException(
+                    "Failed to type key symbol at index $index (0x${keySymbol.toString(KEY_SYMBOL_HEX_RADIX)}). " +
+                        error.message,
+                    error,
+                )
+            }.getOrThrow()
             if (delayMs > 0) delay(delayMs.milliseconds)
         }
     }
@@ -209,9 +224,25 @@ class PortalsClient {
      */
     fun typeKeyCombination(modifierKeySymbol: Int, keySymbol: Int): Result<Unit> = runCatching {
         val remoteDesktop = portal?.remoteDesktop ?: throw portalUnavailableError()
-        remoteDesktop.notifyKeyboardKeySym(modifierKeySymbol, InputState.PRESSED).getOrThrow()
-        remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.PRESSED).getOrThrow()
-        remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.RELEASED).getOrThrow()
-        remoteDesktop.notifyKeyboardKeySym(modifierKeySymbol, InputState.RELEASED).getOrThrow()
+        var modifierDown = false
+        var keyDown = false
+
+        try {
+            remoteDesktop.notifyKeyboardKeySym(modifierKeySymbol, InputState.PRESSED).getOrThrow()
+            modifierDown = true
+            remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.PRESSED).getOrThrow()
+            keyDown = true
+            remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.RELEASED).getOrThrow()
+            keyDown = false
+            remoteDesktop.notifyKeyboardKeySym(modifierKeySymbol, InputState.RELEASED).getOrThrow()
+            modifierDown = false
+        } finally {
+            if (modifierDown) {
+                runCatching { remoteDesktop.notifyKeyboardKeySym(modifierKeySymbol, InputState.RELEASED).getOrThrow() }
+            }
+            if (keyDown) {
+                runCatching { remoteDesktop.notifyKeyboardKeySym(keySymbol, InputState.RELEASED).getOrThrow() }
+            }
+        }
     }
 }
