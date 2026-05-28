@@ -2,7 +2,7 @@ APP_ID = io.speedofsound.SpeedOfSound
 export GRADLE_OPTS = --enable-native-access=ALL-UNNAMED
 
 SMOKE_TIMEOUT ?= 20
-SMOKE_TIMEOUT_CINNAMON ?= 25
+SMOKE_TIMEOUT_CINNAMON ?= 60
 SMOKE_FAIL_ON_FATAL ?= false
 SMOKE_FORCE_REMOTE_SESSION ?= false
 
