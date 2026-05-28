@@ -30,6 +30,14 @@ jobs:
         env:
           GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
         run: ./gradlew build
+      - name: Verify no hard process exits in app startup path
+        run: |
+          if rg -q "exitProcess\\(" app/src/main/kotlin; then
+            echo "Hard process exits found in app source."
+            rg -n "exitProcess\\(" app/src/main/kotlin
+            exit 1
+          fi
+          echo "No hard process exits in app source."
       - name: Check
         env:
           GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
