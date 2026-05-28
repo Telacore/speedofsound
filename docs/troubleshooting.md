@@ -26,13 +26,14 @@ to type text into other applications. This portal must be supported by your desk
 However, not all desktop environments ship a backend that implements it
 ([this table](https://wiki.archlinux.org/title/XDG_Desktop_Portal) provides a good compatibility matrix).
 
-**How to fix it:** We recommend reporting the missing support to your desktop environment's issue tracker.
-In the meantime, if possible, consider switching to a desktop environment that implements this portal (e.g. GNOME, KDE).
+**How to fix it:** Speed of Sound now automatically switches to Clipboard fallback when the remote desktop portal is missing or rejected, so dictation can continue without restarting.
+If you want to keep using portal typing, report the missing support to your desktop environment's issue tracker.
+For deterministic behavior on environments with limited portal support (including some Wayland sessions), manually selecting **Clipboard** in Preferences can still help.
 
-!!! note "Clipboard fallback on X11"
-    If the remote desktop portal is unavailable, Speed of Sound now attempts to continue with the Clipboard output
-    method on X11 by using the system keyboard event API as a last resort for `Ctrl+V`.
-    On non-X11 sessions (such as Wayland), this fallback is usually unavailable and the issue may remain.
+!!! note "Clipboard fallback behavior"
+    If the portal becomes unavailable during runtime, Speed of Sound first prepares clipboard text while the app still has focus,
+    then switches to Clipboard output and pastes with `Ctrl+V`.
+    On X11 the app can also use a local keyboard fallback if the portal paste action fails.
 
 ### Non-Latin text produces only spaces and punctuation
 
