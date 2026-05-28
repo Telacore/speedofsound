@@ -12,6 +12,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
+      SMOKE_TIMEOUT_CI: 60
+      SMOKE_FAIL_ON_FATAL_CI: "true"
+      SMOKE_FORCE_REMOTE_SESSION_CI: "true"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,19 +43,8 @@ jobs:
             exit 1
           fi
           echo "No hard process exits in app source."
-      - name: Run startup smoke check
-        env:
-          GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
-          SMOKE_TIMEOUT: 60
-          SMOKE_FAIL_ON_FATAL: "true"
-        run: make smoke-startup
-      - name: Run Cinnamon-compat startup smoke check
-        env:
-          GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
-          SMOKE_TIMEOUT_CINNAMON: 60
-          SMOKE_FAIL_ON_FATAL: "true"
-          SMOKE_FORCE_REMOTE_SESSION: "true"
-        run: make smoke-startup-cinnamon
+      - name: Run startup smoke checks
+        run: make smoke-startup-ci
       - name: Check
         env:
           GRADLE_OPTS: --enable-native-access=ALL-UNNAMED

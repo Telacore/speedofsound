@@ -5,6 +5,9 @@ SMOKE_TIMEOUT ?= 60
 SMOKE_TIMEOUT_CINNAMON ?= 60
 SMOKE_FAIL_ON_FATAL ?= false
 SMOKE_FORCE_REMOTE_SESSION ?= false
+SMOKE_TIMEOUT_CI ?= 60
+SMOKE_FAIL_ON_FATAL_CI ?= true
+SMOKE_FORCE_REMOTE_SESSION_CI ?= true
 
 .PHONY: clean run run-light run-dark build shadow-build shadow-run check resources \
 	meson-clean meson-setup meson-build meson-install uninstall install \
@@ -12,8 +15,9 @@ SMOKE_FORCE_REMOTE_SESSION ?= false
 	snapcraft-clean snapcraft-pack snapcraft-lint snap-install snap-remove \
 	jpackage-deb jpackage-rpm jpackage-app-image appimage \
 	actionlint \
-    smoke-startup smoke-startup-cinnamon \
+	smoke-startup smoke-startup-cinnamon \
 	smoke-help \
+	smoke-startup-ci \
 	docs-serve docs-build
 
 clean:
@@ -59,7 +63,20 @@ smoke-help:
 	"    Timeout:  $(SMOKE_TIMEOUT_CINNAMON) seconds" \
 	"    Force remote session: $(SMOKE_FORCE_REMOTE_SESSION)" \
 	"    Force fatal fail: $(SMOKE_FAIL_ON_FATAL)" \
+	"  make smoke-startup-ci" \
+	"    Timeout:  $(SMOKE_TIMEOUT_CI) seconds" \
+	"    Force fatal fail: $(SMOKE_FAIL_ON_FATAL_CI)" \
 	""
+
+smoke-startup-ci:
+	@echo "Running CI startup smoke checks with timeout $(SMOKE_TIMEOUT_CI) and fatal-on-error $(SMOKE_FAIL_ON_FATAL_CI)."
+	SMOKE_TIMEOUT="$(SMOKE_TIMEOUT_CI)" \
+	SMOKE_FAIL_ON_FATAL="$(SMOKE_FAIL_ON_FATAL_CI)" \
+	$(MAKE) smoke-startup
+	SMOKE_FORCE_REMOTE_SESSION="$(SMOKE_FORCE_REMOTE_SESSION_CI)" \
+	SMOKE_TIMEOUT_CINNAMON="$(SMOKE_TIMEOUT_CI)" \
+	SMOKE_FAIL_ON_FATAL="$(SMOKE_FAIL_ON_FATAL_CI)" \
+	$(MAKE) smoke-startup-cinnamon
 
 resources:
 	rm -f app/src/main/resources/speedofsound.gresource
