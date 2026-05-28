@@ -26,6 +26,7 @@ class PortalsSessionManager(
     private val logger = LoggerFactory.getLogger(PortalsSessionManager::class.java)
 
     private var portalsEventsJob: Job? = null
+    private var startSessionJob: Job? = null
 
     private val _isSessionDisconnected = MutableStateFlow(initialSessionDisconnected)
     val isSessionDisconnected: StateFlow<Boolean> = _isSessionDisconnected.asStateFlow()
@@ -74,7 +75,12 @@ class PortalsSessionManager(
     }
 
     fun startSession(scope: CoroutineScope, token: String? = null) {
-        scope.launch {
+        if (startSessionJob?.isActive == true) {
+            logger.info("Ignoring remote desktop session start request while another start attempt is in progress.")
+            return
+        }
+
+        startSessionJob = scope.launch {
             val restoreToken = token?.ifBlank { null }
             logger.info(restoreToken?.let { "Trying to restore previous session: $it" } ?: "Starting a new session")
             portalsClient.startRemoteDesktopSession(restoreToken).onSuccess { response ->
@@ -84,11 +90,7 @@ class PortalsSessionManager(
                     settingsClient.setPortalsRestoreToken(newToken)
                 }
                 collectPortalsEvents(scope)
-                _remoteDesktopStatus.value = if (newToken.isNullOrBlank()) {
-                    RemoteDesktopStatus.NeedToken
-                } else {
-                    RemoteDesktopStatus.Ready
-                }
+                _remoteDesktopStatus.value = RemoteDesktopStatus.Ready
                 _isSessionDisconnected.value = false
             }.onFailure { error ->
                 logger.error("Failed to start portals session", error)
@@ -100,11 +102,17 @@ class PortalsSessionManager(
                 }
                 _isSessionDisconnected.value = true
                 settingsClient.setPortalsRestoreToken("")
+            }.also {
+                startSessionJob = null
             }
         }
     }
 
     fun attemptReconnect(scope: CoroutineScope) {
+        if (startSessionJob?.isActive == true) {
+            logger.info("Ignoring portal reconnect while session start is already in progress.")
+            return
+        }
         if (_isSessionDisconnected.value && _remoteDesktopStatus.value != RemoteDesktopStatus.NotSupported) {
             logger.info("Portal session disconnected, attempting to reconnect.")
             val restoreToken = settingsClient.getPortalsRestoreToken()
@@ -129,5 +137,7 @@ class PortalsSessionManager(
         logger.info("Shutting down portals session manager")
         portalsEventsJob?.cancel()
         portalsEventsJob = null
+        startSessionJob?.cancel()
+        startSessionJob = null
     }
 }
