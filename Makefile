@@ -13,6 +13,7 @@ SMOKE_FORCE_REMOTE_SESSION ?= false
 	jpackage-deb jpackage-rpm jpackage-app-image appimage \
 	actionlint \
     smoke-startup smoke-startup-cinnamon \
+	smoke-help \
 	docs-serve docs-build
 
 clean:
@@ -47,6 +48,18 @@ smoke-startup-cinnamon:
 	SMOKE_FORCE_REMOTE_SESSION="$(SMOKE_FORCE_REMOTE_SESSION)" \
 	SMOKE_FAIL_ON_FATAL="$(SMOKE_FAIL_ON_FATAL)" \
 	./scripts/smoke-startup-cinnamon.sh $(SMOKE_TIMEOUT_CINNAMON)
+
+smoke-help:
+	@printf '%s\n' \
+	"Smoke targets:" \
+	"  make smoke-startup" \
+	"    Timeout:  $(SMOKE_TIMEOUT) seconds" \
+	"    Force fatal fail: $(SMOKE_FAIL_ON_FATAL)" \
+	"  make smoke-startup-cinnamon" \
+	"    Timeout:  $(SMOKE_TIMEOUT_CINNAMON) seconds" \
+	"    Force remote session: $(SMOKE_FORCE_REMOTE_SESSION)" \
+	"    Force fatal fail: $(SMOKE_FAIL_ON_FATAL)" \
+	""
 
 resources:
 	rm -f app/src/main/resources/speedofsound.gresource

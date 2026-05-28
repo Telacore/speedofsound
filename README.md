@@ -86,3 +86,6 @@ If you find Speed of Sound useful, consider [sponsoring this work](https://githu
 - `./gradlew check` runs the standard project checks.
 - `make smoke-startup` runs a lightweight startup smoke-check for regression coverage, useful when hard exit paths are touched.
 - Run with a custom timeout via `SMOKE_TIMEOUT=30 make smoke-startup`.
+- `make smoke-startup-cinnamon` adds an additional startup smoke path that exercises the Cinnamon-compatible remote-desktop portal path.
+  - Use `SMOKE_FORCE_REMOTE_SESSION=true` to force portal startup behavior even when the text output method is set to clipboard in the profile.
+  - Timeout for both smoke checks defaults to `60` seconds.
