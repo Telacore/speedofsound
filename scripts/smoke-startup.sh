@@ -9,6 +9,10 @@
 # - Expected startup logs are emitted, including the app entrypoint.
 # - Optional hard-fail when startup logs contain a known fatal startup error.
 #
+# Internal environment variables:
+# - SMOKE_PRESERVE_RUNTIME=true: do not create temporary HOME/XDG dirs and keep
+#   caller-provided runtime env vars (used by smoke-startup-cinnamon.sh).
+#
 # Usage:
 #   ./scripts/smoke-startup.sh
 
