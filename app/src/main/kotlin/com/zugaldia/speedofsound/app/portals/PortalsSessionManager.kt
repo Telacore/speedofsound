@@ -96,10 +96,31 @@ class PortalsSessionManager(
                     _remoteDesktopStatus.value = RemoteDesktopStatus.Ready
                     _isSessionDisconnected.value = false
                 }.onFailure { error ->
-                    logger.error("Failed to start portals session", error)
-                    val isCancelled = error is PortalRequestException && error.response == RequestResponse.CANCELLED
+                    val response = (error as? PortalRequestException)?.response
+                    val isCancelled = response == RequestResponse.CANCELLED
+                    val isMissingRemoteDesktopInterface = isMissingRemoteDesktopInterface(error)
+                    when {
+                        isMissingRemoteDesktopInterface -> {
+                            logger.warn(
+                                "Remote desktop portal is not supported on this system; " +
+                                    "falling back to clipboard output ({}).",
+                                error.message,
+                            )
+                        }
+
+                        isCancelled -> {
+                            logger.info("Remote desktop session start was cancelled by portal. {}", error.message)
+                        }
+
+                        else -> {
+                            logger.error("Failed to start portals session", error)
+                        }
+                    }
+
                     _remoteDesktopStatus.value = if (isCancelled) {
                         RemoteDesktopStatus.NeedToken
+                    } else if (isMissingRemoteDesktopInterface) {
+                        RemoteDesktopStatus.NotSupported
                     } else {
                         RemoteDesktopStatus.NotSupported
                     }
@@ -139,6 +160,15 @@ class PortalsSessionManager(
                     }
                 }
         }
+    }
+
+    private fun isMissingRemoteDesktopInterface(error: Throwable): Boolean {
+        val message = error.message?.lowercase() ?: return false
+        return message.contains("keine derartige schnittstelle") ||
+            (message.contains("no such interface") &&
+                message.contains("org.freedesktop.portal.remotedesktop")) ||
+            (message.contains("does not implement interface") &&
+                message.contains("org.freedesktop.portal.remotedesktop"))
     }
 
     fun shutdown() {
