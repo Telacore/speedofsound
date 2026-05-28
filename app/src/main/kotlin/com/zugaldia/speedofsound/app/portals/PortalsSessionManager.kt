@@ -81,28 +81,30 @@ class PortalsSessionManager(
         }
 
         startSessionJob = scope.launch {
-            val restoreToken = token?.ifBlank { null }
-            logger.info(restoreToken?.let { "Trying to restore previous session: $it" } ?: "Starting a new session")
-            portalsClient.startRemoteDesktopSession(restoreToken).onSuccess { response ->
-                val newToken = response.restoreToken
-                if (!newToken.isNullOrBlank()) {
-                    logger.info("Got a fresh restore token: $newToken")
-                    settingsClient.setPortalsRestoreToken(newToken)
+            try {
+                val restoreToken = token?.ifBlank { null }
+                logger.info(restoreToken?.let { "Trying to restore previous session: $it" } ?: "Starting a new session")
+                portalsClient.startRemoteDesktopSession(restoreToken).onSuccess { response ->
+                    val newToken = response.restoreToken
+                    if (!newToken.isNullOrBlank()) {
+                        logger.info("Got a fresh restore token: $newToken")
+                        settingsClient.setPortalsRestoreToken(newToken)
+                    }
+                    collectPortalsEvents(scope)
+                    _remoteDesktopStatus.value = RemoteDesktopStatus.Ready
+                    _isSessionDisconnected.value = false
+                }.onFailure { error ->
+                    logger.error("Failed to start portals session", error)
+                    val isCancelled = error is PortalRequestException && error.response == RequestResponse.CANCELLED
+                    _remoteDesktopStatus.value = if (isCancelled) {
+                        RemoteDesktopStatus.NeedToken
+                    } else {
+                        RemoteDesktopStatus.NotSupported
+                    }
+                    _isSessionDisconnected.value = true
+                    settingsClient.setPortalsRestoreToken("")
                 }
-                collectPortalsEvents(scope)
-                _remoteDesktopStatus.value = RemoteDesktopStatus.Ready
-                _isSessionDisconnected.value = false
-            }.onFailure { error ->
-                logger.error("Failed to start portals session", error)
-                val isCancelled = error is PortalRequestException && error.response == RequestResponse.CANCELLED
-                _remoteDesktopStatus.value = if (isCancelled) {
-                    RemoteDesktopStatus.NeedToken
-                } else {
-                    RemoteDesktopStatus.NotSupported
-                }
-                _isSessionDisconnected.value = true
-                settingsClient.setPortalsRestoreToken("")
-            }.also {
+            } finally {
                 startSessionJob = null
             }
         }
