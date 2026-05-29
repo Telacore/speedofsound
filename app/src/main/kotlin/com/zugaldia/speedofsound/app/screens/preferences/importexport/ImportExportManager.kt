@@ -102,6 +102,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         viewModel.setPostHideDelayMs(exportData.postHideDelayMs)
         viewModel.setTypingDelayMs(exportData.typingDelayMs)
         viewModel.setCustomContext(exportData.customContext)
+        val wasTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
 
         val existingCredentials = viewModel.peekCredentials()
         val existingCredentialIds = existingCredentials.map { it.id }.toSet()
@@ -140,6 +141,9 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         val importedTextIds = viewModel.peekTextModelProviders().map { it.id }.toSet()
         val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
         viewModel.setSelectedTextModelProviderId(viewModel.peekSelectedTextModelProviderId())
+        if (wasTextProcessingEnabled && viewModel.peekTextModelProviders().isNotEmpty()) {
+            viewModel.setTextProcessingEnabled(true)
+        }
 
         val existingVocabulary = viewModel.peekCustomVocabulary()
         val existingVocabSet = existingVocabulary.toSet()

@@ -12,6 +12,8 @@ import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_SCHEDULER_STATE
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_PROCESSING_ENABLED
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
@@ -652,6 +654,47 @@ class ImportExportManagerTest {
             "text-1",
             store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, "")
         )
+    }
+
+    @Test
+    fun `import restores enabled text processing after provider refresh disables it`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "missing-text",
+            )
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(
+            Json.encodeToString(
+                SettingsExport(
+                    version = 6,
+                    textModelProviders = listOf(
+                        TextModelProviderSetting(
+                            id = "text-1",
+                            name = "Text",
+                            provider = com.zugaldia.speedofsound.core.plugins.llm.LlmProvider.OPENAI,
+                            modelId = "model-2",
+                        )
+                    ),
+                )
+            )
+        )
+
+        val result = manager.importSettings().getOrThrow()
+
+        assertEquals(1, result.textProvidersAdded)
+        assertEquals("text-1", settingsClient.loadTextModelProviders().first().id)
+        assertEquals("text-1", settingsClient.peekSelectedTextModelProviderId())
+        assertEquals("true", store.getString(KEY_TEXT_PROCESSING_ENABLED, "false"))
     }
 
     @Test
