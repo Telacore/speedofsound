@@ -556,6 +556,24 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `alarm last check timestamp setter does not heal malformed legacy trigger dates`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARM_LAST_TRIGGERED_DATES to "{bad-trigger",
+                KEY_ALARM_LAST_CHECK_AT to "{bad-check",
+            )
+        )
+        val client = SettingsClient(store)
+        val timestamp = LocalDateTime.of(2026, 5, 29, 9, 15, 30)
+
+        client.setAlarmLastCheckAt(timestamp)
+
+        assertEquals(2, store.stringWriteCount)
+        assertEquals("{bad-trigger", store.getString(KEY_ALARM_LAST_TRIGGERED_DATES, DEFAULT_ALARM_LAST_TRIGGERED_DATES))
+        assertEquals(timestamp.toString(), store.getString(KEY_ALARM_LAST_CHECK_AT, DEFAULT_ALARM_LAST_CHECK_AT))
+    }
+
+    @Test
     fun `peek alarm last check timestamp does not migrate legacy keys`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

@@ -379,13 +379,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setAlarmLastTriggeredDates(value: Map<String, LocalDate>): Boolean =
         setAlarmSchedulerState(
-            loadAlarmSchedulerState().copy(
+            peekAlarmSchedulerState().copy(
                 lastTriggeredDates = value.mapValues { (_, date) -> date.toString() }
             )
         )
 
     fun setAlarmLastTriggeredDate(alarmId: String, date: LocalDate): Boolean =
-        loadAlarmSchedulerState().let { currentState ->
+        peekAlarmSchedulerState().let { currentState ->
             setAlarmSchedulerState(
                 currentState.copy(
                     lastTriggeredDates = currentState.lastTriggeredDates.toMutableMap().apply {
@@ -397,7 +397,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setAlarmLastCheckAt(value: LocalDateTime): Boolean =
         setAlarmSchedulerState(
-            loadAlarmSchedulerState().copy(lastCheckAt = value.toString())
+            peekAlarmSchedulerState().copy(lastCheckAt = value.toString())
         )
 
     fun loadMaxAlarms(): Int =
