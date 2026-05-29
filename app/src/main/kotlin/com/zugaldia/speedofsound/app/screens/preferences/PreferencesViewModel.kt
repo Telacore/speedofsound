@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.app.screens.preferences
 
 import com.zugaldia.speedofsound.core.APPLICATION_URL_KEYBOARD_SHORTCUT
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
+import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
@@ -77,6 +78,8 @@ class PreferencesViewModel(
     fun setAlarms(value: List<AlarmSetting>): Boolean = settingsClient.setAlarms(value)
     fun getMaxAlarms(): Int = settingsClient.getMaxAlarms()
     fun setMaxAlarms(value: Int): Boolean = settingsClient.setMaxAlarms(value)
+    fun getAlarmSchedulerState(): AlarmSchedulerState = settingsClient.getAlarmSchedulerState()
+    fun setAlarmSchedulerState(value: AlarmSchedulerState): Boolean = settingsClient.setAlarmSchedulerState(value)
 
     /*
      * Cloud Credentials page

@@ -42,7 +42,7 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
         val exportGroup = PreferencesGroup().apply {
             title = "Export"
             description = "Export your preferences to a file. Use it as a backup or to transfer your " +
-                    "configuration to a different machine."
+                    "configuration and alarm scheduler state to a different machine."
             add(exportRow)
         }
 
@@ -59,7 +59,7 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
         val importGroup = PreferencesGroup().apply {
             title = "Import"
             description = "Import preferences from a file. Items such as credentials, " +
-                    "providers, vocabulary, and alarms are added to your existing ones. " +
+                    "providers, vocabulary, alarms, and alarm scheduler state are added to your existing ones. " +
                     "Some items such as language and custom context will be replaced."
             add(importRow)
         }
@@ -140,6 +140,7 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
         if (result.voiceProvidersAdded > 0) parts.add("${result.voiceProvidersAdded} voice provider(s)")
         if (result.textProvidersAdded > 0) parts.add("${result.textProvidersAdded} text provider(s)")
         if (result.vocabularyWordsAdded > 0) parts.add("${result.vocabularyWordsAdded} vocabulary word(s)")
+        if (result.alarmSchedulerStateImported) parts.add("alarm scheduler state")
         return if (parts.isEmpty()) {
             "Import complete. No new items to add."
         } else {

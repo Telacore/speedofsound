@@ -182,7 +182,7 @@ data class AlarmSchedulerState(
  */
 @Serializable
 data class SettingsExport(
-    val version: Int = 5,
+    val version: Int = 6,
     val defaultLanguage: String = DEFAULT_LANGUAGE.iso2,
     val secondaryLanguage: String = DEFAULT_SECONDARY_LANGUAGE.iso2,
     val backgroundRecording: Boolean = DEFAULT_BACKGROUND_RECORDING,
@@ -191,6 +191,7 @@ data class SettingsExport(
     val appendSpace: Boolean = DEFAULT_APPEND_SPACE,
     val alarms: List<AlarmSetting> = emptyList(),
     val maxAlarms: Int = DEFAULT_MAX_ALARMS,
+    val alarmSchedulerState: AlarmSchedulerState? = null,
     val credentials: List<CredentialSetting> = emptyList(),
     val voiceModelProviders: List<VoiceModelProviderSetting> = emptyList(),
     val textModelProviders: List<TextModelProviderSetting> = emptyList(),

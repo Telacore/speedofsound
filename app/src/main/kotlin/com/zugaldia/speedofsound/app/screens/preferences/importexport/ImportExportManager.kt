@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.app.screens.preferences.importexport
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.APPLICATION_SHORT
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
+import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
 import com.zugaldia.speedofsound.core.getDataDir
 import kotlinx.serialization.json.Json
@@ -14,7 +15,8 @@ data class ImportResult(
     val credentialsAdded: Int = 0,
     val voiceProvidersAdded: Int = 0,
     val textProvidersAdded: Int = 0,
-    val vocabularyWordsAdded: Int = 0
+    val vocabularyWordsAdded: Int = 0,
+    val alarmSchedulerStateImported: Boolean = false
 )
 
 class ImportExportManager(private val viewModel: PreferencesViewModel) {
@@ -28,6 +30,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
     fun export(): Result<String> = runCatching {
         // We do not export anything that is instance-specific (e.g., portal token). That
         // also includes built-in voice models, which we filter out below.
+        val schedulerState = viewModel.getAlarmSchedulerState()
         val exportData = SettingsExport(
             defaultLanguage = viewModel.getDefaultLanguage(),
             secondaryLanguage = viewModel.getSecondaryLanguage(),
@@ -37,6 +40,10 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             appendSpace = viewModel.getAppendSpace(),
             alarms = viewModel.getAlarms(),
             maxAlarms = viewModel.getMaxAlarms(),
+            alarmSchedulerState = AlarmSchedulerState(
+                lastCheckAt = schedulerState.lastCheckAt,
+                lastTriggeredDates = schedulerState.lastTriggeredDates,
+            ),
             credentials = viewModel.getCredentials(),
             voiceModelProviders = viewModel.getVoiceModelProviders()
                 .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys },
@@ -59,7 +66,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         check(inputFile.exists()) { "Export file not found: ${inputFile.absolutePath}" }
 
         val exportData = prettyJson.decodeFromString<SettingsExport>(inputFile.readText())
-        if (exportData.version !in 1..5) {
+        if (exportData.version !in 1..6) {
             throw IllegalStateException("Unsupported export version: ${exportData.version}")
         }
 
@@ -70,6 +77,14 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         viewModel.setStayHiddenOnActivation(exportData.stayHiddenOnActivation)
         viewModel.setAppendSpace(exportData.appendSpace)
         viewModel.setMaxAlarms(exportData.maxAlarms)
+        exportData.alarmSchedulerState?.let { schedulerState ->
+            viewModel.setAlarmSchedulerState(
+                schedulerState.copy(
+                    lastCheckAt = schedulerState.lastCheckAt,
+                    lastTriggeredDates = schedulerState.lastTriggeredDates,
+                )
+            )
+        }
 
         val existingAlarms = viewModel.getAlarms()
         val existingAlarmIds = existingAlarms.map { it.id }.toSet()
@@ -118,7 +133,8 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             credentialsAdded = newCredentials.size,
             voiceProvidersAdded = newVoiceProviders.size,
             textProvidersAdded = newTextProviders.size,
-            vocabularyWordsAdded = newVocabWords.size
+            vocabularyWordsAdded = newVocabWords.size,
+            alarmSchedulerStateImported = exportData.alarmSchedulerState != null
         )
     }
 
