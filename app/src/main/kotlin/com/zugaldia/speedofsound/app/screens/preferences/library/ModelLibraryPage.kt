@@ -89,8 +89,42 @@ class ModelLibraryPage(
                         addSuffix(spinner)
                     }
 
+                    val isDownloadingForButtons = downloadingModels.contains(model.id)
+                    val isDeletingForButtons = deletingModels.contains(model.id)
+                    val isOperationInProgressForButtons = isDownloadingForButtons || isDeletingForButtons
+                    val isDefaultModel = model.id == DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
+                    val downloadButton = Button.fromIconName(ICON_DOWNLOAD).apply {
+                        tooltipText = when {
+                            isDefaultModel -> "Bundled with the application"
+                            isDownloadingForButtons -> "Downloading..."
+                            isOperationInProgressForButtons -> "Operation in progress"
+                            isDownloaded -> "Already downloaded"
+                            else -> "Download model"
+                        }
+                        addCssClass(STYLE_CLASS_FLAT)
+                        valign = Align.CENTER
+                        sensitive = !isDownloaded && !isOperationInProgressForButtons
+                        onClicked { handleDownloadModel(model.id) }
+                    }
+
+                    val removeButton = Button.fromIconName(ICON_TRASH).apply {
+                        tooltipText = when {
+                            isDefaultModel -> "Bundled with the application, cannot be removed"
+                            isDeletingForButtons -> "Deleting..."
+                            isOperationInProgressForButtons -> "Operation in progress"
+                            else -> "Remove model"
+                        }
+                        addCssClass(STYLE_CLASS_FLAT)
+                        valign = Align.CENTER
+                        sensitive = isDownloaded && !isOperationInProgressForButtons && !isDefaultModel
+                        onClicked { handleRemoveModel(model.id) }
+                    }
+
                     // Add action buttons as the second suffix
-                    val buttonBox = createActionButtons(model.id, isDownloaded)
+                    val buttonBox = Box(Orientation.HORIZONTAL, 0).apply {
+                        append(downloadButton)
+                        append(removeButton)
+                    }
                     addSuffix(buttonBox)
                 }
 
@@ -123,45 +157,6 @@ class ModelLibraryPage(
         notifyOperationsStateChanged()
         refreshModels()
         pageScope.launch { modelManager.deleteModel(modelId) }
-    }
-
-    @Suppress("CyclomaticComplexMethod")
-    private fun createActionButtons(modelId: String, isDownloaded: Boolean): Box {
-        val isDownloading = downloadingModels.contains(modelId)
-        val isDeleting = deletingModels.contains(modelId)
-        val isOperationInProgress = isDownloading || isDeleting
-        val isDefaultModel = modelId == DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
-        val downloadButton = Button.fromIconName(ICON_DOWNLOAD).apply {
-            tooltipText = when {
-                isDefaultModel -> "Bundled with the application"
-                isDownloading -> "Downloading..."
-                isOperationInProgress -> "Operation in progress"
-                isDownloaded -> "Already downloaded"
-                else -> "Download model"
-            }
-            addCssClass(STYLE_CLASS_FLAT)
-            valign = Align.CENTER
-            sensitive = !isDownloaded && !isOperationInProgress
-            onClicked { handleDownloadModel(modelId) }
-        }
-
-        val removeButton = Button.fromIconName(ICON_TRASH).apply {
-            tooltipText = when {
-                isDefaultModel -> "Bundled with the application, cannot be removed"
-                isDeleting -> "Deleting..."
-                isOperationInProgress -> "Operation in progress"
-                else -> "Remove model"
-            }
-            addCssClass(STYLE_CLASS_FLAT)
-            valign = Align.CENTER
-            sensitive = isDownloaded && !isOperationInProgress && !isDefaultModel
-            onClicked { handleRemoveModel(modelId) }
-        }
-
-        return Box(Orientation.HORIZONTAL, 0).apply {
-            append(downloadButton)
-            append(removeButton)
-        }
     }
 
     @Suppress("LongMethod")
