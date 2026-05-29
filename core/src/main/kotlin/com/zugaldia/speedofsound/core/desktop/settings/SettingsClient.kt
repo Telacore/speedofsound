@@ -134,15 +134,31 @@ class SettingsClient(val settingsStore: SettingsStore) {
         loadAlarms()
         loadAlarmSchedulerState()
         loadCredentials()
-        loadSelectedVoiceModelProviderId()
+        val availableVoiceProviderIds = loadVoiceModelProviders().map { it.id }.toSet()
+        loadSelectedVoiceModelProviderId(availableVoiceProviderIds)
         loadTextProcessingEnabled()
-        loadSelectedTextModelProviderId()
+        val availableTextProviderIds = loadTextModelProviders().map { it.id }.toSet()
+        loadSelectedTextModelProviderId(availableTextProviderIds)
         loadCustomContext()
         loadCustomVocabulary()
         loadSanitizeSpecialChars()
         loadPostHideDelayMs()
         loadTypingDelayMs()
     }
+
+    private fun loadSelectedVoiceModelProviderId(availableProviderIds: Set<String>): String =
+        readSelectedProviderId(
+            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            availableProviderIds
+        )
+
+    private fun loadSelectedTextModelProviderId(availableProviderIds: Set<String>): String =
+        readSelectedProviderId(
+            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            availableProviderIds
+        )
 
     fun setPortalsRestoreToken(value: String): Boolean =
         setStringSettingIfChanged(
