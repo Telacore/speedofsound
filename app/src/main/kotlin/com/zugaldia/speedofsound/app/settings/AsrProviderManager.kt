@@ -42,11 +42,31 @@ class AsrProviderManager(
      * or when a new provider is selected in the settings screen (KEY_SELECTED_VOICE_MODEL_PROVIDER_ID changes).
      */
     fun activateSelectedProvider() {
-        applySelectedProviderConfig(setActive = true, credentials = settingsClient.peekCredentials())
+        val credentials = settingsClient.peekCredentials()
+        applySelectedProviderConfig(
+            setActive = true,
+            credentials = credentials,
+            availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
+        )
     }
 
     fun activateSelectedProvider(credentials: List<CredentialSetting>) {
-        applySelectedProviderConfig(setActive = true, credentials = credentials)
+        applySelectedProviderConfig(
+            setActive = true,
+            credentials = credentials,
+            availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
+        )
+    }
+
+    fun activateSelectedProvider(
+        credentials: List<CredentialSetting>,
+        availableProviders: List<VoiceModelProviderSetting>,
+    ) {
+        applySelectedProviderConfig(
+            setActive = true,
+            credentials = credentials,
+            availableProviders = availableProviders,
+        )
     }
 
     /**
@@ -54,11 +74,31 @@ class AsrProviderManager(
      * (KEY_VOICE_MODEL_PROVIDERS) or credentials change (KEY_CREDENTIALS).
      */
     fun refreshProviderConfiguration() {
-        applySelectedProviderConfig(setActive = false, credentials = settingsClient.peekCredentials())
+        val credentials = settingsClient.peekCredentials()
+        applySelectedProviderConfig(
+            setActive = false,
+            credentials = credentials,
+            availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
+        )
     }
 
     fun refreshProviderConfiguration(credentials: List<CredentialSetting>) {
-        applySelectedProviderConfig(setActive = false, credentials = credentials)
+        applySelectedProviderConfig(
+            setActive = false,
+            credentials = credentials,
+            availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
+        )
+    }
+
+    fun refreshProviderConfiguration(
+        credentials: List<CredentialSetting>,
+        availableProviders: List<VoiceModelProviderSetting>,
+    ) {
+        applySelectedProviderConfig(
+            setActive = false,
+            credentials = credentials,
+            availableProviders = availableProviders,
+        )
     }
 
     /**
@@ -68,9 +108,9 @@ class AsrProviderManager(
     private fun applySelectedProviderConfig(
         setActive: Boolean,
         credentials: List<CredentialSetting>,
+        availableProviders: List<VoiceModelProviderSetting>,
     ) {
         val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderIdExact()
-        val availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet())
         val selectedProvider = selectedVoiceProvider(selectedProviderId, availableProviders)
         val currentActiveId = registry.getActive(AppPluginCategory.ASR)?.id
         val selectedProviderMissing = selectedProvider == null
@@ -155,6 +195,10 @@ class AsrProviderManager(
 
     fun peekCurrentProviderName(credentials: List<CredentialSetting>): String {
         val availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet())
+        return peekCurrentProviderName(availableProviders)
+    }
+
+    fun peekCurrentProviderName(availableProviders: List<VoiceModelProviderSetting>): String {
         val selectedProvider = selectedVoiceProvider(
             selectedProviderId = settingsClient.peekSelectedVoiceModelProviderIdExact(),
             availableProviders = availableProviders,

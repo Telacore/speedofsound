@@ -85,6 +85,8 @@ class MainViewModelCredentialsRefreshTest {
         invokePrivateUnit(viewModel, "refreshCredentials")
 
         assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
+        assertEquals(1, settingsStore.stringReadCount(KEY_VOICE_MODEL_PROVIDERS))
+        assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
         assertEquals("Alpha", viewModel.state.currentAsrModel())
         assertEquals("Bravo", viewModel.state.currentLlmModel())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
@@ -469,7 +471,8 @@ class MainViewModelCredentialsRefreshTest {
         assertEquals("Bravo", viewModel.state.currentLlmModel())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertEquals(GoogleLlm.ID, registry.getActive(AppPluginCategory.LLM)?.id)
-        assertEquals(2, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
+        assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
+        assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
     }
 
     @Test
@@ -514,6 +517,7 @@ class MainViewModelCredentialsRefreshTest {
         assertEquals("Alpha", viewModel.state.currentAsrModel())
         assertEquals("", viewModel.state.currentLlmModel())
         assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
+        assertEquals(1, settingsStore.stringReadCount(KEY_VOICE_MODEL_PROVIDERS))
         assertSame(failingPlugin, registry.getActive(AppPluginCategory.ASR))
     }
 
@@ -572,6 +576,7 @@ class MainViewModelCredentialsRefreshTest {
         assertEquals("Alpha", viewModel.state.currentAsrModel())
         assertEquals("Bravo", viewModel.state.currentLlmModel())
         assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
+        assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertSame(failingPlugin, registry.getActive(AppPluginCategory.LLM))
     }

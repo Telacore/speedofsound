@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.app.settings
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
@@ -35,11 +36,31 @@ class LlmProviderManager(
      * Activates the currently selected LLM provider from settings.
      */
     fun activateSelectedProvider() {
-        applySelectedProviderConfig(setActive = true, credentials = settingsClient.peekCredentials())
+        val credentials = settingsClient.peekCredentials()
+        applySelectedProviderConfig(
+            setActive = true,
+            credentials = credentials,
+            availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
+        )
     }
 
     fun activateSelectedProvider(credentials: List<CredentialSetting>) {
-        applySelectedProviderConfig(setActive = true, credentials = credentials)
+        applySelectedProviderConfig(
+            setActive = true,
+            credentials = credentials,
+            availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
+        )
+    }
+
+    fun activateSelectedProvider(
+        credentials: List<CredentialSetting>,
+        availableProviders: List<TextModelProviderSetting>,
+    ) {
+        applySelectedProviderConfig(
+            setActive = true,
+            credentials = credentials,
+            availableProviders = availableProviders,
+        )
     }
 
     /**
@@ -47,11 +68,31 @@ class LlmProviderManager(
      * Called when provider settings or credentials change.
      */
     fun refreshProviderConfiguration() {
-        applySelectedProviderConfig(setActive = false, credentials = settingsClient.peekCredentials())
+        val credentials = settingsClient.peekCredentials()
+        applySelectedProviderConfig(
+            setActive = false,
+            credentials = credentials,
+            availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
+        )
     }
 
     fun refreshProviderConfiguration(credentials: List<CredentialSetting>) {
-        applySelectedProviderConfig(setActive = false, credentials = credentials)
+        applySelectedProviderConfig(
+            setActive = false,
+            credentials = credentials,
+            availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
+        )
+    }
+
+    fun refreshProviderConfiguration(
+        credentials: List<CredentialSetting>,
+        availableProviders: List<TextModelProviderSetting>,
+    ) {
+        applySelectedProviderConfig(
+            setActive = false,
+            credentials = credentials,
+            availableProviders = availableProviders,
+        )
     }
 
     /**
@@ -61,8 +102,8 @@ class LlmProviderManager(
     private fun applySelectedProviderConfig(
         setActive: Boolean,
         credentials: List<CredentialSetting>,
+        availableProviders: List<TextModelProviderSetting>,
     ) {
-        val availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet())
         val selectedProviderId = settingsClient.peekSelectedTextModelProviderId(availableProviders)
         val selectedProvider = availableProviders.find { it.id == selectedProviderId }
         if (selectedProvider == null) {
@@ -200,10 +241,17 @@ class LlmProviderManager(
         credentials: List<CredentialSetting>,
         runtimeTextProcessingEnabled: Boolean? = null,
     ): String {
+        val availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet())
+        return peekCurrentProviderName(availableProviders, runtimeTextProcessingEnabled)
+    }
+
+    fun peekCurrentProviderName(
+        availableProviders: List<TextModelProviderSetting>,
+        runtimeTextProcessingEnabled: Boolean? = null,
+    ): String {
         if (runtimeTextProcessingEnabled == false) {
             return ""
         }
-        val availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet())
         val selectedProviderId = settingsClient.peekSelectedTextModelProviderId(availableProviders)
         val selectedProvider = availableProviders.find { it.id == selectedProviderId }
         if (selectedProvider != null) {
