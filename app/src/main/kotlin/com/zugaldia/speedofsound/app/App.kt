@@ -75,7 +75,9 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
             val isFirstLaunch = !settingsClient.peekWelcomeScreenShown()
             if (isFirstLaunch) {
                 WelcomeWindow(this) {
-                    settingsClient.setWelcomeScreenShown(true)
+                    if (!settingsClient.setWelcomeScreenShown(true)) {
+                        logger.warn("Failed to persist welcome screen shown state")
+                    }
                     presentMainWindow()
                 }.present()
             } else if (!settingsClient.peekStayHiddenOnActivation()) {

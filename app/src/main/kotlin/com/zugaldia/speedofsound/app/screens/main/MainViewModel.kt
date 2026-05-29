@@ -588,7 +588,9 @@ class MainViewModel(
             "Could not start text processing: ${error.message ?: "Unknown error"}"
         )
         if (settingsClient.peekTextProcessingEnabled()) {
-            settingsClient.setTextProcessingEnabled(false)
+            if (!settingsClient.setTextProcessingEnabled(false)) {
+                logger.warn("Could not persist text processing disable during startup failure")
+            }
         }
         refreshTextProcessingSetting(false)
     }

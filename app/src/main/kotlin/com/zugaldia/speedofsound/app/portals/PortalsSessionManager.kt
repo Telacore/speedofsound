@@ -91,7 +91,7 @@ class PortalsSessionManager(
                     val newToken = response.restoreToken
                     if (!newToken.isNullOrBlank()) {
                         logger.info("Got a fresh restore token: $newToken")
-                        settingsClient.setPortalsRestoreToken(newToken)
+                        persistRestoreToken(newToken, reason = "store fresh restore token")
                     }
                     collectPortalsEvents(scope)
                     logger.info("Remote desktop session started successfully")
@@ -126,7 +126,7 @@ class PortalsSessionManager(
                     }
                     _isSessionDisconnected.value = true
                     if (isMissingRemoteDesktopInterface) {
-                        settingsClient.setPortalsRestoreToken("")
+                        persistRestoreToken("", reason = "clear restore token after unsupported portal")
                     }
                 }
             } finally {
@@ -170,6 +170,12 @@ class PortalsSessionManager(
         portalsEventsJob = null
         startSessionJob?.cancel()
         startSessionJob = null
+    }
+
+    private fun persistRestoreToken(token: String, reason: String) {
+        if (!settingsClient.setPortalsRestoreToken(token)) {
+            logger.warn("Failed to {}: {}", reason, token.ifBlank { "<blank>" })
+        }
     }
 }
 
