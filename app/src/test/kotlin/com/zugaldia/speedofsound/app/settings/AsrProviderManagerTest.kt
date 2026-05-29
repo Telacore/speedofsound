@@ -40,7 +40,7 @@ class AsrProviderManagerTest {
         registry.register(AppPluginCategory.ASR, fallbackPlugin)
         registry.setActiveById(AppPluginCategory.ASR, activePlugin.id)
 
-        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
         assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
@@ -71,7 +71,7 @@ class AsrProviderManagerTest {
         val settingsClient = SettingsClient(settingsStore)
         val manager = AsrProviderManager(AppPluginRegistry(), settingsClient)
 
-        assertEquals("Alpha", manager.peekCurrentProviderName())
+        assertEquals("Alpha", manager.peekCurrentProviderName(settingsClient))
         assertEquals(0, settingsStore.stringReadCount(KEY_CREDENTIALS))
     }
 
@@ -101,7 +101,7 @@ class AsrProviderManagerTest {
         registry.register(AppPluginCategory.ASR, fallbackPlugin)
         registry.setActiveById(AppPluginCategory.ASR, activePlugin.id)
 
-        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
         assertEquals(
             DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
@@ -142,10 +142,10 @@ class AsrProviderManagerTest {
         registry.register(AppPluginCategory.ASR, fallbackPlugin)
         registry.setActiveById(AppPluginCategory.ASR, activePlugin.id)
 
-        manager.refreshProviderConfiguration()
+        manager.refreshProviderConfiguration(settingsClient)
 
         assertEquals("custom-provider", settingsClient.loadSelectedVoiceModelProviderId())
-        assertEquals("Whisper (Local)", manager.peekCurrentProviderName())
+        assertEquals("Whisper (Local)", manager.peekCurrentProviderName(settingsClient))
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)
@@ -177,7 +177,7 @@ class AsrProviderManagerTest {
         registry.register(AppPluginCategory.ASR, activePlugin)
         registry.setActiveById(AppPluginCategory.ASR, activePlugin.id)
 
-        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
         assertEquals(
             DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
@@ -231,7 +231,7 @@ class AsrProviderManagerTest {
         registry.register(AppPluginCategory.ASR, activePlugin)
         registry.setActiveById(AppPluginCategory.ASR, inactivePlugin.id)
 
-        AsrProviderManager(registry, settingsClient).activateSelectedProvider()
+        AsrProviderManager(registry, settingsClient).activateSelectedProvider(settingsClient)
 
         assertEquals("voice-a", settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID))
         assertSame(activePlugin, registry.getActive(AppPluginCategory.ASR))
@@ -260,7 +260,7 @@ class AsrProviderManagerTest {
         registry.register(AppPluginCategory.ASR, fallbackPlugin)
         registry.setActiveById(AppPluginCategory.ASR, inactivePlugin.id)
 
-        AsrProviderManager(registry, settingsClient).activateSelectedProvider()
+        AsrProviderManager(registry, settingsClient).activateSelectedProvider(settingsClient)
 
         assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
@@ -295,7 +295,7 @@ class AsrProviderManagerTest {
         registry.register(AppPluginCategory.ASR, failingPlugin)
         registry.register(AppPluginCategory.ASR, fallbackPlugin)
 
-        AsrProviderManager(registry, settingsClient).activateSelectedProvider()
+        AsrProviderManager(registry, settingsClient).activateSelectedProvider(settingsClient)
 
         assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
@@ -331,7 +331,7 @@ class AsrProviderManagerTest {
         registry.register(AppPluginCategory.ASR, selectedPlugin)
         registry.setActiveById(AppPluginCategory.ASR, inactivePlugin.id)
 
-        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
         assertSame(selectedPlugin, registry.getActive(AppPluginCategory.ASR))
         assertEquals(1, inactivePlugin.enableCount)
@@ -366,7 +366,7 @@ class AsrProviderManagerTest {
         registry.register(AppPluginCategory.ASR, selectedPlugin)
         registry.setActiveById(AppPluginCategory.ASR, activePlugin.id)
 
-        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
         assertEquals("voice-a", settingsClient.loadSelectedVoiceModelProviderId())
         assertSame(activePlugin, registry.getActive(AppPluginCategory.ASR))
@@ -475,4 +475,27 @@ class AsrProviderManagerTest {
 
         fun stringReadCount(key: String): Int = stringReadCounts[key] ?: 0
     }
+}
+
+private fun AsrProviderManager.activateSelectedProvider(settingsClient: SettingsClient) {
+    val credentials = settingsClient.peekCredentials()
+    activateSelectedProvider(
+        credentials = credentials,
+        availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
+    )
+}
+
+private fun AsrProviderManager.refreshProviderConfiguration(settingsClient: SettingsClient) {
+    val credentials = settingsClient.peekCredentials()
+    refreshProviderConfiguration(
+        credentials = credentials,
+        availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
+    )
+}
+
+private fun AsrProviderManager.peekCurrentProviderName(settingsClient: SettingsClient): String {
+    val credentials = settingsClient.peekCredentials()
+    return peekCurrentProviderName(
+        availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
+    )
 }

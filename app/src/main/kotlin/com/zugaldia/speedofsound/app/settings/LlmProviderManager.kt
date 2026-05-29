@@ -32,18 +32,6 @@ class LlmProviderManager(
         registry.register(AppPluginCategory.LLM, OpenAiLlm())
     }
 
-    /**
-     * Activates the currently selected LLM provider from settings.
-     */
-    fun activateSelectedProvider() {
-        val credentials = settingsClient.peekCredentials()
-        applySelectedProviderConfig(
-            setActive = true,
-            credentials = credentials,
-            availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
-        )
-    }
-
     fun activateSelectedProvider(
         credentials: List<CredentialSetting>,
         availableProviders: List<TextModelProviderSetting>,
@@ -52,19 +40,6 @@ class LlmProviderManager(
             setActive = true,
             credentials = credentials,
             availableProviders = availableProviders,
-        )
-    }
-
-    /**
-     * Refreshes the configuration for the currently selected provider.
-     * Called when provider settings or credentials change.
-     */
-    fun refreshProviderConfiguration() {
-        val credentials = settingsClient.peekCredentials()
-        applySelectedProviderConfig(
-            setActive = false,
-            credentials = credentials,
-            availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
         )
     }
 
@@ -211,12 +186,8 @@ class LlmProviderManager(
         }
     }
 
-    /**
-     * Gets the name of the currently selected LLM provider.
-     */
-    fun peekCurrentProviderName(runtimeTextProcessingEnabled: Boolean? = null): String {
-        val credentials = settingsClient.peekCredentials()
-        val availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet())
+    fun peekCurrentProviderName(runtimeTextProcessingEnabled: Boolean?): String {
+        val availableProviders = settingsClient.peekTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())
         return peekCurrentProviderName(availableProviders, runtimeTextProcessingEnabled)
     }
 

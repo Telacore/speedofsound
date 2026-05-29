@@ -139,7 +139,7 @@ class MainViewModelCredentialsRefreshTest {
         val director = getPrivateField<DefaultDirector>(viewModel, "director")
         val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
         asrProviderManager.registerAsrPlugins()
-        asrProviderManager.activateSelectedProvider()
+        asrProviderManager.activateSelectedProvider(settingsClient)
         registry.register(AppPluginCategory.LLM, FailingEnablePlugin(OpenAiLlm.ID))
 
         invokePrivateUnit(viewModel, "refreshCredentials")
@@ -199,7 +199,7 @@ class MainViewModelCredentialsRefreshTest {
         val director = getPrivateField<DefaultDirector>(viewModel, "director")
         val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
         asrProviderManager.registerAsrPlugins()
-        asrProviderManager.activateSelectedProvider()
+        asrProviderManager.activateSelectedProvider(settingsClient)
         registry.register(AppPluginCategory.LLM, FailingEnablePlugin(OpenAiLlm.ID))
 
         invokePrivateString(viewModel, "refreshLlmSetting", KEY_SELECTED_TEXT_MODEL_PROVIDER_ID)
@@ -309,7 +309,7 @@ class MainViewModelCredentialsRefreshTest {
         val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
         val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
         asrProviderManager.registerAsrPlugins()
-        asrProviderManager.activateSelectedProvider()
+        asrProviderManager.activateSelectedProvider(settingsClient)
         registry.register(AppPluginCategory.LLM, FailingEnablePlugin(OpenAiLlm.ID))
 
         invokePrivateThrowable(viewModel, "handleStartupLlmFailure", IllegalStateException("boom"))
@@ -364,7 +364,7 @@ class MainViewModelCredentialsRefreshTest {
         val director = getPrivateField<DefaultDirector>(viewModel, "director")
         val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
         asrProviderManager.registerAsrPlugins()
-        asrProviderManager.activateSelectedProvider()
+        asrProviderManager.activateSelectedProvider(settingsClient)
         registry.register(AppPluginCategory.LLM, FailingEnablePlugin(OpenAiLlm.ID))
 
         invokePrivateThrowable(viewModel, "handleStartupLlmFailure", IllegalStateException("boom"))
@@ -626,7 +626,7 @@ class MainViewModelCredentialsRefreshTest {
         val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
         val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
         asrProviderManager.registerAsrPlugins()
-        asrProviderManager.activateSelectedProvider()
+        asrProviderManager.activateSelectedProvider(settingsClient)
         registry.register(AppPluginCategory.LLM, FailingEnablePlugin(OpenAiLlm.ID))
 
         invokePrivateString(viewModel, "refreshLlmSetting", KEY_SELECTED_TEXT_MODEL_PROVIDER_ID)
@@ -737,4 +737,12 @@ class MainViewModelCredentialsRefreshTest {
 
         fun stringReadCount(key: String): Int = stringReadCounts[key] ?: 0
     }
+}
+
+private fun AsrProviderManager.activateSelectedProvider(settingsClient: SettingsClient) {
+    val credentials = settingsClient.peekCredentials()
+    activateSelectedProvider(
+        credentials = credentials,
+        availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
+    )
 }

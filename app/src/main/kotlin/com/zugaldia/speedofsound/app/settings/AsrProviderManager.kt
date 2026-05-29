@@ -37,19 +37,6 @@ class AsrProviderManager(
         registry.register(AppPluginCategory.ASR, SherpaWhisperAsr())
     }
 
-    /**
-     * Activates the currently selected ASR provider from settings. Invoked when the MainViewModel starts
-     * or when a new provider is selected in the settings screen (KEY_SELECTED_VOICE_MODEL_PROVIDER_ID changes).
-     */
-    fun activateSelectedProvider() {
-        val credentials = settingsClient.peekCredentials()
-        applySelectedProviderConfig(
-            setActive = true,
-            credentials = credentials,
-            availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
-        )
-    }
-
     fun activateSelectedProvider(
         credentials: List<CredentialSetting>,
         availableProviders: List<VoiceModelProviderSetting>,
@@ -58,19 +45,6 @@ class AsrProviderManager(
             setActive = true,
             credentials = credentials,
             availableProviders = availableProviders,
-        )
-    }
-
-    /**
-     * Refreshes the configuration for the currently selected provider. Invoked when the list of providers
-     * (KEY_VOICE_MODEL_PROVIDERS) or credentials change (KEY_CREDENTIALS).
-     */
-    fun refreshProviderConfiguration() {
-        val credentials = settingsClient.peekCredentials()
-        applySelectedProviderConfig(
-            setActive = false,
-            credentials = credentials,
-            availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()),
         )
     }
 
@@ -168,14 +142,6 @@ class AsrProviderManager(
             is SherpaParakeetAsr -> activePlugin.updateOptions(activePlugin.getOptions().copy(language = language))
             is SherpaWhisperAsr -> activePlugin.updateOptions(activePlugin.getOptions().copy(language = language))
         }
-    }
-
-    /**
-     * Gets the name of the currently selected ASR provider.
-     */
-    fun peekCurrentProviderName(): String {
-        val credentials = settingsClient.peekCredentials()
-        return peekCurrentProviderName(settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet()))
     }
 
     fun peekCurrentProviderName(availableProviders: List<VoiceModelProviderSetting>): String {

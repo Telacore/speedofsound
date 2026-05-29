@@ -38,14 +38,14 @@ class LlmProviderManagerTest {
         registry.register(AppPluginCategory.LLM, activePlugin)
         registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
 
-        manager.refreshProviderConfiguration()
+        manager.refreshProviderConfiguration(settingsClient)
 
         assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
         assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId())
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
-        assertEquals("", manager.peekCurrentProviderName())
+        assertEquals("", manager.peekCurrentProviderName(settingsClient))
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)
     }
@@ -68,12 +68,12 @@ class LlmProviderManagerTest {
         registry.register(AppPluginCategory.LLM, activePlugin)
         registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
 
-        manager.refreshProviderConfiguration()
+        manager.refreshProviderConfiguration(settingsClient)
 
         assertEquals("custom-provider", settingsClient.loadSelectedTextModelProviderId())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
-        assertEquals("OpenAI", manager.peekCurrentProviderName())
+        assertEquals("OpenAI", manager.peekCurrentProviderName(settingsClient))
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)
     }
@@ -99,7 +99,7 @@ class LlmProviderManagerTest {
         val settingsClient = SettingsClient(settingsStore)
         val manager = LlmProviderManager(AppPluginRegistry(), settingsClient)
 
-        assertEquals("Alpha", manager.peekCurrentProviderName())
+        assertEquals("Alpha", manager.peekCurrentProviderName(settingsClient))
         assertEquals(0, settingsStore.stringReadCount(KEY_CREDENTIALS))
     }
 
@@ -120,12 +120,12 @@ class LlmProviderManagerTest {
         registry.register(AppPluginCategory.LLM, activePlugin)
         registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
 
-        manager.refreshProviderConfiguration()
+        manager.refreshProviderConfiguration(settingsClient)
 
         assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId())
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
         assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
-        assertEquals("OpenAI", manager.peekCurrentProviderName())
+        assertEquals("OpenAI", manager.peekCurrentProviderName(settingsClient))
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)
     }
@@ -163,7 +163,7 @@ class LlmProviderManagerTest {
         registry.register(AppPluginCategory.LLM, activePlugin)
         registry.setActiveById(AppPluginCategory.LLM, inactivePlugin.id)
 
-        LlmProviderManager(registry, settingsClient).activateSelectedProvider()
+        LlmProviderManager(registry, settingsClient).activateSelectedProvider(settingsClient)
 
         assertEquals("text-a", settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID))
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
@@ -200,7 +200,7 @@ class LlmProviderManagerTest {
 
         registry.register(AppPluginCategory.LLM, failingPlugin)
 
-        LlmProviderManager(registry, settingsClient).activateSelectedProvider()
+        LlmProviderManager(registry, settingsClient).activateSelectedProvider(settingsClient)
 
         assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
         assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
@@ -238,7 +238,7 @@ class LlmProviderManagerTest {
         registry.register(AppPluginCategory.LLM, selectedPlugin)
         registry.setActiveById(AppPluginCategory.LLM, inactivePlugin.id)
 
-        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
         assertSame(selectedPlugin, registry.getActive(AppPluginCategory.LLM))
         assertEquals(1, inactivePlugin.enableCount)
@@ -275,7 +275,7 @@ class LlmProviderManagerTest {
         registry.register(AppPluginCategory.LLM, selectedPlugin)
         registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
 
-        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
         assertEquals("text-a", settingsClient.loadSelectedTextModelProviderId())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
@@ -313,7 +313,7 @@ class LlmProviderManagerTest {
         registry.register(AppPluginCategory.LLM, selectedPlugin)
         registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
 
-        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
         assertEquals(1, activePlugin.enableCount)
@@ -348,7 +348,7 @@ class LlmProviderManagerTest {
         registry.register(AppPluginCategory.LLM, activePlugin)
         registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
 
-        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
         assertEquals(activePlugin, registry.getActive(AppPluginCategory.LLM))
@@ -459,4 +459,28 @@ class LlmProviderManagerTest {
 
         fun stringReadCount(key: String): Int = stringReadCounts[key] ?: 0
     }
+}
+
+private fun LlmProviderManager.activateSelectedProvider(settingsClient: SettingsClient) {
+    val credentials = settingsClient.peekCredentials()
+    activateSelectedProvider(
+        credentials = credentials,
+        availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
+    )
+}
+
+private fun LlmProviderManager.refreshProviderConfiguration(settingsClient: SettingsClient) {
+    val credentials = settingsClient.peekCredentials()
+    refreshProviderConfiguration(
+        credentials = credentials,
+        availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
+    )
+}
+
+private fun LlmProviderManager.peekCurrentProviderName(settingsClient: SettingsClient): String {
+    val credentials = settingsClient.peekCredentials()
+    return peekCurrentProviderName(
+        availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
+        runtimeTextProcessingEnabled = settingsClient.peekTextProcessingEnabled(),
+    )
 }
