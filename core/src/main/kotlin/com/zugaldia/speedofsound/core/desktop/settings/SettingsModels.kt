@@ -83,6 +83,9 @@ data class AlarmSetting(
     val enabled: Boolean = true
 )
 
+fun AlarmSetting.isValid(): Boolean =
+    id.isNotBlank() && hour in 0..23 && minute in 0..59
+
 /**
  * A serializable snapshot of all exportable user preferences.
  * Instance-specific settings (portal token, selected provider IDs, text processing toggle) are excluded.

@@ -193,17 +193,28 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return if (json.isEmpty() || json == DEFAULT_ALARMS) {
             emptyList()
         } else {
-            runCatching {
+            val decoded = runCatching {
                 Json.decodeFromString<List<AlarmSetting>>(json)
             }.getOrElse { error ->
                 logger.error("Failed to decode alarms from JSON", error)
                 emptyList()
             }
+            val filtered = decoded.filter { it.isValid() }
+            val dropped = decoded.size - filtered.size
+            if (dropped > 0) {
+                logger.warn("Dropped {} invalid alarm(s) from settings", dropped)
+            }
+            filtered
         }
     }
 
     fun setAlarms(value: List<AlarmSetting>): Boolean {
-        val json = Json.encodeToString(value)
+        val validAlarms = value.filter { it.isValid() }
+        val dropped = value.size - validAlarms.size
+        if (dropped > 0) {
+            logger.warn("Ignoring {} invalid alarm(s) while saving settings", dropped)
+        }
+        val json = Json.encodeToString(validAlarms)
         return settingsStore.setString(KEY_ALARMS, json).also { success ->
             if (success) _settingsChanged.tryEmit(KEY_ALARMS)
         }
