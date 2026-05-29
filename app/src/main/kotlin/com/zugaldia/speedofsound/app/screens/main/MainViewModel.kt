@@ -694,6 +694,7 @@ class MainViewModel(
         viewModelScope.cancel()
         portalsSessionManager.shutdown()
         registry.shutdownAll()
+        portalsClient.close()
     }
 
     companion object {
