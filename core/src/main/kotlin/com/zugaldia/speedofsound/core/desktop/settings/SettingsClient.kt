@@ -192,7 +192,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekLanguageSetting(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2)
 
     fun setDefaultLanguage(value: String): Boolean =
-        setStringSettingIfChanged(KEY_DEFAULT_LANGUAGE, peekDefaultLanguage(), value, KEY_DEFAULT_LANGUAGE)
+        setStringSettingIfChanged(
+            KEY_DEFAULT_LANGUAGE,
+            settingsStore.getString(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2),
+            normalizeLanguageForSave(value, DEFAULT_LANGUAGE.iso2),
+            KEY_DEFAULT_LANGUAGE
+        )
 
     fun loadSecondaryLanguage(): String =
         readLanguageSetting(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
@@ -201,7 +206,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekLanguageSetting(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
 
     fun setSecondaryLanguage(value: String): Boolean =
-        setStringSettingIfChanged(KEY_SECONDARY_LANGUAGE, peekSecondaryLanguage(), value, KEY_SECONDARY_LANGUAGE)
+        setStringSettingIfChanged(
+            KEY_SECONDARY_LANGUAGE,
+            settingsStore.getString(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2),
+            normalizeLanguageForSave(value, DEFAULT_SECONDARY_LANGUAGE.iso2),
+            KEY_SECONDARY_LANGUAGE
+        )
 
     fun loadBackgroundRecording(): Boolean =
         readBooleanSetting(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING)
@@ -266,7 +276,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekTextOutputMethodValue()
 
     fun setTextOutputMethod(value: String): Boolean =
-        setStringSettingIfChanged(KEY_TEXT_OUTPUT_METHOD, peekTextOutputMethod(), value, KEY_TEXT_OUTPUT_METHOD)
+        setStringSettingIfChanged(
+            KEY_TEXT_OUTPUT_METHOD,
+            settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD),
+            normalizeTextOutputMethodForSave(value),
+            KEY_TEXT_OUTPUT_METHOD
+        )
 
     /*
      * Alarms page
@@ -1111,6 +1126,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     private fun normalizePortalsRestoreToken(value: String): String = value.trim()
 
+    private fun normalizeTextOutputMethodForSave(value: String): String {
+        val normalized = value.trim().lowercase()
+        return if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+            normalized
+        } else {
+            DEFAULT_TEXT_OUTPUT_METHOD
+        }
+    }
+
     private fun readCustomContext(): String {
         val raw = settingsStore.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT)
         val normalized = normalizeCustomContext(raw)
@@ -1219,6 +1243,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
         val normalized = raw.trim().lowercase()
         return languageFromIso2(normalized)?.iso2 ?: defaultValue
     }
+
+    private fun normalizeLanguageForSave(value: String, defaultValue: String): String =
+        languageFromIso2(value.trim().lowercase())?.iso2 ?: defaultValue
 
     private fun readIntSetting(
         key: String,
