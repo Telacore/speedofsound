@@ -67,7 +67,16 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
             onClicked {
                 val dialog = AddVoiceModelProviderDialog(viewModel) { provider ->
-                    onProviderAdded(provider)
+                    val updatedProviders = currentProviders + provider
+                    logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
+                    if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
+                        logger.warn("Failed to persist voice provider '${provider.name}'")
+                        refreshProviders()
+                        false
+                    } else {
+                        renderProviders(updatedProviders)
+                        true
+                    }
                 }
 
                 dialog.present(this@VoiceModelsPage)
@@ -179,22 +188,6 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
         if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
             logger.warn("Failed to persist voice provider deletion '$providerId'")
-            refreshProviders()
-            return false
-        }
-        renderProviders(updatedProviders)
-        return true
-    }
-
-    /*
-     * Dialog logic
-     */
-
-    private fun onProviderAdded(provider: VoiceModelProviderSetting): Boolean {
-        val updatedProviders = currentProviders + provider
-        logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
-            logger.warn("Failed to persist voice provider '${provider.name}'")
             refreshProviders()
             return false
         }
