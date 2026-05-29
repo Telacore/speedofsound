@@ -61,7 +61,9 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
 
         activeProviderComboRow = ActiveProviderComboRow(
             getSelectedProviderId = { viewModel.peekSelectedTextModelProviderId() },
-            setSelectedProviderId = { viewModel.setSelectedTextModelProviderId(it) },
+            setSelectedProviderId = { value, providers ->
+                viewModel.setSelectedTextModelProviderId(value, providers)
+            },
             rowSubtitle = "Select which provider to use for text processing"
         )
 

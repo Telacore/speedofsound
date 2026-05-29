@@ -337,6 +337,42 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
+    fun `selected provider setters reuse provided snapshots`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-voice",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-text",
+                KEY_VOICE_MODEL_PROVIDERS to "{bad",
+                KEY_TEXT_MODEL_PROVIDERS to "{bad",
+            )
+        )
+        val client = SettingsClient(store)
+        val voiceProviders = listOf(
+            VoiceModelProviderSetting(
+                id = "voice-a",
+                name = "Voice",
+                provider = AsrProvider.SHERPA_WHISPER,
+                modelId = "model-a",
+            )
+        )
+        val textProviders = listOf(
+            TextModelProviderSetting(
+                id = "text-a",
+                name = "Text",
+                provider = LlmProvider.OPENAI,
+                modelId = "model-a",
+            )
+        )
+
+        assertEquals(true, client.setSelectedVoiceModelProviderId("voice-a", voiceProviders))
+        assertEquals(true, client.setSelectedTextModelProviderId("text-a", textProviders))
+        assertEquals(0, store.stringReadCount(KEY_VOICE_MODEL_PROVIDERS))
+        assertEquals(0, store.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
+        assertEquals("voice-a", store.rawString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID))
+        assertEquals("text-a", store.rawString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID))
+    }
+
+    @Test
     fun `credentials setter reuses provided provider snapshots`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

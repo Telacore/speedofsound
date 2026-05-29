@@ -47,7 +47,9 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
 
         activeProviderComboRow = ActiveProviderComboRow(
             getSelectedProviderId = { viewModel.peekSelectedVoiceModelProviderIdExact() },
-            setSelectedProviderId = { viewModel.setSelectedVoiceModelProviderId(it) },
+            setSelectedProviderId = { value, providers ->
+                viewModel.setSelectedVoiceModelProviderId(value, providers)
+            },
             shouldPersistFallbackSelection = { savedProviderId, providers ->
                 !shouldPreserveExactWhisperSelection(savedProviderId, providers)
             },
