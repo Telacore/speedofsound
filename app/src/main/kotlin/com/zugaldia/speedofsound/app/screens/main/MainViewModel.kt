@@ -145,8 +145,13 @@ class MainViewModel(
             try {
                 registry.setActiveById(AppPluginCategory.RECORDER, recorder.id)
                 asrProviderManager.activateSelectedProvider()
-                llmProviderManager.refreshProviderConfiguration()
-                refreshTextProcessingSetting()
+                runCatching { llmProviderManager.refreshProviderConfiguration() }
+                    .onSuccess {
+                        refreshTextProcessingSetting()
+                    }
+                    .onFailure { error ->
+                        handleStartupLlmFailure(error)
+                    }
                 activateSelectedTextOutput()
                 updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
                 registry.setActiveById(AppPluginCategory.DIRECTOR, DefaultDirector.ID)
@@ -504,6 +509,17 @@ class MainViewModel(
         } else {
             updateModelLabels()
         }
+    }
+
+    private fun handleStartupLlmFailure(error: Throwable) {
+        logger.error("Failed to refresh LLM provider configuration during startup: {}", error.message)
+        portalsClient.showNotification(
+            "Could not start text processing: ${error.message ?: "Unknown error"}"
+        )
+        if (settingsClient.peekTextProcessingEnabled()) {
+            settingsClient.setTextProcessingEnabled(false)
+        }
+        refreshTextProcessingSetting()
     }
 
     private fun updateModelLabels() {

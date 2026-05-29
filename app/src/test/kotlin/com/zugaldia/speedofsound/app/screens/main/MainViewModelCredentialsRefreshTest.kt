@@ -18,6 +18,7 @@ import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.EmptyOptions
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
+import com.zugaldia.speedofsound.core.plugins.llm.OpenAiLlm
 import com.zugaldia.stargate.sdk.DesktopPortal
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -136,6 +137,62 @@ class MainViewModelCredentialsRefreshTest {
 
         assertEquals("stale-text", settingsClient.loadSelectedTextModelProviderId())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
+    }
+
+    @Test
+    fun `handleStartupLlmFailure disables text processing and refreshes labels`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "whisper-1",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-a",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-a",
+                            name = "Bravo",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "gpt-5.4-mini",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val viewModel = MainViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+
+        viewModel.state.updateAsrModel("stale-asr")
+        viewModel.state.updateLlmModel("stale-llm")
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
+        asrProviderManager.registerAsrPlugins()
+        asrProviderManager.activateSelectedProvider()
+        registry.register(AppPluginCategory.LLM, FailingEnablePlugin(OpenAiLlm.ID))
+
+        invokePrivateThrowable(viewModel, "handleStartupLlmFailure", IllegalStateException("boom"))
+
+        assertEquals(false, settingsClient.loadTextProcessingEnabled())
+        assertEquals("Alpha", viewModel.state.currentAsrModel())
+        assertEquals("", viewModel.state.currentLlmModel())
+        assertEquals(null, registry.getActive(AppPluginCategory.LLM))
     }
 
     @Test
@@ -295,6 +352,12 @@ class MainViewModelCredentialsRefreshTest {
         method.invoke(instance, arg)
     }
 
+    private fun invokePrivateThrowable(instance: Any, methodName: String, arg: Throwable) {
+        val method = instance.javaClass.getDeclaredMethod(methodName, Throwable::class.java)
+        method.isAccessible = true
+        method.invoke(instance, arg)
+    }
+
     private inline fun <reified T> getPrivateField(instance: Any, fieldName: String): T {
         val field = instance.javaClass.getDeclaredField(fieldName)
         field.isAccessible = true
@@ -310,6 +373,14 @@ class MainViewModelCredentialsRefreshTest {
 
         override fun disable() {
             throw IllegalStateException("disable failed")
+        }
+    }
+
+    private class FailingEnablePlugin(
+        override val id: String,
+    ) : AppPlugin<EmptyOptions>(EmptyOptions) {
+        override fun enable() {
+            throw IllegalStateException("enable failed")
         }
     }
 
