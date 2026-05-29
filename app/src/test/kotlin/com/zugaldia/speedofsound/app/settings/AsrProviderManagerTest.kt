@@ -89,6 +89,41 @@ class AsrProviderManagerTest {
         assertEquals(0, activePlugin.disableCount)
     }
 
+    @Test
+    fun `refreshProviderConfiguration reactivates the selected provider when active plugin is stale`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val inactivePlugin = RecordingPlugin(id = "ASR_INACTIVE")
+        val selectedPlugin = RecordingPlugin(id = OpenAiAsr.ID)
+
+        registry.register(AppPluginCategory.ASR, inactivePlugin)
+        registry.register(AppPluginCategory.ASR, selectedPlugin)
+        registry.setActiveById(AppPluginCategory.ASR, inactivePlugin.id)
+
+        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
+
+        assertSame(selectedPlugin, registry.getActive(AppPluginCategory.ASR))
+        assertEquals(1, inactivePlugin.enableCount)
+        assertEquals(1, inactivePlugin.disableCount)
+        assertEquals(1, selectedPlugin.enableCount)
+        assertEquals(0, selectedPlugin.disableCount)
+    }
+
     private class RecordingPlugin(
         override val id: String,
     ) : AppPlugin<EmptyOptions>(EmptyOptions) {

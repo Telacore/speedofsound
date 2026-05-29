@@ -67,11 +67,12 @@ class LlmProviderManager(
             return
         }
 
+        val currentActiveId = registry.getActive(AppPluginCategory.LLM)?.id
         val pluginId = pluginIdForProvider(selectedProvider.provider)
         val options = settingsClient.resolveTextProviderOptions(selectedProvider)
         applyLlmOptions(pluginId, options)
 
-        if (setActive) {
+        if (setActive || currentActiveId != pluginId) {
             registry.setActiveById(AppPluginCategory.LLM, pluginId)
         }
     }

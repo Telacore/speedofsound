@@ -89,6 +89,43 @@ class LlmProviderManagerTest {
         assertEquals(0, activePlugin.disableCount)
     }
 
+    @Test
+    fun `refreshProviderConfiguration reactivates the selected provider when active plugin is stale`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-a",
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-a",
+                            name = "Alpha",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val inactivePlugin = RecordingPlugin(id = "LLM_INACTIVE")
+        val selectedPlugin = RecordingPlugin(id = OpenAiLlm.ID)
+
+        registry.register(AppPluginCategory.LLM, inactivePlugin)
+        registry.register(AppPluginCategory.LLM, selectedPlugin)
+        registry.setActiveById(AppPluginCategory.LLM, inactivePlugin.id)
+
+        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
+
+        assertSame(selectedPlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(1, inactivePlugin.enableCount)
+        assertEquals(1, inactivePlugin.disableCount)
+        assertEquals(1, selectedPlugin.enableCount)
+        assertEquals(0, selectedPlugin.disableCount)
+        assertEquals(true, settingsClient.loadTextProcessingEnabled())
+    }
+
     private class RecordingPlugin(
         override val id: String,
     ) : AppPlugin<EmptyOptions>(EmptyOptions) {
