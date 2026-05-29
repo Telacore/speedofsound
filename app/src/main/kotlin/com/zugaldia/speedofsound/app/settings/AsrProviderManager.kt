@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.app.settings
 import com.zugaldia.speedofsound.core.Language
 import com.zugaldia.speedofsound.core.FatalStartupException
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
+import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
@@ -41,7 +42,11 @@ class AsrProviderManager(
      * or when a new provider is selected in the settings screen (KEY_SELECTED_VOICE_MODEL_PROVIDER_ID changes).
      */
     fun activateSelectedProvider() {
-        applySelectedProviderConfig(setActive = true)
+        applySelectedProviderConfig(setActive = true, credentials = settingsClient.peekCredentials())
+    }
+
+    fun activateSelectedProvider(credentials: List<CredentialSetting>) {
+        applySelectedProviderConfig(setActive = true, credentials = credentials)
     }
 
     /**
@@ -49,16 +54,22 @@ class AsrProviderManager(
      * (KEY_VOICE_MODEL_PROVIDERS) or credentials change (KEY_CREDENTIALS).
      */
     fun refreshProviderConfiguration() {
-        applySelectedProviderConfig(setActive = false)
+        applySelectedProviderConfig(setActive = false, credentials = settingsClient.peekCredentials())
+    }
+
+    fun refreshProviderConfiguration(credentials: List<CredentialSetting>) {
+        applySelectedProviderConfig(setActive = false, credentials = credentials)
     }
 
     /**
      * Applies configuration for the currently selected provider.
      * Optionally activates the provider if setActive is true.
      */
-    private fun applySelectedProviderConfig(setActive: Boolean) {
+    private fun applySelectedProviderConfig(
+        setActive: Boolean,
+        credentials: List<CredentialSetting>,
+    ) {
         val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderIdExact()
-        val credentials = settingsClient.peekCredentials()
         val availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet())
         val selectedProvider = selectedVoiceProvider(selectedProviderId, availableProviders)
         val currentActiveId = registry.getActive(AppPluginCategory.ASR)?.id
@@ -139,7 +150,11 @@ class AsrProviderManager(
      * Gets the name of the currently selected ASR provider.
      */
     fun peekCurrentProviderName(): String {
-        val availableProviders = settingsClient.peekVoiceModelProviders(emptySet())
+        return peekCurrentProviderName(settingsClient.peekCredentials())
+    }
+
+    fun peekCurrentProviderName(credentials: List<CredentialSetting>): String {
+        val availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet())
         val selectedProvider = selectedVoiceProvider(
             selectedProviderId = settingsClient.peekSelectedVoiceModelProviderIdExact(),
             availableProviders = availableProviders,

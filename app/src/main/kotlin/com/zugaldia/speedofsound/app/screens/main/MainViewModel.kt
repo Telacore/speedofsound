@@ -15,6 +15,7 @@ import com.zugaldia.speedofsound.app.settings.LlmProviderManager
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_LANGUAGE
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SECONDARY_LANGUAGE
+import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CUSTOM_CONTEXT
@@ -58,6 +59,7 @@ import kotlinx.coroutines.launch
 import org.gnome.glib.GLib
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
+import kotlin.jvm.JvmOverloads
 import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("TooManyFunctions")
@@ -137,7 +139,8 @@ class MainViewModel(
 
         // Initialize status UI labels
         onPrimaryLanguageSelected(forceUpdate = true)
-        updateModelLabels()
+        val startupCredentials = settingsClient.peekCredentials()
+        updateModelLabels(startupCredentials)
         refreshAlarmSummary()
 
         // Phase 2 (async, IO thread): Enable plugins (heavy: model extraction + ONNX load).
@@ -145,8 +148,8 @@ class MainViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 registry.setActiveById(AppPluginCategory.RECORDER, recorder.id)
-                asrProviderManager.activateSelectedProvider()
-                runCatching { llmProviderManager.refreshProviderConfiguration() }
+                asrProviderManager.activateSelectedProvider(startupCredentials)
+                runCatching { llmProviderManager.refreshProviderConfiguration(startupCredentials) }
                     .onSuccess {
                         if (settingsClient.peekTextProcessingEnabled() &&
                             registry.getActive(AppPluginCategory.LLM) == null
@@ -154,14 +157,15 @@ class MainViewModel(
                             handleStartupLlmFailure(
                                 IllegalStateException(
                                     "Failed to refresh LLM provider configuration during startup"
-                                )
+                                ),
+                                startupCredentials,
                             )
                         } else {
-                            refreshTextProcessingSetting()
+                            refreshTextProcessingSetting(credentials = startupCredentials)
                         }
                     }
                     .onFailure { error ->
-                        handleStartupLlmFailure(error)
+                        handleStartupLlmFailure(error, startupCredentials)
                     }
                 if (!activateSelectedTextOutput()) {
                     switchToClipboardFallback(
@@ -355,8 +359,10 @@ class MainViewModel(
         )
     }
 
+    @JvmOverloads
     private fun refreshTextProcessingSetting(
         textProcessingEnabled: Boolean = settingsClient.peekTextProcessingEnabled(),
+        credentials: List<CredentialSetting> = settingsClient.peekCredentials(),
     ) {
         director.updateOptions(
             director.getOptions().copy(enableTextProcessing = textProcessingEnabled)
@@ -365,7 +371,7 @@ class MainViewModel(
             val activeProviderId = registry.getActive(AppPluginCategory.LLM)?.id
             val selectedPluginId = selectedLlmPluginId()
             if (activeProviderId == null || activeProviderId != selectedPluginId) {
-                runCatching { llmProviderManager.activateSelectedProvider() }
+                runCatching { llmProviderManager.activateSelectedProvider(credentials) }
                     .onFailure { error ->
                         logger.error("Failed to activate LLM provider after enabling text processing: {}", error.message)
                         portalsClient.showNotification(
@@ -379,10 +385,10 @@ class MainViewModel(
                     logger.error("Failed to clear active LLM after disabling text processing: {}", error.message)
                     portalsClient.showNotification(
                         "Could not disable LLM provider: ${error.message ?: "Unknown error"}"
-                    )
-                }
+                )
+            }
         }
-        updateModelLabels()
+        updateModelLabels(credentials)
     }
 
     private fun refreshCustomContextSetting() {
@@ -432,24 +438,28 @@ class MainViewModel(
         alarmSummaryJob = null
     }
 
-    private fun refreshAsrSetting(key: String) {
+    @JvmOverloads
+    private fun refreshAsrSetting(
+        key: String,
+        credentials: List<CredentialSetting> = settingsClient.peekCredentials(),
+    ) {
         val asrResult = when (key) {
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID -> runCatching {
-                asrProviderManager.activateSelectedProvider()
+                asrProviderManager.activateSelectedProvider(credentials)
             }
 
             else -> runCatching {
-                asrProviderManager.refreshProviderConfiguration()
+                asrProviderManager.refreshProviderConfiguration(credentials)
             }
         }
 
-        asrResult.onSuccess { updateModelLabels() }
+        asrResult.onSuccess { updateModelLabels(credentials) }
             .onFailure { error ->
                 logger.error("Failed to apply ASR settings after {} change: {}", key, error.message)
                 if (error is FatalStartupException) {
                     handleFatalStartupError(error)
                 }
-                updateModelLabels()
+                updateModelLabels(credentials)
             }
     }
 
@@ -498,18 +508,22 @@ class MainViewModel(
         updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
     }
 
-    private fun refreshLlmSetting(key: String) {
+    @JvmOverloads
+    private fun refreshLlmSetting(
+        key: String,
+        credentials: List<CredentialSetting> = settingsClient.peekCredentials(),
+    ) {
         val llmResult = when (key) {
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID -> runCatching {
                 if (settingsClient.peekTextProcessingEnabled()) {
-                    llmProviderManager.activateSelectedProvider()
+                    llmProviderManager.activateSelectedProvider(credentials)
                 } else {
-                    llmProviderManager.refreshProviderConfiguration()
+                    llmProviderManager.refreshProviderConfiguration(credentials)
                 }
             }
 
             else -> runCatching {
-                llmProviderManager.refreshProviderConfiguration()
+                llmProviderManager.refreshProviderConfiguration(credentials)
             }
         }
 
@@ -528,9 +542,9 @@ class MainViewModel(
                 portalsClient.showNotification(
                     "Could not apply LLM setting '$key': no active provider available"
                 )
-                refreshTextProcessingSetting(false)
+                refreshTextProcessingSetting(textProcessingEnabled = false, credentials = credentials)
             } else {
-                refreshTextProcessingSetting()
+                refreshTextProcessingSetting(credentials = credentials)
             }
         }
             .onFailure { error ->
@@ -538,12 +552,13 @@ class MainViewModel(
                 portalsClient.showNotification(
                     "Could not apply LLM setting '$key': ${error.message ?: "Unknown error"}"
                 )
-                updateModelLabels()
+                updateModelLabels(credentials)
             }
     }
 
     private fun refreshCredentials() {
-        runCatching { asrProviderManager.refreshProviderConfiguration() }
+        val credentials = settingsClient.peekCredentials()
+        runCatching { asrProviderManager.refreshProviderConfiguration(credentials) }
             .onFailure { error ->
                 logger.error("Failed to refresh ASR provider configuration: {}", error.message)
                 if (error is FatalStartupException) {
@@ -551,11 +566,11 @@ class MainViewModel(
                 }
             }
         if (hasFatalStartupError) {
-            updateModelLabels()
+            updateModelLabels(credentials)
             return
         }
         val textProcessingEnabled = settingsClient.peekTextProcessingEnabled()
-        val llmResult = runCatching { llmProviderManager.refreshProviderConfiguration() }
+        val llmResult = runCatching { llmProviderManager.refreshProviderConfiguration(credentials) }
         llmResult
             .onFailure { error ->
                 logger.error("Failed to refresh LLM provider configuration: {}", error.message)
@@ -574,16 +589,20 @@ class MainViewModel(
                 portalsClient.showNotification(
                     "Could not refresh LLM provider configuration: no active provider available"
                 )
-                refreshTextProcessingSetting(false)
+                refreshTextProcessingSetting(textProcessingEnabled = false, credentials = credentials)
             } else {
-                refreshTextProcessingSetting()
+                refreshTextProcessingSetting(credentials = credentials)
             }
         } else {
-            updateModelLabels()
+            updateModelLabels(credentials)
         }
     }
 
-    private fun handleStartupLlmFailure(error: Throwable) {
+    @JvmOverloads
+    private fun handleStartupLlmFailure(
+        error: Throwable,
+        credentials: List<CredentialSetting> = settingsClient.peekCredentials(),
+    ) {
         logger.error("Failed to refresh LLM provider configuration during startup: {}", error.message)
         portalsClient.showNotification(
             "Could not start text processing: ${error.message ?: "Unknown error"}"
@@ -594,17 +613,26 @@ class MainViewModel(
                 successMessage = "Disabled text processing during startup failure",
             )
         }
-        refreshTextProcessingSetting(false)
+        refreshTextProcessingSetting(textProcessingEnabled = false, credentials = credentials)
     }
 
-    private fun updateModelLabels() {
+    @JvmOverloads
+    private fun updateModelLabels(credentials: List<CredentialSetting> = settingsClient.peekCredentials()) {
         if (hasFatalStartupError) {
             state.updateAsrModel("ASR unavailable")
-            state.updateLlmModel(llmProviderManager.peekCurrentProviderName(director.getOptions().enableTextProcessing))
+            state.updateLlmModel(
+                llmProviderManager.peekCurrentProviderName(
+                    credentials = credentials,
+                    runtimeTextProcessingEnabled = director.getOptions().enableTextProcessing,
+                )
+            )
             return
         }
-        val asrModelName = asrProviderManager.peekCurrentProviderName()
-        val llmModelName = llmProviderManager.peekCurrentProviderName(director.getOptions().enableTextProcessing)
+        val asrModelName = asrProviderManager.peekCurrentProviderName(credentials)
+        val llmModelName = llmProviderManager.peekCurrentProviderName(
+            credentials = credentials,
+            runtimeTextProcessingEnabled = director.getOptions().enableTextProcessing,
+        )
         state.updateAsrModel(asrModelName)
         state.updateLlmModel(llmModelName)
     }

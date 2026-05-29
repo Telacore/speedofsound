@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.app.screens.main
 import com.zugaldia.speedofsound.app.settings.AsrProviderManager
 import com.zugaldia.speedofsound.app.settings.LlmProviderManager
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
@@ -83,6 +84,7 @@ class MainViewModelCredentialsRefreshTest {
 
         invokePrivateUnit(viewModel, "refreshCredentials")
 
+        assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertEquals("Alpha", viewModel.state.currentAsrModel())
         assertEquals("Bravo", viewModel.state.currentLlmModel())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
@@ -140,6 +142,7 @@ class MainViewModelCredentialsRefreshTest {
 
         invokePrivateUnit(viewModel, "refreshCredentials")
 
+        assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
         assertFalse(director.getOptions().enableTextProcessing)
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
@@ -510,6 +513,7 @@ class MainViewModelCredentialsRefreshTest {
 
         assertEquals("Alpha", viewModel.state.currentAsrModel())
         assertEquals("", viewModel.state.currentLlmModel())
+        assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertSame(failingPlugin, registry.getActive(AppPluginCategory.ASR))
     }
 
@@ -567,6 +571,7 @@ class MainViewModelCredentialsRefreshTest {
 
         assertEquals("Alpha", viewModel.state.currentAsrModel())
         assertEquals("Bravo", viewModel.state.currentLlmModel())
+        assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertSame(failingPlugin, registry.getActive(AppPluginCategory.LLM))
     }
