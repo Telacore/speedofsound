@@ -113,24 +113,31 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         dialog.present(this)
     }
 
-    private fun onCredentialAdded(credential: CredentialSetting) {
+    private fun onCredentialAdded(credential: CredentialSetting): Boolean {
         val currentCredentials = viewModel.peekCredentials()
         if (currentCredentials.size >= MAX_CREDENTIALS) {
             logger.warn("Cannot add credential: limit of $MAX_CREDENTIALS reached")
-            return
+            refresh()
+            return false
         }
 
         val exists = currentCredentials.any { it.name == credential.name }
         if (exists) {
             logger.warn("Credential with name '${credential.name}' already exists")
-            return
+            refresh()
+            return false
         }
 
         val updatedCredentials = currentCredentials + credential
         logger.info("Adding credential, total is now ${updatedCredentials.size} entries.")
-        viewModel.setCredentials(updatedCredentials)
+        if (!viewModel.setCredentials(updatedCredentials)) {
+            logger.warn("Failed to persist credential '${credential.name}'")
+            refresh()
+            return false
+        }
         addCredentialToUI(credential)
         updatePlaceholderVisibility()
+        return true
     }
 
     private fun addCredentialToUI(credential: CredentialSetting) {
@@ -185,7 +192,11 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         // Proceed with deletion
         val updatedCredentials = currentCredentials.filter { it.id != credentialId }
         logger.info("Removing credential '$credentialName', total is now ${updatedCredentials.size} entries.")
-        viewModel.setCredentials(updatedCredentials)
+        if (!viewModel.setCredentials(updatedCredentials)) {
+            logger.warn("Failed to persist credential deletion '$credentialName'")
+            refresh()
+            return false
+        }
         updatePlaceholderVisibility()
         return true
     }

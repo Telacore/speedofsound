@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory
 @Suppress("TooManyFunctions")
 class AddTextModelProviderDialog(
     private val viewModel: PreferencesViewModel,
-    private val onProviderAdded: (TextModelProviderSetting) -> Unit
+    private val onProviderAdded: (TextModelProviderSetting) -> Boolean
 ) : Dialog() {
     private val logger = LoggerFactory.getLogger(AddTextModelProviderDialog::class.java)
 
@@ -394,8 +394,7 @@ class AddTextModelProviderDialog(
             disableThinking = disableThinkingRow.active
         )
 
-        onProviderAdded(config)
-        return true
+        return onProviderAdded(config)
     }
 
     private fun closeDialog() {

@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory
 
 class AddCredentialDialog(
     private val viewModel: PreferencesViewModel,
-    private val onCredentialAdded: (CredentialSetting) -> Unit
+    private val onCredentialAdded: (CredentialSetting) -> Boolean
 ) : Dialog() {
     private val logger = LoggerFactory.getLogger(AddCredentialDialog::class.java)
     private val dialogScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -87,8 +87,9 @@ class AddCredentialDialog(
                         name = name,
                         value = apiKey
                     )
-                    onCredentialAdded(credential)
-                    close()
+                    if (onCredentialAdded(credential)) {
+                        close()
+                    }
                 }
             }
         }

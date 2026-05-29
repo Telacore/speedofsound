@@ -140,8 +140,9 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
                 addCssClass(STYLE_CLASS_FLAT)
                 valign = Align.CENTER
                 onClicked {
-                    providersListBox.remove(row)
-                    onProviderDeleted(providerSetting.id)
+                    if (onProviderDeleted(providerSetting.id)) {
+                        providersListBox.remove(row)
+                    }
                 }
             }
             row.addSuffix(deleteButton)
@@ -150,13 +151,18 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         providersListBox.append(row)
     }
 
-    private fun onProviderDeleted(providerId: String) {
+    private fun onProviderDeleted(providerId: String): Boolean {
         val currentProviders = viewModel.peekVoiceModelProviders()
         val updatedProviders = currentProviders.filter { it.id != providerId }
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
-        viewModel.setVoiceModelProviders(updatedProviders)
+        if (!viewModel.setVoiceModelProviders(updatedProviders)) {
+            logger.warn("Failed to persist voice provider deletion '$providerId'")
+            refreshProviders()
+            return false
+        }
         activeProviderComboRow.updateProviders(updatedProviders)
         updateAddProviderButtonState()
+        return true
     }
 
     private fun updateAddProviderButtonState() {
@@ -179,13 +185,18 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         dialog.present(this)
     }
 
-    private fun onProviderAdded(provider: VoiceModelProviderSetting) {
+    private fun onProviderAdded(provider: VoiceModelProviderSetting): Boolean {
         val currentProviders = viewModel.peekVoiceModelProviders()
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
-        viewModel.setVoiceModelProviders(updatedProviders)
+        if (!viewModel.setVoiceModelProviders(updatedProviders)) {
+            logger.warn("Failed to persist voice provider '${provider.name}'")
+            refreshProviders()
+            return false
+        }
         addProviderToUI(provider)
         activeProviderComboRow.updateProviders(updatedProviders)
         updateAddProviderButtonState()
+        return true
     }
 }

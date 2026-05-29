@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory
 @Suppress("TooManyFunctions")
 class AddVoiceModelProviderDialog(
     private val viewModel: PreferencesViewModel,
-    private val onProviderAdded: (VoiceModelProviderSetting) -> Unit
+    private val onProviderAdded: (VoiceModelProviderSetting) -> Boolean
 ) : Dialog() {
     private val logger = LoggerFactory.getLogger(AddVoiceModelProviderDialog::class.java)
 
@@ -274,8 +274,7 @@ class AddVoiceModelProviderDialog(
             modelId = modelId
         )
 
-        onProviderAdded(config)
-        return true
+        return onProviderAdded(config)
     }
 
     private fun closeDialog() {

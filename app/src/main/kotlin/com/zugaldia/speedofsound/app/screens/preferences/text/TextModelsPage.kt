@@ -209,8 +209,9 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
             addCssClass(STYLE_CLASS_FLAT)
             valign = Align.CENTER
             onClicked {
-                providersListBox.remove(row)
-                onProviderDeleted(providerSetting.id)
+                if (onProviderDeleted(providerSetting.id)) {
+                    providersListBox.remove(row)
+                }
             }
         }
 
@@ -218,14 +219,19 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         providersListBox.append(row)
     }
 
-    private fun onProviderDeleted(providerId: String) {
+    private fun onProviderDeleted(providerId: String): Boolean {
         val currentProviders = viewModel.peekTextModelProviders()
         val updatedProviders = currentProviders.filter { it.id != providerId }
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
-        viewModel.setTextModelProviders(updatedProviders)
+        if (!viewModel.setTextModelProviders(updatedProviders)) {
+            logger.warn("Failed to persist text provider deletion '$providerId'")
+            refreshProviders()
+            return false
+        }
         activeProviderComboRow.updateProviders(updatedProviders)
         updatePlaceholderVisibility()
         updateActiveProviderSensitivity()
+        return true
     }
 
     private fun updatePlaceholderVisibility() {
@@ -255,14 +261,19 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         dialog.present(this)
     }
 
-    private fun onProviderAdded(provider: TextModelProviderSetting) {
+    private fun onProviderAdded(provider: TextModelProviderSetting): Boolean {
         val currentProviders = viewModel.peekTextModelProviders()
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
-        viewModel.setTextModelProviders(updatedProviders)
+        if (!viewModel.setTextModelProviders(updatedProviders)) {
+            logger.warn("Failed to persist text provider '${provider.name}'")
+            refreshProviders()
+            return false
+        }
         addProviderToUI(provider)
         activeProviderComboRow.updateProviders(updatedProviders)
         updatePlaceholderVisibility()
         updateActiveProviderSensitivity()
+        return true
     }
 }
