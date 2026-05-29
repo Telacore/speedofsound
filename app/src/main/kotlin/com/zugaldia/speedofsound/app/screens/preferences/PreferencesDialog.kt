@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.app.screens.preferences
 
 import com.zugaldia.speedofsound.app.DEFAULT_PREFERENCES_DIALOG_HEIGHT
 import com.zugaldia.speedofsound.app.DEFAULT_PREFERENCES_DIALOG_WIDTH
+import com.zugaldia.speedofsound.app.screens.preferences.alarms.AlarmsPage
 import com.zugaldia.speedofsound.app.screens.preferences.advanced.AdvancedPage
 import com.zugaldia.speedofsound.app.screens.preferences.credentials.CloudCredentialsPage
 import com.zugaldia.speedofsound.app.screens.preferences.general.GeneralPage
@@ -31,6 +32,7 @@ class PreferencesDialog(settingsClient: SettingsClient, portalsClient: PortalsCl
     private val sidebar: StackSidebar
 
     private val generalPage: GeneralPage
+    private val alarmsPage: AlarmsPage
     private val modelLibraryPage: ModelLibraryPage
     private val cloudCredentialsPage: CloudCredentialsPage
     private val voiceModelsPage: VoiceModelsPage
@@ -49,6 +51,7 @@ class PreferencesDialog(settingsClient: SettingsClient, portalsClient: PortalsCl
         }
 
         generalPage = GeneralPage(viewModel)
+        alarmsPage = AlarmsPage(viewModel)
         modelLibraryPage = ModelLibraryPage(viewModel) { hasOperations -> operationsBanner.revealed = hasOperations }
         cloudCredentialsPage = CloudCredentialsPage(viewModel)
         voiceModelsPage = VoiceModelsPage(viewModel)
@@ -61,6 +64,7 @@ class PreferencesDialog(settingsClient: SettingsClient, portalsClient: PortalsCl
             hexpand = true
             vexpand = true
             addTitled(generalPage, "general", "General")
+            addTitled(alarmsPage, "alarms", "Alarms")
             addTitled(modelLibraryPage, "model_library", "Model Library")
             addTitled(cloudCredentialsPage, "cloud_credentials", "Cloud Credentials")
             addTitled(voiceModelsPage, "voice_models", "Voice Models")
@@ -118,6 +122,7 @@ class PreferencesDialog(settingsClient: SettingsClient, portalsClient: PortalsCl
     private fun refreshAllPages() {
         logger.info("Refreshing all preferences pages after import")
         generalPage.refresh()
+        alarmsPage.refresh()
         cloudCredentialsPage.refresh()
         voiceModelsPage.refreshProviders()
         textModelsPage.refreshProviders()

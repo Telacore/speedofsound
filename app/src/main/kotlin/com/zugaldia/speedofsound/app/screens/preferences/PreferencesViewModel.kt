@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.app.screens.preferences
 
 import com.zugaldia.speedofsound.core.APPLICATION_URL_KEYBOARD_SHORTCUT
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
+import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
@@ -67,6 +68,13 @@ class PreferencesViewModel(
 
     fun getTextOutputMethod(): String = settingsClient.getTextOutputMethod()
     fun setTextOutputMethod(value: String): Boolean = settingsClient.setTextOutputMethod(value)
+
+    /*
+     * Alarms page
+     */
+
+    fun getAlarms(): List<AlarmSetting> = settingsClient.getAlarms()
+    fun setAlarms(value: List<AlarmSetting>): Boolean = settingsClient.setAlarms(value)
 
     /*
      * Cloud Credentials page

@@ -24,6 +24,9 @@ const val DEFAULT_PREFERENCES_DIALOG_HEIGHT = 825
 const val DEFAULT_ADD_CREDENTIAL_DIALOG_WIDTH = 500
 const val DEFAULT_ADD_CREDENTIAL_DIALOG_HEIGHT = 300
 
+const val DEFAULT_ADD_ALARM_DIALOG_WIDTH = 520
+const val DEFAULT_ADD_ALARM_DIALOG_HEIGHT = 360
+
 const val DEFAULT_PROGRESS_BAR_WIDTH = 300
 
 const val DEFAULT_TEXT_VIEW_PADDING = 10
@@ -89,6 +92,7 @@ const val SIGNAL_LLM_MODEL_CHANGED = "llm-model-changed"
 // Icon names (all bundled)
 const val ICON_AUTO_ADJUST = "sos-image-auto-adjust-symbolic"
 const val ICON_DOWNLOAD = "sos-folder-download-symbolic"
+const val ICON_ALARM = "alarm-symbolic"
 const val ICON_EDIT = "sos-document-edit-symbolic"
 const val ICON_MENU = "sos-open-menu-symbolic"
 const val ICON_MICROPHONE = "sos-audio-input-microphone-symbolic"

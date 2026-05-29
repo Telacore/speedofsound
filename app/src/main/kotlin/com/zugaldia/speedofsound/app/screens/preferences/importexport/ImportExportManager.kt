@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 
 data class ImportResult(
     val filePath: String,
+    val alarmsAdded: Int = 0,
     val credentialsAdded: Int = 0,
     val voiceProvidersAdded: Int = 0,
     val textProvidersAdded: Int = 0,
@@ -34,6 +35,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             hideInsteadOfMinimize = viewModel.getHideInsteadOfMinimize(),
             stayHiddenOnActivation = viewModel.getStayHiddenOnActivation(),
             appendSpace = viewModel.getAppendSpace(),
+            alarms = viewModel.getAlarms(),
             credentials = viewModel.getCredentials(),
             voiceModelProviders = viewModel.getVoiceModelProviders()
                 .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys },
@@ -56,7 +58,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         check(inputFile.exists()) { "Export file not found: ${inputFile.absolutePath}" }
 
         val exportData = prettyJson.decodeFromString<SettingsExport>(inputFile.readText())
-        if (exportData.version != 1) {
+        if (exportData.version !in 1..2) {
             throw IllegalStateException("Unsupported export version: ${exportData.version}")
         }
 
@@ -66,6 +68,14 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         viewModel.setHideInsteadOfMinimize(exportData.hideInsteadOfMinimize)
         viewModel.setStayHiddenOnActivation(exportData.stayHiddenOnActivation)
         viewModel.setAppendSpace(exportData.appendSpace)
+
+        val existingAlarms = viewModel.getAlarms()
+        val existingAlarmIds = existingAlarms.map { it.id }.toSet()
+        val newAlarms = exportData.alarms.filter { it.id !in existingAlarmIds }
+        if (newAlarms.isNotEmpty()) {
+            viewModel.setAlarms(existingAlarms + newAlarms)
+        }
+
         viewModel.setSanitizeSpecialChars(exportData.sanitizeSpecialChars)
         viewModel.setPostHideDelayMs(exportData.postHideDelayMs)
         viewModel.setTypingDelayMs(exportData.typingDelayMs)
@@ -102,6 +112,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         logger.info("Imported settings from: ${inputFile.absolutePath}")
         ImportResult(
             filePath = inputFile.absolutePath,
+            alarmsAdded = newAlarms.size,
             credentialsAdded = newCredentials.size,
             voiceProvidersAdded = newVoiceProviders.size,
             textProvidersAdded = newTextProviders.size,

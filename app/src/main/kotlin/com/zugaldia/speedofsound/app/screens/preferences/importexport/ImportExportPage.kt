@@ -59,7 +59,7 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
         val importGroup = PreferencesGroup().apply {
             title = "Import"
             description = "Import preferences from a file. Items such as credentials, " +
-                    "providers, and vocabulary are added to your existing ones. " +
+                    "providers, vocabulary, and alarms are added to your existing ones. " +
                     "Some items such as language and custom context will be replaced."
             add(importRow)
         }
@@ -135,6 +135,7 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
 
     private fun buildImportSummary(result: ImportResult): String {
         val parts = mutableListOf<String>()
+        if (result.alarmsAdded > 0) parts.add("${result.alarmsAdded} alarm(s)")
         if (result.credentialsAdded > 0) parts.add("${result.credentialsAdded} credential(s)")
         if (result.voiceProvidersAdded > 0) parts.add("${result.voiceProvidersAdded} voice provider(s)")
         if (result.textProvidersAdded > 0) parts.add("${result.textProvidersAdded} text provider(s)")

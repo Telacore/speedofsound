@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.app
 
 import com.zugaldia.speedofsound.app.screens.main.MainViewModel
 import com.zugaldia.speedofsound.app.screens.main.MainWindow
+import com.zugaldia.speedofsound.app.alarms.AlarmSchedulerService
 import com.zugaldia.speedofsound.app.screens.welcome.WelcomeWindow
 import com.zugaldia.speedofsound.app.settings.GioStore
 import com.zugaldia.speedofsound.app.status.StatusNotifierService
@@ -32,6 +33,7 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
     private var mainWindow: MainWindow? = null
     private var isHoldingForHiddenStart = false
     private var statusNotifierService: StatusNotifierService? = null
+    private var alarmSchedulerService: AlarmSchedulerService? = null
 
     private lateinit var settingsClient: SettingsClient
     private lateinit var portalsClient: PortalsClient
@@ -58,6 +60,7 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
 
             settingsClient = SettingsClient(buildSettingsStore())
             portalsClient = PortalsClient()
+            alarmSchedulerService = AlarmSchedulerService(settingsClient, portalsClient).also { it.connect() }
             mainViewModel = MainViewModel(settingsClient, portalsClient, onShortcutTriggered = { handleTrigger() })
             registerTriggerAction()
         }
@@ -89,6 +92,7 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
         onShutdown {
             logger.info("Application shutting down.")
             statusNotifierService?.close()
+            alarmSchedulerService?.close()
             mainViewModel.shutdown()
         }
     }

@@ -58,6 +58,32 @@ data class TextModelProviderSetting(
 ) : SelectableProviderSetting
 
 /**
+ * How an alarm should notify the user.
+ *
+ * Desktop Linux does not expose a reliable cross-desktop vibration API, so these actions map
+ * to notification urgency levels as a best-effort approximation.
+ */
+@Serializable
+enum class AlarmAction {
+    SILENT,
+    NORMAL,
+    ATTENTION,
+    URGENT
+}
+
+/**
+ * A repeating daily alarm.
+ */
+@Serializable
+data class AlarmSetting(
+    val id: String,
+    val hour: Int,
+    val minute: Int,
+    val action: AlarmAction = AlarmAction.NORMAL,
+    val enabled: Boolean = true
+)
+
+/**
  * A serializable snapshot of all exportable user preferences.
  * Instance-specific settings (portal token, selected provider IDs, text processing toggle) are excluded.
  *
@@ -66,13 +92,14 @@ data class TextModelProviderSetting(
  */
 @Serializable
 data class SettingsExport(
-    val version: Int = 1,
+    val version: Int = 2,
     val defaultLanguage: String = DEFAULT_LANGUAGE.iso2,
     val secondaryLanguage: String = DEFAULT_SECONDARY_LANGUAGE.iso2,
     val backgroundRecording: Boolean = DEFAULT_BACKGROUND_RECORDING,
     val hideInsteadOfMinimize: Boolean = DEFAULT_HIDE_INSTEAD_OF_MINIMIZE,
     val stayHiddenOnActivation: Boolean = DEFAULT_STAY_HIDDEN_ON_ACTIVATION,
     val appendSpace: Boolean = DEFAULT_APPEND_SPACE,
+    val alarms: List<AlarmSetting> = emptyList(),
     val credentials: List<CredentialSetting> = emptyList(),
     val voiceModelProviders: List<VoiceModelProviderSetting> = emptyList(),
     val textModelProviders: List<TextModelProviderSetting> = emptyList(),

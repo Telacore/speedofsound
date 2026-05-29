@@ -185,6 +185,31 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
 
     /*
+     * Alarms page
+     */
+
+    fun getAlarms(): List<AlarmSetting> {
+        val json = settingsStore.getString(KEY_ALARMS, DEFAULT_ALARMS)
+        return if (json.isEmpty() || json == DEFAULT_ALARMS) {
+            emptyList()
+        } else {
+            runCatching {
+                Json.decodeFromString<List<AlarmSetting>>(json)
+            }.getOrElse { error ->
+                logger.error("Failed to decode alarms from JSON", error)
+                emptyList()
+            }
+        }
+    }
+
+    fun setAlarms(value: List<AlarmSetting>): Boolean {
+        val json = Json.encodeToString(value)
+        return settingsStore.setString(KEY_ALARMS, json).also { success ->
+            if (success) _settingsChanged.tryEmit(KEY_ALARMS)
+        }
+    }
+
+    /*
      * Cloud Credentials page
      */
 
