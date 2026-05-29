@@ -758,21 +758,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         value: String,
         availableProviders: List<VoiceModelProviderSetting>,
     ): Boolean =
-        setSelectedVoiceModelProviderIdInternal(value, availableProviders)
-
-    private fun setSelectedVoiceModelProviderIdInternal(
-        value: String,
-        availableProviders: List<SelectableProviderSetting>,
-    ): Boolean =
-        setStringSettingIfChanged(
-            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID),
-            normalizeSelectedProviderId(
-                value = value,
-                defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-                availableProviders = availableProviders,
-            ),
-            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
+        setSelectedProviderIdInternal(
+            key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            value = value,
+            availableProviders = availableProviders,
         )
 
     /**
@@ -853,21 +843,28 @@ class SettingsClient(val settingsStore: SettingsStore) {
         value: String,
         availableProviders: List<TextModelProviderSetting>,
     ): Boolean =
-        setSelectedTextModelProviderIdInternal(value, availableProviders)
+        setSelectedProviderIdInternal(
+            key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            value = value,
+            availableProviders = availableProviders,
+        )
 
-    private fun setSelectedTextModelProviderIdInternal(
+    private fun setSelectedProviderIdInternal(
+        key: String,
+        defaultValue: String,
         value: String,
         availableProviders: List<SelectableProviderSetting>,
     ): Boolean =
         setStringSettingIfChanged(
-            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID),
+            key,
+            settingsStore.getString(key, defaultValue),
             normalizeSelectedProviderId(
                 value = value,
-                defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+                defaultValue = defaultValue,
                 availableProviders = availableProviders,
             ),
-            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
+            key
         )
 
     /*
@@ -1312,7 +1309,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
                 availableProviders = availableProviders,
             )
-            setSelectedVoiceModelProviderIdInternal(normalizedSelectedProviderId, availableProviders)
+            setSelectedProviderIdInternal(
+                key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+                defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+                value = normalizedSelectedProviderId,
+                availableProviders = availableProviders,
+            )
         }
     }
 
@@ -1324,7 +1326,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
             availableProviders = availableProviders,
         )
-        return setSelectedTextModelProviderIdInternal(normalizedSelectedProviderId, availableProviders)
+        return setSelectedProviderIdInternal(
+            key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            value = normalizedSelectedProviderId,
+            availableProviders = availableProviders,
+        )
     }
 
     private fun List<VoiceModelProviderSetting>.normalizedCustomVoiceModelProviders(
