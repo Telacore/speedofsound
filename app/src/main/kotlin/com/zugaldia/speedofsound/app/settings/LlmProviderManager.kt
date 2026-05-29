@@ -62,6 +62,9 @@ class LlmProviderManager(
                 reason = "while removing missing LLM provider ${selectedProviderId.ifBlank { "<empty>" }}",
                 successMessage = "Disabled text processing while removing missing LLM provider ${selectedProviderId.ifBlank { "<empty>" }}",
             )
+            if (!disableSucceeded) {
+                return
+            }
             runCatching { registry.clearActive(AppPluginCategory.LLM) }
                 .onFailure { error ->
                     logger.error(
@@ -71,9 +74,6 @@ class LlmProviderManager(
                         error,
                     )
                 }
-            if (!disableSucceeded) {
-                return
-            }
             if (selectedProviderId.isNotEmpty()) {
                 if (!settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)) {
                     logger.warn(

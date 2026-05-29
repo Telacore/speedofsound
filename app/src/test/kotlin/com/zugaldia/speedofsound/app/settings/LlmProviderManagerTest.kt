@@ -46,7 +46,7 @@ class LlmProviderManagerTest {
     }
 
     @Test
-    fun `refreshProviderConfiguration keeps stale llm selection when disabling text processing fails`() {
+    fun `refreshProviderConfiguration keeps active llm when disabling text processing fails`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
                 KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "custom-provider",
@@ -58,15 +58,17 @@ class LlmProviderManagerTest {
         val settingsClient = SettingsClient(settingsStore)
         val registry = AppPluginRegistry()
         val activePlugin = RecordingPlugin(id = "LLM_OPENAI")
+        val manager = LlmProviderManager(registry, settingsClient)
 
         registry.register(AppPluginCategory.LLM, activePlugin)
         registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
 
-        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
+        manager.refreshProviderConfiguration()
 
         assertEquals("custom-provider", settingsClient.loadSelectedTextModelProviderId())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
-        assertEquals(null, registry.getActive(AppPluginCategory.LLM))
+        assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals("OpenAI", manager.peekCurrentProviderName())
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)
     }
