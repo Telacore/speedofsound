@@ -204,10 +204,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun getAlarmSchedulerState(): AlarmSchedulerState {
+        val rawJson = settingsStore.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
         readAlarmSchedulerState()?.let { return it }
         val legacyState = loadLegacyAlarmSchedulerState()
         if (legacyState.lastCheckAt != null || legacyState.lastTriggeredDates.isNotEmpty()) {
             setAlarmSchedulerState(legacyState, emitChange = false)
+        } else if (rawJson.isNotBlank() && rawJson != DEFAULT_ALARM_SCHEDULER_STATE) {
+            setAlarmSchedulerState(AlarmSchedulerState(), emitChange = false)
         }
         return legacyState
     }

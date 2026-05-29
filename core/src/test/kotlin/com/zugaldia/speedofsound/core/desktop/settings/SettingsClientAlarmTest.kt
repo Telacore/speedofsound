@@ -292,6 +292,19 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `alarm scheduler state heals malformed combined json without legacy fallback`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARM_SCHEDULER_STATE to "{not-json",
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(AlarmSchedulerState(), client.getAlarmSchedulerState())
+        assertEquals(AlarmSchedulerState(), Json.decodeFromString<AlarmSchedulerState>(store.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)))
+    }
+
+    @Test
     fun `peek alarm scheduler state does not migrate legacy keys`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
