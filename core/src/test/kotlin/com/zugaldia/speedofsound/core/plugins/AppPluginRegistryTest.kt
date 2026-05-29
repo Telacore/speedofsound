@@ -63,6 +63,21 @@ class AppPluginRegistryTest {
     }
 
     @Test
+    fun `clearActive keeps active plugin when disable fails`() {
+        val registry = AppPluginRegistry()
+        val plugin = RecordingPlugin(id = "plugin", failOnDisable = true)
+
+        registry.register(AppPluginCategory.LLM, plugin)
+        registry.setActiveById(AppPluginCategory.LLM, plugin.id)
+
+        registry.clearActive(AppPluginCategory.LLM)
+
+        assertSame(plugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(1, plugin.enableCount)
+        assertEquals(1, plugin.disableCount)
+    }
+
+    @Test
     fun `setActiveById keeps previous plugin active when disable of current plugin fails`() {
         val registry = AppPluginRegistry()
         val first = RecordingPlugin(id = "first", failOnDisable = true)

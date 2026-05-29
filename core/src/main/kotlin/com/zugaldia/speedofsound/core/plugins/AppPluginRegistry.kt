@@ -136,11 +136,13 @@ class AppPluginRegistry {
     @Synchronized
     fun clearActive(category: AppPluginCategory) {
         check(!isShutdown) { "Registry has been shut down" }
-        val activeId = activePlugins.remove(category) ?: return
+        val activeId = activePlugins[category] ?: return
         val activePlugin = plugins[category]?.find { it.id == activeId } ?: return
 
         runCatching {
             activePlugin.disable()
+        }.onSuccess {
+            activePlugins.remove(category)
         }.onFailure { error ->
             log.error(
                 "Failed to disable active plugin ${activePlugin.id} while clearing category $category: {}",
