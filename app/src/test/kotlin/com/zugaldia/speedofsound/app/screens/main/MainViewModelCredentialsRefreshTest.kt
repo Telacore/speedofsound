@@ -139,6 +139,49 @@ class MainViewModelCredentialsRefreshTest {
     }
 
     @Test
+    fun `refreshTextProcessingSetting updates labels when llm clear fails`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "whisper-1",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_TEXT_PROCESSING_ENABLED to "false",
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val viewModel = MainViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+
+        viewModel.state.updateAsrModel("stale-asr")
+        viewModel.state.updateLlmModel("stale-llm")
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
+        asrProviderManager.registerAsrPlugins()
+        registry.register(AppPluginCategory.LLM, ThrowingPlugin(id = "LLM_FAIL"))
+        registry.setActiveById(AppPluginCategory.LLM, "LLM_FAIL")
+
+        invokePrivateUnit(viewModel, "refreshTextProcessingSetting")
+
+        assertEquals("Alpha", viewModel.state.currentAsrModel())
+        assertEquals("", viewModel.state.currentLlmModel())
+        assertEquals(false, settingsClient.loadTextProcessingEnabled())
+    }
+
+    @Test
     fun `refreshAsrSetting updates labels after asr refresh failure`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(

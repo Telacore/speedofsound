@@ -340,7 +340,13 @@ class MainViewModel(
                     }
             }
         } else {
-            registry.clearActive(AppPluginCategory.LLM)
+            runCatching { registry.clearActive(AppPluginCategory.LLM) }
+                .onFailure { error ->
+                    logger.error("Failed to clear active LLM after disabling text processing: {}", error.message)
+                    portalsClient.showNotification(
+                        "Could not disable LLM provider: ${error.message ?: "Unknown error"}"
+                    )
+                }
         }
         updateModelLabels()
     }
