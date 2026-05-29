@@ -114,6 +114,34 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
+    fun `selected provider setters do not heal malformed provider json`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_VOICE_MODEL_PROVIDERS to "{bad",
+                KEY_TEXT_MODEL_PROVIDERS to "{bad",
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-voice",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-text",
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.setSelectedVoiceModelProviderId(" missing-voice-provider ")
+        client.setSelectedTextModelProviderId(" missing-text-provider ")
+
+        assertEquals("{bad", store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS))
+        assertEquals("{bad", store.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS))
+        assertEquals(
+            DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
+        )
+        assertEquals(
+            DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
+        )
+        assertEquals(2, store.writeCount)
+    }
+
+    @Test
     fun `local voice providers are filtered from save`() {
         val store = MapSettingsStore()
         val client = SettingsClient(store)
