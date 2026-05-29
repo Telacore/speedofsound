@@ -60,8 +60,8 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
 
             settingsClient = SettingsClient(buildSettingsStore())
             logger.info("Normalizing persisted alarm settings on startup.")
-            settingsClient.getAlarms()
-            settingsClient.getAlarmSchedulerState()
+            settingsClient.loadAlarms()
+            settingsClient.loadAlarmSchedulerState()
             portalsClient = PortalsClient()
             alarmSchedulerService = AlarmSchedulerService(settingsClient, portalsClient).also { it.connect() }
             mainViewModel = MainViewModel(settingsClient, portalsClient, onShortcutTriggered = { handleTrigger() })

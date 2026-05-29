@@ -190,7 +190,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Alarms page
      */
 
-    fun getAlarms(): List<AlarmSetting> = readAlarms(heal = true)
+    fun loadAlarms(): List<AlarmSetting> = readAlarms(heal = true)
+
+    @Deprecated("Use loadAlarms() for healing reads or peekAlarms() for side-effect free reads")
+    fun getAlarms(): List<AlarmSetting> = loadAlarms()
 
     fun peekAlarms(): List<AlarmSetting> = readAlarms(heal = false)
 
@@ -203,7 +206,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return persistAlarms(normalizedAlarms, emitChange = true)
     }
 
-    fun getAlarmSchedulerState(): AlarmSchedulerState {
+    fun loadAlarmSchedulerState(): AlarmSchedulerState {
         val rawJson = settingsStore.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
         readAlarmSchedulerState()?.let { return it }
         val legacyState = loadLegacyAlarmSchedulerState()
@@ -214,6 +217,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
         return legacyState
     }
+
+    @Deprecated("Use loadAlarmSchedulerState() for healing reads or peekAlarmSchedulerState() for side-effect free reads")
+    fun getAlarmSchedulerState(): AlarmSchedulerState = loadAlarmSchedulerState()
 
     fun peekAlarmSchedulerState(): AlarmSchedulerState =
         readAlarmSchedulerState() ?: loadLegacyAlarmSchedulerState()
@@ -239,12 +245,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
-    fun getAlarmLastTriggeredDates(): Map<String, LocalDate> =
-        getAlarmSchedulerState().lastTriggeredDates.mapNotNull { (alarmId, dateValue) ->
+    fun loadAlarmLastTriggeredDates(): Map<String, LocalDate> =
+        loadAlarmSchedulerState().lastTriggeredDates.mapNotNull { (alarmId, dateValue) ->
             runCatching { LocalDate.parse(dateValue) }
                 .getOrNull()
                 ?.let { parsedDate -> alarmId to parsedDate }
         }.toMap()
+
+    @Deprecated("Use loadAlarmLastTriggeredDates() for healing reads or peekAlarmLastTriggeredDates() for side-effect free reads")
+    fun getAlarmLastTriggeredDates(): Map<String, LocalDate> = loadAlarmLastTriggeredDates()
 
     fun peekAlarmLastTriggeredDates(): Map<String, LocalDate> =
         peekAlarmSchedulerState().lastTriggeredDates.mapNotNull { (alarmId, dateValue) ->
@@ -253,14 +262,17 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 ?.let { parsedDate -> alarmId to parsedDate }
         }.toMap()
 
-    fun getAlarmLastCheckAt(): LocalDateTime? {
-        val value = getAlarmSchedulerState().lastCheckAt ?: return null
+    fun loadAlarmLastCheckAt(): LocalDateTime? {
+        val value = loadAlarmSchedulerState().lastCheckAt ?: return null
         return runCatching { LocalDateTime.parse(value) }
             .getOrElse { error ->
                 logger.error("Failed to decode alarm last check timestamp", error)
                 null
             }
     }
+
+    @Deprecated("Use loadAlarmLastCheckAt() for healing reads or peekAlarmLastCheckAt() for side-effect free reads")
+    fun getAlarmLastCheckAt(): LocalDateTime? = loadAlarmLastCheckAt()
 
     fun peekAlarmLastCheckAt(): LocalDateTime? {
         val value = peekAlarmSchedulerState().lastCheckAt ?: return null
@@ -273,13 +285,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setAlarmLastTriggeredDates(value: Map<String, LocalDate>): Boolean =
         setAlarmSchedulerState(
-            getAlarmSchedulerState().copy(
+            loadAlarmSchedulerState().copy(
                 lastTriggeredDates = value.mapValues { (_, date) -> date.toString() }
             )
         )
 
     fun setAlarmLastTriggeredDate(alarmId: String, date: LocalDate): Boolean =
-        getAlarmSchedulerState().let { currentState ->
+        loadAlarmSchedulerState().let { currentState ->
             setAlarmSchedulerState(
                 currentState.copy(
                     lastTriggeredDates = currentState.lastTriggeredDates.toMutableMap().apply {
@@ -291,7 +303,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setAlarmLastCheckAt(value: LocalDateTime): Boolean =
         setAlarmSchedulerState(
-            getAlarmSchedulerState().copy(lastCheckAt = value.toString())
+            loadAlarmSchedulerState().copy(lastCheckAt = value.toString())
         )
 
     fun getMaxAlarms(): Int =

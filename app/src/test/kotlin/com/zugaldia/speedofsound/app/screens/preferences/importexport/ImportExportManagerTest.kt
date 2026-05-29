@@ -93,7 +93,7 @@ class ImportExportManagerTest {
                 lastCheckAt = "2026-05-29T09:15:30",
                 lastTriggeredDates = mapOf("alarm-1" to "2026-05-29"),
             ),
-            settingsClient.getAlarmSchedulerState()
+            settingsClient.loadAlarmSchedulerState()
         )
     }
 
@@ -114,7 +114,7 @@ class ImportExportManagerTest {
 
         assertTrue(result.filePath.isNotBlank())
         assertEquals(false, result.alarmSchedulerStateImported)
-        assertEquals(AlarmSchedulerState(), settingsClient.getAlarmSchedulerState())
+        assertEquals(AlarmSchedulerState(), settingsClient.loadAlarmSchedulerState())
     }
 
     @Test
