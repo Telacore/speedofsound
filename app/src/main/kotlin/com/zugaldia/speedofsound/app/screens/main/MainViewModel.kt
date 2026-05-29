@@ -76,13 +76,13 @@ class MainViewModel(
         GStreamerRecorder(settingsClient.getRecorderOptions())
     }
 
-    private val director = DefaultDirector(registry, settingsClient.getDirectorOptions())
+    private val director = DefaultDirector(registry, settingsClient.peekDirectorOptions())
 
     private val portalTextOutput = PortalTextOutput(
         portalsClient = portalsClient,
         options = PortalTextOutputOptions(
-            typingDelayMs = settingsClient.getTypingDelayMs().toLong(),
-            sanitizeSpecialChars = settingsClient.getSanitizeSpecialChars(),
+            typingDelayMs = settingsClient.peekTypingDelayMs().toLong(),
+            sanitizeSpecialChars = settingsClient.peekSanitizeSpecialChars(),
         ),
     )
 
@@ -92,7 +92,7 @@ class MainViewModel(
         portalsClient = portalsClient,
         settingsClient = settingsClient,
         initialSessionDisconnected = true,
-        initialRemoteDesktopStatus = if (settingsClient.getPortalsRestoreToken().isBlank()) {
+        initialRemoteDesktopStatus = if (settingsClient.peekPortalsRestoreToken().isBlank()) {
             RemoteDesktopStatus.NeedToken
         } else {
             RemoteDesktopStatus.Ready
@@ -104,7 +104,7 @@ class MainViewModel(
     private var startupErrorMessage: String = ""
     private var hasFatalStartupError = false
     private var activeRemoteDesktopStatus: RemoteDesktopStatus = if (
-        settingsClient.getPortalsRestoreToken().isBlank()
+        settingsClient.peekPortalsRestoreToken().isBlank()
     ) {
         RemoteDesktopStatus.NeedToken
     } else {
@@ -149,7 +149,7 @@ class MainViewModel(
                 activateSelectedTextOutput()
                 updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
                 registry.setActiveById(AppPluginCategory.DIRECTOR, DefaultDirector.ID)
-                if (shouldForceClipboardFallback(settingsClient.getTextOutputMethod(), portalsClient.isPortalAvailable)) {
+                if (shouldForceClipboardFallback(settingsClient.peekTextOutputMethod(), portalsClient.isPortalAvailable)) {
                     switchToClipboardFallback(
                         reason = "Desktop portal is not available for this session.",
                         policy = ClipboardFallbackPolicy.PERSIST_PREFERENCE,
@@ -187,7 +187,7 @@ class MainViewModel(
         // Check if the portal session needs reconnection. This typically happens when the user locks the screen and
         // comes back. The remote desktop session is closed in those circumstances for security reasons.
         if (shouldRestorePortalOutput(
-                settingsClient.getTextOutputMethod(),
+                settingsClient.peekTextOutputMethod(),
                 (registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? TextOutputPlugin<*>)?.id,
                 activeRemoteDesktopStatus,
                 portalsClient.isPortalAvailable,
@@ -196,7 +196,7 @@ class MainViewModel(
             activateSelectedTextOutput()
             updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
         }
-        if (shouldAttemptPortalReconnect(settingsClient.getTextOutputMethod())) {
+        if (shouldAttemptPortalReconnect(settingsClient.peekTextOutputMethod())) {
             portalsSessionManager.attemptReconnect(viewModelScope)
         }
         logger.info("Trigger action invoked.")
@@ -310,7 +310,7 @@ class MainViewModel(
     private fun refreshTypingDelaySetting() {
         portalTextOutput.updateOptions(
             portalTextOutput.getOptions().copy(
-                typingDelayMs = settingsClient.getTypingDelayMs().toLong()
+                typingDelayMs = settingsClient.peekTypingDelayMs().toLong()
             )
         )
     }
@@ -318,13 +318,13 @@ class MainViewModel(
     private fun refreshSanitizeSpecialCharsSetting() {
         portalTextOutput.updateOptions(
             portalTextOutput.getOptions().copy(
-                sanitizeSpecialChars = settingsClient.getSanitizeSpecialChars()
+                sanitizeSpecialChars = settingsClient.peekSanitizeSpecialChars()
             )
         )
     }
 
     private fun refreshTextProcessingSetting() {
-        val textProcessingEnabled = settingsClient.getTextProcessingEnabled()
+        val textProcessingEnabled = settingsClient.peekTextProcessingEnabled()
         director.updateOptions(
             director.getOptions().copy(enableTextProcessing = textProcessingEnabled)
         )
@@ -346,13 +346,13 @@ class MainViewModel(
 
     private fun refreshCustomContextSetting() {
         director.updateOptions(
-            director.getOptions().copy(customContext = settingsClient.getCustomContext())
+            director.getOptions().copy(customContext = settingsClient.peekCustomContext())
         )
     }
 
     private fun refreshCustomVocabularySetting() {
         director.updateOptions(
-            director.getOptions().copy(customVocabulary = settingsClient.getCustomVocabulary())
+            director.getOptions().copy(customVocabulary = settingsClient.peekCustomVocabulary())
         )
     }
 
@@ -407,7 +407,7 @@ class MainViewModel(
         }
         runCatching { activateSelectedTextOutput() }
             .onSuccess {
-                if (shouldForceClipboardFallback(settingsClient.getTextOutputMethod(), portalsClient.isPortalAvailable)) {
+                if (shouldForceClipboardFallback(settingsClient.peekTextOutputMethod(), portalsClient.isPortalAvailable)) {
                     switchToClipboardFallback(
                         reason = "Remote desktop portal is not supported on this system.",
                         policy = ClipboardFallbackPolicy.PERSIST_PREFERENCE,
@@ -415,12 +415,12 @@ class MainViewModel(
                     return@onSuccess
                 }
                 if (shouldAutoStartPortalSession(
-                        settingsClient.getTextOutputMethod(),
+                        settingsClient.peekTextOutputMethod(),
                         activeRemoteDesktopStatus,
                         portalsClient.isPortalAvailable,
                     )
                 ) {
-                    startPortalsSession(settingsClient.getPortalsRestoreToken().ifBlank { null })
+                    startPortalsSession(settingsClient.peekPortalsRestoreToken().ifBlank { null })
                     return@onSuccess
                 }
                 updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
@@ -436,7 +436,7 @@ class MainViewModel(
     private fun refreshLlmSetting(key: String) {
         val llmResult = when (key) {
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID -> runCatching {
-                if (settingsClient.getTextProcessingEnabled()) {
+                if (settingsClient.peekTextProcessingEnabled()) {
                     llmProviderManager.activateSelectedProvider()
                 } else {
                     llmProviderManager.refreshProviderConfiguration()
@@ -496,7 +496,7 @@ class MainViewModel(
         registry.setActiveById(
             AppPluginCategory.TEXT_OUTPUT,
             resolveTextOutputPluginId(
-                settingsClient.getTextOutputMethod(),
+                settingsClient.peekTextOutputMethod(),
                 forceClipboard = forceClipboard,
             ),
         )
@@ -506,7 +506,7 @@ class MainViewModel(
         reason: String,
         policy: ClipboardFallbackPolicy = ClipboardFallbackPolicy.PERSIST_PREFERENCE,
     ) {
-        if (settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_CLIPBOARD) return
+        if (settingsClient.peekTextOutputMethod() == TEXT_OUTPUT_METHOD_CLIPBOARD) return
 
         logger.warn("Falling back to Clipboard output: {}", reason)
         runCatching {
@@ -537,7 +537,7 @@ class MainViewModel(
 
     private fun updateRemoteDesktopStatusUi(status: RemoteDesktopStatus) {
         val uiStatus = resolveRemoteDesktopUiStatus(
-            settingsClient.getTextOutputMethod(),
+            settingsClient.peekTextOutputMethod(),
             (registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? TextOutputPlugin<*>)?.id,
             status,
         )
@@ -553,7 +553,7 @@ class MainViewModel(
     }
 
     fun onPrimaryLanguageSelected(forceUpdate: Boolean = false) {
-        val language = languageFromIso2(settingsClient.getDefaultLanguage()) ?: DEFAULT_LANGUAGE
+        val language = languageFromIso2(settingsClient.peekDefaultLanguage()) ?: DEFAULT_LANGUAGE
         if (!forceUpdate && language == state.currentLanguage()) return // Force update on initialization
         state.updateLanguage(language)
         asrProviderManager.updateLanguage(language)
@@ -561,7 +561,7 @@ class MainViewModel(
     }
 
     fun onSecondaryLanguageSelected() {
-        val language = languageFromIso2(settingsClient.getSecondaryLanguage()) ?: DEFAULT_SECONDARY_LANGUAGE
+        val language = languageFromIso2(settingsClient.peekSecondaryLanguage()) ?: DEFAULT_SECONDARY_LANGUAGE
         if (language == state.currentLanguage()) return
         state.updateLanguage(language)
         asrProviderManager.updateLanguage(language)
@@ -569,12 +569,12 @@ class MainViewModel(
     }
 
     fun onLanguageToggled() {
-        val primaryLanguage = languageFromIso2(settingsClient.getDefaultLanguage()) ?: DEFAULT_LANGUAGE
+        val primaryLanguage = languageFromIso2(settingsClient.peekDefaultLanguage()) ?: DEFAULT_LANGUAGE
         if (state.currentLanguage() == primaryLanguage) onSecondaryLanguageSelected() else onPrimaryLanguageSelected()
     }
 
     private fun onSecondaryLanguageUpdated() {
-        val primaryLanguage = languageFromIso2(settingsClient.getDefaultLanguage()) ?: DEFAULT_LANGUAGE
+        val primaryLanguage = languageFromIso2(settingsClient.peekDefaultLanguage()) ?: DEFAULT_LANGUAGE
         if (state.currentLanguage() == primaryLanguage) return
         onSecondaryLanguageSelected()
     }
@@ -608,7 +608,7 @@ class MainViewModel(
             return
         }
 
-        val suffix = if (settingsClient.getAppendSpace()) APPEND_SPACE_TEXT else ""
+        val suffix = if (settingsClient.peekAppendSpace()) APPEND_SPACE_TEXT else ""
         val finalText = event.finalResult.trim() + suffix
         val textOutput = registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? TextOutputPlugin<*>
         if (textOutput == null) {
@@ -632,7 +632,7 @@ class MainViewModel(
             }
 
             val preparedTextOutput = textOutput.prepareText(request)
-            val postHideDelayMs = settingsClient.getPostHideDelayMs()
+            val postHideDelayMs = settingsClient.peekPostHideDelayMs()
             if (preparedTextOutput.isFailure) {
                 val error = preparedTextOutput.exceptionOrNull()
                 if (textOutput is PortalTextOutput) {

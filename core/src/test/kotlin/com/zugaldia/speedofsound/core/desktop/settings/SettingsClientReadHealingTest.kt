@@ -95,6 +95,29 @@ class SettingsClientReadHealingTest {
     }
 
     @Test
+    fun `peek director and portal reads do not heal malformed startup settings`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_DEFAULT_LANGUAGE to "EN",
+                KEY_SECONDARY_LANGUAGE to "zz",
+                KEY_TEXT_PROCESSING_ENABLED to "maybe",
+                KEY_CUSTOM_CONTEXT to "x".repeat(MAX_CUSTOM_CONTEXT_CHARS + 11),
+                KEY_CUSTOM_VOCABULARY to " alpha ||| |||beta|||alpha ",
+                KEY_PORTALS_RESTORE_TOKEN to " token ",
+            )
+        )
+        val client = SettingsClient(store)
+
+        val directorOptions = client.peekDirectorOptions()
+        assertEquals(com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_TEXT_PROCESSING_ENABLED, directorOptions.enableTextProcessing)
+        assertEquals(com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_LANGUAGE, directorOptions.language)
+        assertEquals(listOf("alpha", "beta"), directorOptions.customVocabulary)
+        assertEquals(MAX_CUSTOM_CONTEXT_CHARS, directorOptions.customContext.length)
+        assertEquals("token", client.peekPortalsRestoreToken())
+        assertEquals(0, store.writeCount)
+    }
+
+    @Test
     fun `peek reads do not heal malformed shared settings`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

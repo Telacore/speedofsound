@@ -208,7 +208,7 @@ class MainWindow(
     }
 
     private fun goAway() {
-        if (settingsClient.getHideInsteadOfMinimize()) {
+        if (settingsClient.peekHideInsteadOfMinimize()) {
             // Hide the window so it restores on the current workspace (where the target app is),
             // rather than on the workspace the SOS window was originally in. Useful for multi-workspace setups.
             visible = false

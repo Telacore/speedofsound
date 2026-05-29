@@ -54,8 +54,8 @@ class AsrProviderManager(
      * Optionally activates the provider if setActive is true.
      */
     private fun applySelectedProviderConfig(setActive: Boolean) {
-        val selectedProviderId = settingsClient.getSelectedVoiceModelProviderId()
-        val providers = settingsClient.getVoiceModelProviders()
+        val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderId()
+        val providers = settingsClient.peekVoiceModelProviders()
         val selectedProvider = providers.find { it.id == selectedProviderId }
         val shouldActivate = setActive || selectedProvider == null
         val pluginId = if (selectedProvider != null) {
@@ -92,8 +92,8 @@ class AsrProviderManager(
      * Gets the name of the currently selected ASR provider.
      */
     fun getCurrentProviderName(): String {
-        val selectedProviderId = settingsClient.getSelectedVoiceModelProviderId()
-        val providers = settingsClient.getVoiceModelProviders()
+        val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderId()
+        val providers = settingsClient.peekVoiceModelProviders()
         val selectedProvider = providers.find { it.id == selectedProviderId }
         return selectedProvider?.name ?: ""
     }

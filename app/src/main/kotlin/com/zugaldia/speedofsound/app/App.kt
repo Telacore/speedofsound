@@ -71,13 +71,13 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
             ensureMainWindow()
             ensureStatusNotifier()
 
-            val isFirstLaunch = !settingsClient.getWelcomeScreenShown()
+            val isFirstLaunch = !settingsClient.peekWelcomeScreenShown()
             if (isFirstLaunch) {
                 WelcomeWindow(this) {
                     settingsClient.setWelcomeScreenShown(true)
                     presentMainWindow()
                 }.present()
-            } else if (!settingsClient.getStayHiddenOnActivation()) {
+            } else if (!settingsClient.peekStayHiddenOnActivation()) {
                 presentMainWindow()
             } else if (!isHoldingForHiddenStart) {
                 // Keep the app alive without a visible window. GApplication auto-quits
@@ -159,7 +159,7 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
 
     private fun handleTrigger() {
         ensureMainWindow()
-        if (!settingsClient.getBackgroundRecording()) presentMainWindow()
+        if (!settingsClient.peekBackgroundRecording()) presentMainWindow()
         mainWindow?.let { mainViewModel.onTriggerAction() }
     }
 

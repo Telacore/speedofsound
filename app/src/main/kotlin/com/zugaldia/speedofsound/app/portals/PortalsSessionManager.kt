@@ -56,7 +56,7 @@ class PortalsSessionManager(
                     logger.info("Global Shortcuts session created successfully.")
                     // If the user previously configured a shortcut, rebind it silently on startup.
                     // (System UI is only shown to the user the first time.)
-                    if (settingsClient.getShortcutConfigured()) {
+                    if (settingsClient.peekShortcutConfigured()) {
                         portalsClient.bindGlobalShortcuts()
                             .onSuccess { logger.info("Global shortcut rebound successfully.") }
                             .onFailure { logger.warn("Failed to rebind global shortcut: {}", it.message) }
@@ -68,7 +68,7 @@ class PortalsSessionManager(
 
             // We can still use portals even if registration above fails.
             // (Some portals might not work, e.g. Global Shortcuts, or have degraded experience though).
-            val token = settingsClient.getPortalsRestoreToken()
+            val token = settingsClient.peekPortalsRestoreToken()
             if (token.isNotBlank()) {
                 startSession(scope, token)
             } else {
@@ -142,7 +142,7 @@ class PortalsSessionManager(
         }
         if (_isSessionDisconnected.value && _remoteDesktopStatus.value != RemoteDesktopStatus.NotSupported) {
             logger.info("Portal session disconnected, attempting to reconnect.")
-            val restoreToken = settingsClient.getPortalsRestoreToken()
+            val restoreToken = settingsClient.peekPortalsRestoreToken()
             startSession(scope, restoreToken.ifBlank { null })
         }
     }

@@ -104,6 +104,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
         customContext = getCustomContext()
     )
 
+    fun peekDirectorOptions(): DirectorOptions = DirectorOptions(
+        enableTextProcessing = peekTextProcessingEnabled(),
+        language = languageFromIso2(peekDefaultLanguage()) ?: DEFAULT_LANGUAGE,
+        customVocabulary = peekCustomVocabulary(),
+        customContext = peekCustomContext()
+    )
+
     /*
      * Not exposed to the UI
      */
@@ -123,6 +130,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun getPortalsRestoreToken(): String =
         readPortalsRestoreToken()
+
+    fun peekPortalsRestoreToken(): String =
+        normalizePortalsRestoreToken(settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN))
 
     fun setPortalsRestoreToken(value: String): Boolean =
         setStringSettingIfChanged(

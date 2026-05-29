@@ -49,15 +49,15 @@ class LlmProviderManager(
      * Optionally activates the provider if setActive is true.
      */
     private fun applySelectedProviderConfig(setActive: Boolean) {
-        val selectedProviderId = settingsClient.getSelectedTextModelProviderId()
-        val providers = settingsClient.getTextModelProviders()
+        val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
+        val providers = settingsClient.peekTextModelProviders()
         val selectedProvider = providers.find { it.id == selectedProviderId }
         if (selectedProvider == null) {
             logger.warn(
                 "Selected LLM provider {} is missing; disabling text processing",
                 selectedProviderId.ifBlank { "<empty>" }
             )
-            if (settingsClient.getTextProcessingEnabled()) {
+            if (settingsClient.peekTextProcessingEnabled()) {
                 settingsClient.setTextProcessingEnabled(false)
             }
             registry.clearActive(AppPluginCategory.LLM)
@@ -90,9 +90,9 @@ class LlmProviderManager(
      * Returns an empty string if text processing is disabled.
      */
     fun getCurrentProviderName(): String {
-        if (!settingsClient.getTextProcessingEnabled()) { return "" }
-        val selectedProviderId = settingsClient.getSelectedTextModelProviderId()
-        val providers = settingsClient.getTextModelProviders()
+        if (!settingsClient.peekTextProcessingEnabled()) { return "" }
+        val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
+        val providers = settingsClient.peekTextModelProviders()
         val selectedProvider = providers.find { it.id == selectedProviderId }
         return selectedProvider?.name ?: ""
     }
