@@ -114,7 +114,44 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         val currentAlarms = viewModel.peekAlarms()
         currentAlarms
             .sortedWith(compareBy<AlarmSetting> { it.hour }.thenBy { it.minute }.thenBy { it.id })
-            .forEach { alarm -> addAlarmToUI(alarm) }
+            .forEach { alarm ->
+                val row = ActionRow().apply {
+                    title = formatAlarmName(alarm)
+                    subtitle = formatAlarmSummary(alarm)
+                }
+
+                val enabledSwitch = Switch().apply {
+                    active = alarm.enabled
+                    valign = Align.CENTER
+                }
+
+                val editButton = Button.fromIconName(ICON_EDIT).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                }
+
+                val deleteButton = Button.fromIconName(ICON_TRASH).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                }
+
+                row.addSuffix(enabledSwitch)
+                row.addSuffix(editButton)
+                row.addSuffix(deleteButton)
+                alarmsListBox.append(row)
+
+                enabledSwitch.onNotify("active") {
+                    upsertAlarm(alarm.copy(enabled = enabledSwitch.active))
+                }
+                editButton.onClicked { showAlarmEditor(alarm) }
+                deleteButton.onClicked {
+                    val updatedAlarms = viewModel.peekAlarms().filterNot { it.id == alarm.id }
+                    if (!viewModel.setAlarms(updatedAlarms)) {
+                        logger.warn("Failed to persist alarm deletion '${alarm.id}'")
+                    }
+                    refresh()
+                }
+            }
         alarmsListBox.visible = currentAlarms.isNotEmpty()
         placeholderBox.visible = currentAlarms.isEmpty()
         maxAlarmsRow.value = viewModel.peekMaxAlarms().toDouble()
@@ -141,45 +178,6 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         }
         refresh()
         return true
-    }
-
-    private fun addAlarmToUI(alarm: AlarmSetting) {
-        val row = ActionRow().apply {
-            title = formatAlarmName(alarm)
-            subtitle = formatAlarmSummary(alarm)
-        }
-
-        val enabledSwitch = Switch().apply {
-            active = alarm.enabled
-            valign = Align.CENTER
-        }
-
-        val editButton = Button.fromIconName(ICON_EDIT).apply {
-            addCssClass(STYLE_CLASS_FLAT)
-            valign = Align.CENTER
-        }
-
-        val deleteButton = Button.fromIconName(ICON_TRASH).apply {
-            addCssClass(STYLE_CLASS_FLAT)
-            valign = Align.CENTER
-        }
-
-        row.addSuffix(enabledSwitch)
-        row.addSuffix(editButton)
-        row.addSuffix(deleteButton)
-        alarmsListBox.append(row)
-
-        enabledSwitch.onNotify("active") {
-            upsertAlarm(alarm.copy(enabled = enabledSwitch.active))
-        }
-        editButton.onClicked { showAlarmEditor(alarm) }
-        deleteButton.onClicked {
-            val updatedAlarms = viewModel.peekAlarms().filterNot { it.id == alarm.id }
-            if (!viewModel.setAlarms(updatedAlarms)) {
-                logger.warn("Failed to persist alarm deletion '${alarm.id}'")
-            }
-            refresh()
-        }
     }
 
 }
