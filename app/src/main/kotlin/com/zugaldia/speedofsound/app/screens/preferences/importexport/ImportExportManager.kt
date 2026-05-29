@@ -81,6 +81,14 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         viewModel.setStayHiddenOnActivation(exportData.stayHiddenOnActivation)
         viewModel.setAppendSpace(exportData.appendSpace)
         viewModel.setMaxAlarms(exportData.maxAlarms)
+
+        val existingAlarms = viewModel.peekAlarms()
+        val existingAlarmIds = existingAlarms.map { it.id }.toSet()
+        val newAlarms = exportData.alarms.filter { it.id !in existingAlarmIds }
+        viewModel.setAlarms(existingAlarms + newAlarms)
+        val importedAlarmIds = viewModel.peekAlarms().map { it.id }.toSet()
+        val alarmsAdded = importedAlarmIds.count { it !in existingAlarmIds }
+
         exportData.alarmSchedulerState?.let { schedulerState ->
             viewModel.setAlarmSchedulerState(
                 schedulerState.copy(
@@ -89,13 +97,6 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
                 )
             )
         }
-
-        val existingAlarms = viewModel.peekAlarms()
-        val existingAlarmIds = existingAlarms.map { it.id }.toSet()
-        val newAlarms = exportData.alarms.filter { it.id !in existingAlarmIds }
-        viewModel.setAlarms(existingAlarms + newAlarms)
-        val importedAlarmIds = viewModel.peekAlarms().map { it.id }.toSet()
-        val alarmsAdded = importedAlarmIds.count { it !in existingAlarmIds }
 
         viewModel.setSanitizeSpecialChars(exportData.sanitizeSpecialChars)
         viewModel.setPostHideDelayMs(exportData.postHideDelayMs)
