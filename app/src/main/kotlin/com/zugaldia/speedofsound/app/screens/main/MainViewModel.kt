@@ -508,15 +508,10 @@ class MainViewModel(
             if (settingsClient.peekTextProcessingEnabled() &&
                 registry.getActive(AppPluginCategory.LLM) == null
             ) {
-                if (settingsClient.setTextProcessingEnabled(false)) {
-                    logger.warn(
-                        "Disabled text processing after LLM refresh left no active provider"
-                    )
-                } else {
-                    logger.warn(
-                        "Could not persist text processing disable after LLM refresh left no active provider"
-                    )
-                }
+                persistTextProcessingDisable(
+                    reason = "after LLM refresh left no active provider",
+                    successMessage = "Disabled text processing after LLM refresh left no active provider",
+                )
                 logger.error(
                     "Failed to apply LLM settings after {} change: no active provider available",
                     key,
@@ -559,16 +554,13 @@ class MainViewModel(
                     "Could not refresh LLM provider configuration: " +
                         "${error.message ?: "Unknown error"}"
                 )
-            }
+        }
         if (llmResult.isSuccess && textProcessingEnabled) {
             if (registry.getActive(AppPluginCategory.LLM) == null) {
-                if (settingsClient.setTextProcessingEnabled(false)) {
-                    logger.warn("Disabled text processing after credential refresh left no active provider")
-                } else {
-                    logger.warn(
-                        "Could not persist text processing disable after credential refresh left no active provider"
-                    )
-                }
+                persistTextProcessingDisable(
+                    reason = "after credential refresh left no active provider",
+                    successMessage = "Disabled text processing after credential refresh left no active provider",
+                )
                 logger.error("Failed to refresh LLM provider configuration: no active provider available")
                 portalsClient.showNotification(
                     "Could not refresh LLM provider configuration: no active provider available"
@@ -588,9 +580,10 @@ class MainViewModel(
             "Could not start text processing: ${error.message ?: "Unknown error"}"
         )
         if (settingsClient.peekTextProcessingEnabled()) {
-            if (!settingsClient.setTextProcessingEnabled(false)) {
-                logger.warn("Could not persist text processing disable during startup failure")
-            }
+            persistTextProcessingDisable(
+                reason = "during startup failure",
+                successMessage = "Disabled text processing during startup failure",
+            )
         }
         refreshTextProcessingSetting(false)
     }
@@ -670,6 +663,14 @@ class MainViewModel(
             logger.warn(
                 "Could not persist text output method preference; continuing with runtime fallback"
             )
+        }
+    }
+
+    private fun persistTextProcessingDisable(reason: String, successMessage: String) {
+        if (settingsClient.setTextProcessingEnabled(false)) {
+            logger.warn(successMessage)
+        } else {
+            logger.warn("Could not persist text processing disable {}", reason)
         }
     }
 
