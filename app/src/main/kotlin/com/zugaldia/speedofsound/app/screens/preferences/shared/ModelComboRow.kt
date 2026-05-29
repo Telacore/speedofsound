@@ -44,7 +44,27 @@ class ModelComboRow<T : SelectableModel>(
     /**
      * Refresh the list of available models on initialization and when the provider changes.
      */
-    fun refreshComboRows() = updateCurrentModels(getModels())
+    fun refreshComboRows() {
+        currentModels = getModels()
+        val modelList = currentModels.values.toList()
+        val modelNames = modelList.map { it.name }.toMutableList()
+        modelNames.add(CUSTOM_MODEL_LABEL) // Add the custom option at the end
+        comboRow.model = StringList(modelNames.toTypedArray())
+
+        val selectedModelId = getCurrentModelId()
+        val predefinedIndex = modelList.indexOfFirst { it.id == selectedModelId }
+        if (predefinedIndex >= 0) {
+            comboRow.selected = predefinedIndex
+            customEntryRow.visible = false
+        } else if (modelList.isNotEmpty()) {
+            comboRow.selected = modelList.size // Index of "Custom..." option
+            customEntryRow.text = selectedModelId
+            customEntryRow.visible = true
+        } else {
+            comboRow.selected = 0 // Default to the first model
+            customEntryRow.visible = false
+        }
+    }
 
     /**
      * Refresh the list of available models with a custom list (e.g., fetched from API).
@@ -52,11 +72,7 @@ class ModelComboRow<T : SelectableModel>(
      */
     fun refreshComboRows(models: List<T>) {
         if (models.isEmpty()) { return }
-        updateCurrentModels(models.associateBy { it.id })
-    }
-
-    private fun updateCurrentModels(models: Map<String, T>) {
-        currentModels = models
+        currentModels = models.associateBy { it.id }
         val modelList = currentModels.values.toList()
         val modelNames = modelList.map { it.name }.toMutableList()
         modelNames.add(CUSTOM_MODEL_LABEL) // Add the custom option at the end
