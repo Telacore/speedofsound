@@ -12,6 +12,16 @@ import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_CREDENTIALS
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_TEXT_MODEL_PROVIDERS
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_VOCABULARY_WORDS
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_VOICE_MODEL_PROVIDERS
+import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
+import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
+import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_PROVIDER_CONFIG_NAME_LENGTH
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_CREDENTIAL_NAME_LENGTH
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_CREDENTIAL_VALUE_LENGTH
 import com.zugaldia.speedofsound.core.getDataDir
 import com.zugaldia.stargate.sdk.DesktopPortal
 import kotlinx.serialization.json.Json
@@ -204,6 +214,137 @@ class ImportExportManagerTest {
 
         assertTrue(result.filePath.isNotBlank())
         assertEquals(DEFAULT_ALARMS, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
+    }
+
+    @Test
+    fun `import counts only normalized additions`() {
+        val settingsClient = SettingsClient(
+            MapSettingsStore(
+                initialValues = mutableMapOf(
+                    com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS to Json.encodeToString(
+                        listOf(
+                            CredentialSetting(id = "existing-cred", type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY, name = "Existing", value = "secret")
+                        )
+                    ),
+                    com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                        listOf(
+                            VoiceModelProviderSetting(
+                                id = "existing-voice",
+                                name = "Existing Voice",
+                                provider = com.zugaldia.speedofsound.core.plugins.asr.AsrProvider.SHERPA_WHISPER,
+                                modelId = "model-existing",
+                            )
+                        )
+                    ),
+                    com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                        listOf(
+                            TextModelProviderSetting(
+                                id = "existing-text",
+                                name = "Existing Text",
+                                provider = com.zugaldia.speedofsound.core.plugins.llm.LlmProvider.OPENAI,
+                                modelId = "model-existing",
+                            )
+                        )
+                    ),
+                    com.zugaldia.speedofsound.core.desktop.settings.KEY_CUSTOM_VOCABULARY to "existing-word",
+                )
+            )
+        )
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(
+            Json.encodeToString(
+                SettingsExport(
+                    version = 6,
+                    credentials = buildList {
+                        add(
+                            CredentialSetting(
+                                id = "existing-cred",
+                                type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY,
+                                name = "duplicate",
+                                value = "ignored",
+                            )
+                        )
+                        repeat(MAX_CREDENTIALS + 7) { index ->
+                            add(
+                                CredentialSetting(
+                                    id = "import-cred-$index",
+                                    type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY,
+                                    name = " ${"n".repeat(MAX_CREDENTIAL_NAME_LENGTH + 4)} ",
+                                    value = " ${"v".repeat(MAX_CREDENTIAL_VALUE_LENGTH + 4)} ",
+                                )
+                            )
+                        }
+                    },
+                    voiceModelProviders = buildList {
+                        add(
+                            VoiceModelProviderSetting(
+                                id = "existing-voice",
+                                name = "duplicate",
+                                provider = com.zugaldia.speedofsound.core.plugins.asr.AsrProvider.SHERPA_WHISPER,
+                                modelId = "ignored",
+                            )
+                        )
+                        repeat(MAX_VOICE_MODEL_PROVIDERS + 7) { index ->
+                            add(
+                                VoiceModelProviderSetting(
+                                    id = "import-voice-$index",
+                                    name = " ${"w".repeat(MAX_PROVIDER_CONFIG_NAME_LENGTH + 4)} ",
+                                    provider = com.zugaldia.speedofsound.core.plugins.asr.AsrProvider.SHERPA_WHISPER,
+                                    modelId = "model-$index",
+                                )
+                            )
+                        }
+                    },
+                    textModelProviders = buildList {
+                        add(
+                            TextModelProviderSetting(
+                                id = "existing-text",
+                                name = "duplicate",
+                                provider = com.zugaldia.speedofsound.core.plugins.llm.LlmProvider.OPENAI,
+                                modelId = "ignored",
+                            )
+                        )
+                        repeat(MAX_TEXT_MODEL_PROVIDERS + 7) { index ->
+                            add(
+                                TextModelProviderSetting(
+                                    id = "import-text-$index",
+                                    name = " ${"t".repeat(MAX_PROVIDER_CONFIG_NAME_LENGTH + 4)} ",
+                                    provider = com.zugaldia.speedofsound.core.plugins.llm.LlmProvider.OPENAI,
+                                    modelId = "model-$index",
+                                )
+                            )
+                        }
+                    },
+                    customVocabulary = buildList {
+                        add(" existing-word ")
+                        repeat(MAX_VOCABULARY_WORDS + 7) { index ->
+                            add(" word-$index ")
+                        }
+                    },
+                )
+            )
+        )
+
+        val result = manager.importSettings().getOrThrow()
+
+        assertEquals(MAX_CREDENTIALS - 1, result.credentialsAdded)
+        assertEquals(MAX_VOICE_MODEL_PROVIDERS - 1, result.voiceProvidersAdded)
+        assertEquals(MAX_TEXT_MODEL_PROVIDERS - 1, result.textProvidersAdded)
+        assertEquals(MAX_VOCABULARY_WORDS - 1, result.vocabularyWordsAdded)
+        assertEquals(MAX_CREDENTIALS, settingsClient.getCredentials().size)
+        assertEquals(
+            MAX_VOICE_MODEL_PROVIDERS,
+            settingsClient.getVoiceModelProviders().filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys }.size
+        )
+        assertEquals(MAX_TEXT_MODEL_PROVIDERS, settingsClient.getTextModelProviders().size)
+        assertEquals(MAX_VOCABULARY_WORDS, settingsClient.getCustomVocabulary().size)
     }
 
     @Test

@@ -94,6 +94,8 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         val existingAlarmIds = existingAlarms.map { it.id }.toSet()
         val newAlarms = exportData.alarms.filter { it.id !in existingAlarmIds }
         viewModel.setAlarms(existingAlarms + newAlarms)
+        val importedAlarmIds = viewModel.peekAlarms().map { it.id }.toSet()
+        val alarmsAdded = importedAlarmIds.count { it !in existingAlarmIds }
 
         viewModel.setSanitizeSpecialChars(exportData.sanitizeSpecialChars)
         viewModel.setPostHideDelayMs(exportData.postHideDelayMs)
@@ -106,13 +108,24 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         if (newCredentials.isNotEmpty()) {
             viewModel.setCredentials(existingCredentials + newCredentials)
         }
+        val importedCredentialIds = viewModel.getCredentials().map { it.id }.toSet()
+        val credentialsAdded = importedCredentialIds.count { it !in existingCredentialIds }
 
         val existingVoiceProviders = viewModel.getVoiceModelProviders()
         val existingVoiceIds = existingVoiceProviders.map { it.id }.toSet()
+        val existingCustomVoiceIds = existingVoiceProviders
+            .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+            .map { it.id }
+            .toSet()
         val newVoiceProviders = exportData.voiceModelProviders.filter { it.id !in existingVoiceIds }
         if (newVoiceProviders.isNotEmpty()) {
             viewModel.setVoiceModelProviders(existingVoiceProviders + newVoiceProviders)
         }
+        val importedVoiceIds = viewModel.getVoiceModelProviders()
+            .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+            .map { it.id }
+            .toSet()
+        val voiceProvidersAdded = importedVoiceIds.count { it !in existingCustomVoiceIds }
 
         val existingTextProviders = viewModel.getTextModelProviders()
         val existingTextIds = existingTextProviders.map { it.id }.toSet()
@@ -120,6 +133,8 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         if (newTextProviders.isNotEmpty()) {
             viewModel.setTextModelProviders(existingTextProviders + newTextProviders)
         }
+        val importedTextIds = viewModel.getTextModelProviders().map { it.id }.toSet()
+        val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
 
         val existingVocabulary = viewModel.getCustomVocabulary()
         val existingVocabSet = existingVocabulary.toSet()
@@ -127,15 +142,17 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         if (newVocabWords.isNotEmpty()) {
             viewModel.setCustomVocabulary(existingVocabulary + newVocabWords)
         }
+        val importedVocabulary = viewModel.getCustomVocabulary()
+        val vocabularyWordsAdded = importedVocabulary.count { it !in existingVocabSet }
 
         logger.info("Imported settings from: ${inputFile.absolutePath}")
         ImportResult(
             filePath = inputFile.absolutePath,
-            alarmsAdded = newAlarms.size,
-            credentialsAdded = newCredentials.size,
-            voiceProvidersAdded = newVoiceProviders.size,
-            textProvidersAdded = newTextProviders.size,
-            vocabularyWordsAdded = newVocabWords.size,
+            alarmsAdded = alarmsAdded,
+            credentialsAdded = credentialsAdded,
+            voiceProvidersAdded = voiceProvidersAdded,
+            textProvidersAdded = textProvidersAdded,
+            vocabularyWordsAdded = vocabularyWordsAdded,
             alarmSchedulerStateImported = exportData.alarmSchedulerState != null
         )
     }
