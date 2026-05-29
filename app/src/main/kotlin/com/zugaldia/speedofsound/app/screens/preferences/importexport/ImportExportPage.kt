@@ -83,25 +83,35 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
         add(statusGroup)
 
         exportButton.onClicked {
-            setButtonsEnabled(false)
+            exportButton.sensitive = false
+            importButton.sensitive = false
             pageScope.launch {
                 val result = manager.export()
                 GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                    setButtonsEnabled(true)
+                    exportButton.sensitive = true
+                    importButton.sensitive = true
                     result.fold(
-                        onSuccess = { filePath -> showStatus("Exported to: $filePath") },
-                        onFailure = { error -> showStatus("Export failed: ${error.message}") }
+                        onSuccess = { filePath ->
+                            statusLabel.label = "Exported to: $filePath"
+                            statusLabel.visible = true
+                        },
+                        onFailure = { error ->
+                            statusLabel.label = "Export failed: ${error.message}"
+                            statusLabel.visible = true
+                        }
                     )
                     false
                 }
             }
         }
         importButton.onClicked {
-            setButtonsEnabled(false)
+            exportButton.sensitive = false
+            importButton.sensitive = false
             pageScope.launch {
                 val result = manager.importSettings()
                 GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                    setButtonsEnabled(true)
+                    exportButton.sensitive = true
+                    importButton.sensitive = true
                     result.fold(
                         onSuccess = { importResult ->
                             val parts = mutableListOf<String>()
@@ -116,10 +126,14 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
                             } else {
                                 "Imported: ${parts.joinToString(", ")}."
                             }
-                            showStatus(summary)
+                            statusLabel.label = summary
+                            statusLabel.visible = true
                             onImportSuccess()
                         },
-                        onFailure = { error -> showStatus("Import failed: ${error.message}") }
+                        onFailure = { error ->
+                            statusLabel.label = "Import failed: ${error.message}"
+                            statusLabel.visible = true
+                        }
                     )
                     false
                 }
@@ -129,15 +143,5 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
 
     fun shutdown() {
         pageScope.cancel()
-    }
-
-    private fun setButtonsEnabled(enabled: Boolean) {
-        exportButton.sensitive = enabled
-        importButton.sensitive = enabled
-    }
-
-    private fun showStatus(message: String) {
-        statusLabel.label = message
-        statusLabel.visible = true
     }
 }
