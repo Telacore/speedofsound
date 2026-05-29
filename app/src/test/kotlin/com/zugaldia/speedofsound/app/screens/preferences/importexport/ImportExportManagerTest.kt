@@ -110,6 +110,54 @@ class ImportExportManagerTest {
     }
 
     @Test
+    fun `import filters alarm scheduler history to imported alarms`() {
+        val settingsClient = SettingsClient(MapSettingsStore())
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(
+            Json.encodeToString(
+                SettingsExport(
+                    version = 6,
+                    alarms = listOf(
+                        AlarmSetting(
+                            id = "alarm-1",
+                            name = "Morning",
+                            hour = 6,
+                            minute = 0,
+                            enabled = false,
+                        ),
+                    ),
+                    alarmSchedulerState = AlarmSchedulerState(
+                        lastCheckAt = "2026-05-29T09:15:00",
+                        lastTriggeredDates = mapOf(
+                            "alarm-1" to "2026-05-29",
+                            "alarm-2" to "2026-05-28",
+                        ),
+                    ),
+                )
+            )
+        )
+
+        val result = manager.importSettings().getOrThrow()
+
+        assertTrue(result.filePath.isNotBlank())
+        assertTrue(result.alarmSchedulerStateImported)
+        assertEquals(
+            AlarmSchedulerState(
+                lastCheckAt = "2026-05-29T09:15:00",
+                lastTriggeredDates = mapOf("alarm-1" to "2026-05-29"),
+            ),
+            settingsClient.peekAlarmSchedulerState()
+        )
+    }
+
+    @Test
     fun `import preserves alarm scheduler state after alarm reloads`() {
         val settingsClient = SettingsClient(MapSettingsStore())
         val schedulerService = AlarmSchedulerService(

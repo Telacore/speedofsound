@@ -90,12 +90,10 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         val alarmsAdded = importedAlarmIds.count { it !in existingAlarmIds }
 
         exportData.alarmSchedulerState?.let { schedulerState ->
-            viewModel.setAlarmSchedulerState(
-                schedulerState.copy(
-                    lastCheckAt = schedulerState.lastCheckAt,
-                    lastTriggeredDates = schedulerState.lastTriggeredDates,
-                )
+            val filteredSchedulerState = schedulerState.copy(
+                lastTriggeredDates = schedulerState.lastTriggeredDates.filterKeys { it in importedAlarmIds }
             )
+            viewModel.setAlarmSchedulerState(filteredSchedulerState)
         }
 
         viewModel.setSanitizeSpecialChars(exportData.sanitizeSpecialChars)
