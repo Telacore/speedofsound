@@ -148,6 +148,7 @@ class PortalsSessionManagerTest {
 
         assertEquals(RemoteDesktopStatus.NotSupported, manager.remoteDesktopStatus.value)
         assertEquals("smoke-restore-token", settingsClient.loadPortalsRestoreToken())
+        assertEquals("smoke-restore-token", getPrivateField<String?>(manager, "runtimeRestoreToken"))
     }
 
     @Test
@@ -202,6 +203,13 @@ private fun <T> setPrivateStateFlowValue(instance: Any, fieldName: String, value
     @Suppress("UNCHECKED_CAST")
     val stateFlow = field.get(instance) as MutableStateFlow<T>
     stateFlow.value = value
+}
+
+private fun <T> getPrivateField(instance: Any, fieldName: String): T {
+    val field = instance.javaClass.getDeclaredField(fieldName)
+    field.isAccessible = true
+    @Suppress("UNCHECKED_CAST")
+    return field.get(instance) as T
 }
 
 private class FakeSettingsStore : SettingsStore {

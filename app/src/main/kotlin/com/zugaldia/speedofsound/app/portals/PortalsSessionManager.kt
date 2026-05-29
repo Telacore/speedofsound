@@ -128,8 +128,9 @@ class PortalsSessionManager(
                     }
                     _isSessionDisconnected.value = true
                     if (isMissingRemoteDesktopInterface) {
-                        runtimeRestoreToken = null
-                        persistRestoreToken("", reason = "clear restore token after unsupported portal")
+                        if (persistRestoreToken("", reason = "clear restore token after unsupported portal")) {
+                            runtimeRestoreToken = null
+                        }
                     }
                 }
             } finally {
@@ -175,9 +176,12 @@ class PortalsSessionManager(
         startSessionJob = null
     }
 
-    private fun persistRestoreToken(token: String, reason: String) {
-        if (!settingsClient.setPortalsRestoreToken(token)) {
+    private fun persistRestoreToken(token: String, reason: String): Boolean {
+        return if (settingsClient.setPortalsRestoreToken(token)) {
+            true
+        } else {
             logger.warn("Failed to {}: {}", reason, token.ifBlank { "<blank>" })
+            false
         }
     }
 }
