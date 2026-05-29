@@ -82,6 +82,13 @@ class AppPluginRegistryTest {
         assertEquals(0, healthy.disableCount)
         assertEquals(1, healthy.shutdownCount)
         assertNull(registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+
+        registry.shutdownAll()
+
+        assertEquals(1, broken.disableCount)
+        assertEquals(1, broken.shutdownCount)
+        assertEquals(0, healthy.disableCount)
+        assertEquals(1, healthy.shutdownCount)
     }
 
     @Test
@@ -102,6 +109,22 @@ class AppPluginRegistryTest {
         assertEquals(1, sharedRecorder.shutdownCount)
         assertNull(registry.getActive(AppPluginCategory.TEXT_OUTPUT))
         assertNull(registry.getActive(AppPluginCategory.RECORDER))
+    }
+
+    @Test
+    fun `register and setActiveById fail after shutdownAll`() {
+        val registry = AppPluginRegistry()
+        val plugin = RecordingPlugin(id = "plugin")
+
+        registry.register(AppPluginCategory.TEXT_OUTPUT, plugin)
+        registry.shutdownAll()
+
+        assertFailsWith<IllegalStateException> {
+            registry.register(AppPluginCategory.TEXT_OUTPUT, RecordingPlugin(id = "late"))
+        }
+        assertFailsWith<IllegalStateException> {
+            registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, plugin.id)
+        }
     }
 
     private class RecordingPlugin(

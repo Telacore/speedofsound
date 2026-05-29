@@ -10,11 +10,14 @@ class AppPluginRegistry {
 
     private val plugins = mutableMapOf<AppPluginCategory, MutableList<AppPlugin<*>>>()
     private val activePlugins = mutableMapOf<AppPluginCategory, String>()
+    private var isShutdown = false
 
     /**
      * Registers a plugin for a given category and initializes it.
      */
+    @Synchronized
     fun register(category: AppPluginCategory, plugin: AppPlugin<*>) {
+        check(!isShutdown) { "Registry has been shut down" }
         log.info("Registering plugin ${plugin.id} for category $category")
         plugin.initialize()
         plugins.getOrPut(category) { mutableListOf() }.add(plugin)
@@ -26,6 +29,7 @@ class AppPluginRegistry {
      */
     @Synchronized
     fun setActiveById(category: AppPluginCategory, pluginId: String) {
+        check(!isShutdown) { "Registry has been shut down" }
         if (activePlugins[category] == pluginId) {
             log.info("Plugin $pluginId is already active for category $category, skipping")
             return
@@ -63,7 +67,9 @@ class AppPluginRegistry {
      * Gets a specific plugin by its ID within a category.
      * Returns null if not found.
      */
+    @Synchronized
     fun getPluginById(category: AppPluginCategory, pluginId: String): AppPlugin<*>? {
+        if (isShutdown) return null
         return plugins[category]?.find { it.id == pluginId }
     }
 
@@ -73,6 +79,7 @@ class AppPluginRegistry {
      */
     @Synchronized
     fun getActive(category: AppPluginCategory): AppPlugin<*>? {
+        if (isShutdown) return null
         val activeId = activePlugins[category] ?: return null
         return getPluginById(category, activeId)
     }
@@ -83,6 +90,11 @@ class AppPluginRegistry {
      */
     @Synchronized
     fun shutdownAll() {
+        if (isShutdown) {
+            log.info("Shutting down all plugins skipped: registry already shut down")
+            return
+        }
+        isShutdown = true
         log.info("Shutting down all plugins")
         val activePluginsSnapshot = activePlugins.toMap()
         plugins.forEach { (category, categoryPlugins) ->
@@ -111,5 +123,6 @@ class AppPluginRegistry {
             }
         }
         activePlugins.clear()
+        plugins.clear()
     }
 }
