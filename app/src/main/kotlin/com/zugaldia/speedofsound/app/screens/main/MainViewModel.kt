@@ -147,7 +147,17 @@ class MainViewModel(
                 asrProviderManager.activateSelectedProvider()
                 runCatching { llmProviderManager.refreshProviderConfiguration() }
                     .onSuccess {
-                        refreshTextProcessingSetting()
+                        if (settingsClient.peekTextProcessingEnabled() &&
+                            registry.getActive(AppPluginCategory.LLM) == null
+                        ) {
+                            handleStartupLlmFailure(
+                                IllegalStateException(
+                                    "Failed to refresh LLM provider configuration during startup"
+                                )
+                            )
+                        } else {
+                            refreshTextProcessingSetting()
+                        }
                     }
                     .onFailure { error ->
                         handleStartupLlmFailure(error)
@@ -475,7 +485,22 @@ class MainViewModel(
             }
         }
 
-        llmResult.onSuccess { refreshTextProcessingSetting() }
+        llmResult.onSuccess {
+            if (settingsClient.peekTextProcessingEnabled() &&
+                registry.getActive(AppPluginCategory.LLM) == null
+            ) {
+                logger.error(
+                    "Failed to apply LLM settings after {} change: no active provider available",
+                    key,
+                )
+                portalsClient.showNotification(
+                    "Could not apply LLM setting '$key': no active provider available"
+                )
+                refreshTextProcessingSetting(false)
+            } else {
+                refreshTextProcessingSetting()
+            }
+        }
             .onFailure { error ->
                 logger.error("Failed to apply LLM settings after {} change: {}", key, error.message)
                 portalsClient.showNotification(
@@ -508,7 +533,15 @@ class MainViewModel(
                 )
             }
         if (llmResult.isSuccess && textProcessingEnabled) {
-            refreshTextProcessingSetting()
+            if (registry.getActive(AppPluginCategory.LLM) == null) {
+                logger.error("Failed to refresh LLM provider configuration: no active provider available")
+                portalsClient.showNotification(
+                    "Could not refresh LLM provider configuration: no active provider available"
+                )
+                refreshTextProcessingSetting(false)
+            } else {
+                refreshTextProcessingSetting()
+            }
         } else {
             updateModelLabels()
         }
