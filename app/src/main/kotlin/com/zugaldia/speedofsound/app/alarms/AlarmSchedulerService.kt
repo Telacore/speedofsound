@@ -113,11 +113,12 @@ class AlarmSchedulerService(
             }
         }
 
-        dueAlarmEvents.forEach { (alarm, dueOccurrence) ->
-            if (!settingsClient.setAlarmLastTriggeredDate(alarm.id, dueOccurrence.toLocalDate())) {
-                logger.warn("Failed to persist last-triggered date for alarm {}", alarm.id)
-            }
+        dueAlarmEvents.forEach { (alarm, _) ->
             fireAlarm(alarm)
+        }
+
+        if (dueAlarmEvents.isNotEmpty() && !settingsClient.setAlarmLastTriggeredDates(lastTriggeredDates.toMap())) {
+            logger.warn("Failed to persist alarm trigger history after firing {} alarm(s).", dueAlarmEvents.size)
         }
 
         synchronized(stateLock) {

@@ -157,6 +157,27 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `alarm trigger dates batch round trip through the store`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        client.setAlarmLastTriggeredDates(
+            mapOf(
+                "alarm-1" to LocalDate.of(2026, 5, 29),
+                "alarm-2" to LocalDate.of(2026, 5, 30),
+            )
+        )
+
+        assertEquals(
+            mapOf(
+                "alarm-1" to LocalDate.of(2026, 5, 29),
+                "alarm-2" to LocalDate.of(2026, 5, 30),
+            ),
+            client.getAlarmLastTriggeredDates()
+        )
+    }
+
+    @Test
     fun `alarm trigger dates fall back to empty on malformed json`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
