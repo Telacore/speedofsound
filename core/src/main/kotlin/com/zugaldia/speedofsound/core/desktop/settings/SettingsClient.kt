@@ -226,6 +226,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun getTextOutputMethod(): String =
         readTextOutputMethod()
 
+    fun peekTextOutputMethod(): String =
+        peekTextOutputMethodValue()
+
     fun setTextOutputMethod(value: String): Boolean =
         setStringSettingIfChanged(KEY_TEXT_OUTPUT_METHOD, getTextOutputMethod(), value, KEY_TEXT_OUTPUT_METHOD)
 
@@ -665,6 +668,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
             availableProviderIds = getVoiceModelProviders().map { it.id }.toSet(),
         )
 
+    fun peekSelectedVoiceModelProviderId(): String =
+        peekSelectedProviderId(
+            key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            availableProviderIds = peekVoiceModelProviders().map { it.id }.toSet(),
+        )
+
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
@@ -692,6 +702,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
+    private fun peekSelectedProviderId(
+        key: String,
+        defaultValue: String,
+        availableProviderIds: Set<String>,
+    ): String {
+        val raw = settingsStore.getString(key, defaultValue)
+        return normalizeSelectedProviderId(raw, defaultValue, availableProviderIds)
+    }
+
     private fun normalizeSelectedProviderId(
         value: String,
         defaultValue: String,
@@ -712,6 +731,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
             availableProviderIds = getTextModelProviders().map { it.id }.toSet(),
         )
 
+    fun peekSelectedTextModelProviderId(): String =
+        peekSelectedProviderId(
+            key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            availableProviderIds = peekTextModelProviders().map { it.id }.toSet(),
+        )
+
     fun setSelectedTextModelProviderId(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
@@ -730,6 +756,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun getTextProcessingEnabled(): Boolean =
         readBooleanSetting(KEY_TEXT_PROCESSING_ENABLED, DEFAULT_TEXT_PROCESSING_ENABLED)
+
+    fun peekTextProcessingEnabled(): Boolean =
+        peekBooleanSetting(KEY_TEXT_PROCESSING_ENABLED, DEFAULT_TEXT_PROCESSING_ENABLED)
 
     fun setTextProcessingEnabled(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -1008,6 +1037,16 @@ class SettingsClient(val settingsStore: SettingsStore) {
             normalized
         } else {
             settingsStore.setString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
+            DEFAULT_TEXT_OUTPUT_METHOD
+        }
+    }
+
+    private fun peekTextOutputMethodValue(): String {
+        val raw = settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
+        val normalized = raw.trim().lowercase()
+        return if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+            normalized
+        } else {
             DEFAULT_TEXT_OUTPUT_METHOD
         }
     }

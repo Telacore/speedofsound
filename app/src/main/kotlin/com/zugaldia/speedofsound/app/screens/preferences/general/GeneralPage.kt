@@ -73,14 +73,14 @@ class GeneralPage(private val viewModel: PreferencesViewModel) : PreferencesPage
         primaryComboRow = LanguageComboRow(
             rowTitle = "Primary Language",
             rowSubtitle = "Used by default for speech recognition",
-            getLanguage = { viewModel.getDefaultLanguage() },
+            getLanguage = { viewModel.peekDefaultLanguage() },
             setLanguage = { viewModel.setDefaultLanguage(it) }
         )
 
         secondaryComboRow = LanguageComboRow(
             rowTitle = "Secondary Language",
             rowSubtitle = "Optional language to switch to (right Shift key)",
-            getLanguage = { viewModel.getSecondaryLanguage() },
+            getLanguage = { viewModel.peekSecondaryLanguage() },
             setLanguage = { viewModel.setSecondaryLanguage(it) }
         )
 
@@ -93,14 +93,14 @@ class GeneralPage(private val viewModel: PreferencesViewModel) : PreferencesPage
         }
 
         textOutputMethodRow = TextOutputMethodComboRow(
-            getMethod = { viewModel.getTextOutputMethod() },
+            getMethod = { viewModel.peekTextOutputMethod() },
             setMethod = { viewModel.setTextOutputMethod(it) },
         )
 
         appendSpaceRow = SwitchRow().apply {
             title = "Append space after transcription"
             subtitle = "Useful when dictating consecutive sentences independently."
-            active = viewModel.getAppendSpace()
+            active = viewModel.peekAppendSpace()
         }
 
         val outputGroup = PreferencesGroup().apply {
@@ -112,19 +112,19 @@ class GeneralPage(private val viewModel: PreferencesViewModel) : PreferencesPage
         stayHiddenOnActivationRow = SwitchRow().apply {
             title = "Stay hidden on activation"
             subtitle = "Launch without showing the main window. Use the shortcut to start voice typing."
-            active = viewModel.getStayHiddenOnActivation()
+            active = viewModel.peekStayHiddenOnActivation()
         }
 
         backgroundRecordingRow = SwitchRow().apply {
             title = "Record in background"
             subtitle = "Keep the main window hidden while listening."
-            active = viewModel.getBackgroundRecording()
+            active = viewModel.peekBackgroundRecording()
         }
 
         hideInsteadOfMinimizeRow = SwitchRow().apply {
             title = "Hide instead of minimize"
             subtitle = "Useful on multi-workspace setups where the window should restore on the current workspace."
-            active = viewModel.getHideInsteadOfMinimize()
+            active = viewModel.peekHideInsteadOfMinimize()
         }
 
         val behaviorGroup = PreferencesGroup().apply {
@@ -159,10 +159,10 @@ class GeneralPage(private val viewModel: PreferencesViewModel) : PreferencesPage
         primaryComboRow.refresh()
         secondaryComboRow.refresh()
         textOutputMethodRow.refresh()
-        appendSpaceRow.active = viewModel.getAppendSpace()
-        stayHiddenOnActivationRow.active = viewModel.getStayHiddenOnActivation()
-        backgroundRecordingRow.active = viewModel.getBackgroundRecording()
-        hideInsteadOfMinimizeRow.active = viewModel.getHideInsteadOfMinimize()
+        appendSpaceRow.active = viewModel.peekAppendSpace()
+        stayHiddenOnActivationRow.active = viewModel.peekStayHiddenOnActivation()
+        backgroundRecordingRow.active = viewModel.peekBackgroundRecording()
+        hideInsteadOfMinimizeRow.active = viewModel.peekHideInsteadOfMinimize()
     }
 
     /*
@@ -202,7 +202,7 @@ class GeneralPage(private val viewModel: PreferencesViewModel) : PreferencesPage
      * Step 2: Decide whether to (1) show settings, (2) show setup, or (3) automatically bind
      */
     private suspend fun handleShortcutsListed(shortcuts: List<BoundShortcut>) {
-        val shortcutConfigured = viewModel.getShortcutConfigured()
+        val shortcutConfigured = viewModel.peekShortcutConfigured()
         logger.info("[Shortcut] Decision: shortcuts.size={}, shortcutConfigured={}", shortcuts.size, shortcutConfigured)
         if (shortcuts.isNotEmpty()) {
             logger.info("[Shortcut] Existing shortcuts found, showing them directly")

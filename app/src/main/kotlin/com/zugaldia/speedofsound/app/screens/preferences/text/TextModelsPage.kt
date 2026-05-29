@@ -51,11 +51,11 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         enableSwitch = SwitchRow().apply {
             title = "Enable text processing"
             subtitle = "Process transcriptions with an LLM for improved results"
-            active = viewModel.getTextProcessingEnabled()
+            active = viewModel.peekTextProcessingEnabled()
         }
 
         activeProviderComboRow = ActiveProviderComboRow(
-            getSelectedProviderId = { viewModel.getSelectedTextModelProviderId() },
+            getSelectedProviderId = { viewModel.peekSelectedTextModelProviderId() },
             setSelectedProviderId = { viewModel.setSelectedTextModelProviderId(it) },
             rowSubtitle = "Select which provider to use for text processing"
         )
@@ -116,7 +116,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     }
 
     private fun syncEnableSwitch() {
-        val enabled = viewModel.getTextProcessingEnabled()
+        val enabled = viewModel.peekTextProcessingEnabled()
         if (enableSwitch.active == enabled) return
         suppressEnableSwitchNotify = true
         try {
@@ -127,7 +127,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     }
 
     private fun loadProviders() {
-        val providers = viewModel.getTextModelProviders()
+        val providers = viewModel.peekTextModelProviders()
         providers.sortedBy { it.name.lowercase() }.forEach { provider -> addProviderToUI(provider) }
         activeProviderComboRow.updateProviders(providers)
         updatePlaceholderVisibility()
@@ -214,7 +214,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     }
 
     private fun onProviderDeleted(providerId: String) {
-        val currentProviders = viewModel.getTextModelProviders()
+        val currentProviders = viewModel.peekTextModelProviders()
         val updatedProviders = currentProviders.filter { it.id != providerId }
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
         viewModel.setTextModelProviders(updatedProviders)
@@ -224,7 +224,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     }
 
     private fun updatePlaceholderVisibility() {
-        val providers = viewModel.getTextModelProviders()
+        val providers = viewModel.peekTextModelProviders()
         val hasProviders = providers.isNotEmpty()
         val atLimit = providers.size >= MAX_TEXT_MODEL_PROVIDERS
         providersListBox.visible = hasProviders
@@ -233,8 +233,8 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     }
 
     private fun updateActiveProviderSensitivity() {
-        val textProcessingEnabled = viewModel.getTextProcessingEnabled()
-        val hasProviders = viewModel.getTextModelProviders().isNotEmpty()
+        val textProcessingEnabled = viewModel.peekTextProcessingEnabled()
+        val hasProviders = viewModel.peekTextModelProviders().isNotEmpty()
         activeProviderComboRow.sensitive = textProcessingEnabled && hasProviders
     }
 
@@ -243,8 +243,8 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
      */
 
     private fun showAddProviderDialog() {
-        val existingNames = viewModel.getTextModelProviders().map { it.name }.toSet()
-        val existingCredentials = viewModel.getCredentials()
+        val existingNames = viewModel.peekTextModelProviders().map { it.name }.toSet()
+        val existingCredentials = viewModel.peekCredentials()
         val dialog = AddTextModelProviderDialog(existingNames, existingCredentials) { provider ->
             onProviderAdded(provider)
         }
@@ -253,7 +253,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     }
 
     private fun onProviderAdded(provider: TextModelProviderSetting) {
-        val currentProviders = viewModel.getTextModelProviders()
+        val currentProviders = viewModel.peekTextModelProviders()
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
         viewModel.setTextModelProviders(updatedProviders)

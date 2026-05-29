@@ -20,7 +20,7 @@ class AdvancedPage(private val viewModel: PreferencesViewModel) : PreferencesPag
             title = "Sanitize Special Characters"
             subtitle = "Replace accented and special characters with ASCII equivalents before typing. " +
                     "Enable this if your desktop portal does not correctly handle Unicode key symbols."
-            active = viewModel.getSanitizeSpecialChars()
+            active = viewModel.peekSanitizeSpecialChars()
             onNotify("active") {
                 viewModel.setSanitizeSpecialChars(active)
             }
@@ -31,7 +31,7 @@ class AdvancedPage(private val viewModel: PreferencesViewModel) : PreferencesPag
             subtitle = "Time to wait after hiding the window before typing. Set to 0 to disable. " +
                     "Increase this if the beginning of the typed text is missing."
             digits = 0
-            value = viewModel.getPostHideDelayMs().toDouble()
+            value = viewModel.peekPostHideDelayMs().toDouble()
             onNotify("value") {
                 viewModel.setPostHideDelayMs(value.toInt())
             }
@@ -43,7 +43,7 @@ class AdvancedPage(private val viewModel: PreferencesViewModel) : PreferencesPag
                     "Increase this if characters are dropped, out of order, " +
                     "or like a slower typing effect."
             digits = 0
-            value = viewModel.getTypingDelayMs().toDouble()
+            value = viewModel.peekTypingDelayMs().toDouble()
             onNotify("value") {
                 viewModel.setTypingDelayMs(value.toInt())
             }

@@ -75,6 +75,7 @@ class PreferencesViewModel(
     fun setAppendSpace(value: Boolean): Boolean = settingsClient.setAppendSpace(value)
 
     fun getTextOutputMethod(): String = settingsClient.getTextOutputMethod()
+    fun peekTextOutputMethod(): String = settingsClient.peekTextOutputMethod()
     fun setTextOutputMethod(value: String): Boolean = settingsClient.setTextOutputMethod(value)
 
     /*
@@ -110,6 +111,8 @@ class PreferencesViewModel(
 
     fun getSelectedVoiceModelProviderId(): String =
         settingsClient.getSelectedVoiceModelProviderId()
+    fun peekSelectedVoiceModelProviderId(): String =
+        settingsClient.peekSelectedVoiceModelProviderId()
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
         settingsClient.setSelectedVoiceModelProviderId(value)
 
@@ -118,6 +121,7 @@ class PreferencesViewModel(
      */
 
     fun getTextProcessingEnabled(): Boolean = settingsClient.getTextProcessingEnabled()
+    fun peekTextProcessingEnabled(): Boolean = settingsClient.peekTextProcessingEnabled()
     fun setTextProcessingEnabled(value: Boolean): Boolean = settingsClient.setTextProcessingEnabled(value)
 
     fun getTextModelProviders(): List<TextModelProviderSetting> =
@@ -128,6 +132,8 @@ class PreferencesViewModel(
 
     fun getSelectedTextModelProviderId(): String =
         settingsClient.getSelectedTextModelProviderId()
+    fun peekSelectedTextModelProviderId(): String =
+        settingsClient.peekSelectedTextModelProviderId()
     fun setSelectedTextModelProviderId(value: String): Boolean =
         settingsClient.setSelectedTextModelProviderId(value)
 

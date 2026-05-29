@@ -95,6 +95,31 @@ class SettingsClientReadHealingTest {
     }
 
     @Test
+    fun `peek reads do not heal malformed shared settings`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_TEXT_OUTPUT_METHOD to "not-a-method",
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "missing-voice-provider",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "missing-text-provider",
+                KEY_TEXT_PROCESSING_ENABLED to "maybe",
+                KEY_CUSTOM_CONTEXT to "x".repeat(MAX_CUSTOM_CONTEXT_CHARS + 17),
+                KEY_CUSTOM_VOCABULARY to " alpha ||| |||beta|||alpha ",
+                KEY_CREDENTIALS to "{bad",
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(TEXT_OUTPUT_METHOD_PORTAL, client.peekTextOutputMethod())
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.peekSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.peekSelectedTextModelProviderId())
+        assertEquals(DEFAULT_TEXT_PROCESSING_ENABLED, client.peekTextProcessingEnabled())
+        assertEquals(MAX_CUSTOM_CONTEXT_CHARS, client.peekCustomContext().length)
+        assertEquals(listOf("alpha", "beta"), client.peekCustomVocabulary())
+        assertEquals(emptyList<CredentialSetting>(), client.peekCredentials())
+        assertEquals(0, store.writeCount)
+    }
+
+    @Test
     fun `valid but dirty credential and provider json is normalized on read`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

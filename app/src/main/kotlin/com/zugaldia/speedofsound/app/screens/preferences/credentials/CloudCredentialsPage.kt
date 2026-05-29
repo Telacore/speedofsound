@@ -77,7 +77,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     }
 
     private fun loadCredentials() {
-        val credentials = viewModel.getCredentials()
+        val credentials = viewModel.peekCredentials()
         credentials.sortedBy { it.name.lowercase() }.forEach { credential -> addCredentialToUI(credential) }
         updatePlaceholderVisibility()
     }
@@ -89,13 +89,13 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     }
 
     private fun showAddCredentialDialog() {
-        val existingNames = viewModel.getCredentials().map { it.name }.toSet()
+        val existingNames = viewModel.peekCredentials().map { it.name }.toSet()
         val dialog = AddCredentialDialog(existingNames) { credential -> onCredentialAdded(credential) }
         dialog.present(this)
     }
 
     private fun onCredentialAdded(credential: CredentialSetting) {
-        val currentCredentials = viewModel.getCredentials()
+        val currentCredentials = viewModel.peekCredentials()
         if (currentCredentials.size >= MAX_CREDENTIALS) {
             logger.warn("Cannot add credential: limit of $MAX_CREDENTIALS reached")
             return
@@ -142,10 +142,10 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         }
 
     private fun onCredentialDeleted(credentialName: String) {
-        val currentCredentials = viewModel.getCredentials()
+        val currentCredentials = viewModel.peekCredentials()
         val credentialToDelete = currentCredentials.find { it.name == credentialName }
         if (credentialToDelete != null) {
-            val providers = viewModel.getTextModelProviders()
+            val providers = viewModel.peekTextModelProviders()
             val referencingProviders = providers.filter { it.credentialId == credentialToDelete.id }
             if (referencingProviders.isNotEmpty()) {
                 val providerNames = referencingProviders.joinToString(", ") { it.name }
@@ -162,7 +162,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     }
 
     private fun updatePlaceholderVisibility() {
-        val credentials = viewModel.getCredentials()
+        val credentials = viewModel.peekCredentials()
         val hasCredentials = credentials.isNotEmpty()
         val atLimit = credentials.size >= MAX_CREDENTIALS
         credentialsListBox.visible = hasCredentials

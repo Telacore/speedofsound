@@ -53,7 +53,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
             title = "Maximum Alarms"
             subtitle = "How many alarms you can define in total"
             digits = 0
-            value = viewModel.getMaxAlarms().toDouble()
+            value = viewModel.peekMaxAlarms().toDouble()
         }
 
         alarmsListBox = ListBox().apply {
@@ -114,7 +114,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
             .sortedWith(compareBy<AlarmSetting> { it.hour }.thenBy { it.minute }.thenBy { it.id })
             .forEach { alarm -> addAlarmToUI(alarm) }
         updatePlaceholderVisibility(currentAlarms)
-        maxAlarmsRow.value = viewModel.getMaxAlarms().toDouble()
+        maxAlarmsRow.value = viewModel.peekMaxAlarms().toDouble()
         updateAddButtonState(currentAlarms)
     }
 
@@ -181,6 +181,6 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
     }
 
     private fun updateAddButtonState(currentAlarms: List<AlarmSetting>) {
-        addButton.sensitive = currentAlarms.size < viewModel.getMaxAlarms()
+        addButton.sensitive = currentAlarms.size < viewModel.peekMaxAlarms()
     }
 }

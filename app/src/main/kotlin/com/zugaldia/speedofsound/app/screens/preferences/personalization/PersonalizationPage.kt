@@ -110,10 +110,10 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
     }
 
     private fun loadValues() {
-        val instructions = viewModel.getCustomContext()
+        val instructions = viewModel.peekCustomContext()
         instructionsTextView.buffer.setText(instructions, -1)
 
-        val vocabulary = viewModel.getCustomVocabulary()
+        val vocabulary = viewModel.peekCustomVocabulary()
         vocabulary.sortedWith(String.CASE_INSENSITIVE_ORDER).forEach { word -> addVocabularyWordToUI(word) }
     }
 
