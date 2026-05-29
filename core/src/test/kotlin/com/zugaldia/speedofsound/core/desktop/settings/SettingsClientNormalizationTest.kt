@@ -308,11 +308,13 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
-    fun `selected provider setters reuse provided snapshots`() {
+    fun `provider setters reuse provided snapshots`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
                 KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-voice",
                 KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-text",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(emptyList<VoiceModelProviderSetting>()),
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(emptyList<TextModelProviderSetting>()),
             )
         )
         val client = SettingsClient(store)
@@ -333,12 +335,11 @@ class SettingsClientNormalizationTest {
             )
         )
 
-        assertEquals(true, client.setSelectedVoiceModelProviderId("missing-voice", voiceProviders))
-        assertEquals(true, client.setSelectedTextModelProviderId("missing-text", textProviders))
-        assertEquals("voice-a", store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID))
-        assertEquals("text-a", store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID))
-        assertEquals(0, store.stringReadCount(KEY_VOICE_MODEL_PROVIDERS))
-        assertEquals(0, store.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
+        assertEquals(true, client.setVoiceModelProviders(listOf(voiceProviders.first()), setOf("cred-1"), voiceProviders))
+        assertEquals(true, client.setTextModelProviders(listOf(textProviders.first()), setOf("cred-1"), textProviders))
+        assertEquals(0, store.stringReadCount(KEY_CREDENTIALS))
+        assertEquals(1, store.stringReadCount(KEY_VOICE_MODEL_PROVIDERS))
+        assertEquals(1, store.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
     }
 
     @Test

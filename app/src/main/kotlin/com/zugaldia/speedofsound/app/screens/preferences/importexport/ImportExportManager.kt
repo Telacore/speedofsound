@@ -133,7 +133,14 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             val newVoiceProviders = exportData.voiceModelProviders.filter { it.id !in existingVoiceIds }
             val normalizedVoiceProviders = (existingVoiceProviders + newVoiceProviders).normalizedCredentialRefs(importedCredentialIds)
             if (normalizedVoiceProviders != existingVoiceProviders) {
-                requireWrite(viewModel.setVoiceModelProviders(normalizedVoiceProviders), "voice model providers")
+                requireWrite(
+                    viewModel.setVoiceModelProviders(
+                        normalizedVoiceProviders,
+                        importedCredentialIds,
+                        normalizedVoiceProviders,
+                    ),
+                    "voice model providers",
+                )
             }
             val importedVoiceIds = normalizedVoiceProviders
                 .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
@@ -150,7 +157,14 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             val newTextProviders = exportData.textModelProviders.filter { it.id !in existingTextIds }
             val normalizedTextProviders = (existingTextProviders + newTextProviders).normalizedCredentialRefs(importedCredentialIds)
             if (normalizedTextProviders != existingTextProviders) {
-                requireWrite(viewModel.setTextModelProviders(normalizedTextProviders), "text model providers")
+                requireWrite(
+                    viewModel.setTextModelProviders(
+                        normalizedTextProviders,
+                        importedCredentialIds,
+                        normalizedTextProviders,
+                    ),
+                    "text model providers",
+                )
             }
             val importedTextIds = normalizedTextProviders.map { it.id }.toSet()
             val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
@@ -280,14 +294,26 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         restoreWrite("typing delay") { viewModel.setTypingDelayMs(snapshot.typingDelayMs) }
         restoreWrite("custom context") { viewModel.setCustomContext(snapshot.customContext) }
         restoreWrite("credentials") { viewModel.setCredentials(snapshot.credentials) }
-        restoreWrite("voice model providers") { viewModel.setVoiceModelProviders(snapshot.voiceProviders) }
+        restoreWrite("voice model providers") {
+            viewModel.setVoiceModelProviders(
+                snapshot.voiceProviders,
+                snapshot.credentials.map { it.id }.toSet(),
+                snapshot.voiceProviders,
+            )
+        }
         restoreWrite("selected voice model provider") {
             persistExactVoiceProviderSelection(
                 snapshot.selectedVoiceProviderIdExact,
                 snapshot.voiceProviders,
             )
         }
-        restoreWrite("text model providers") { viewModel.setTextModelProviders(snapshot.textProviders) }
+        restoreWrite("text model providers") {
+            viewModel.setTextModelProviders(
+                snapshot.textProviders,
+                snapshot.credentials.map { it.id }.toSet(),
+                snapshot.textProviders,
+            )
+        }
         restoreWrite("selected text model provider") {
             viewModel.setSelectedTextModelProviderId(snapshot.selectedTextProviderId, snapshot.textProviders)
         }

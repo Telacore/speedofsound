@@ -98,6 +98,17 @@ class PreferencesViewModel(
         settingsClient.peekVoiceModelProviders(validCredentialIds)
     fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean =
         settingsClient.setVoiceModelProviders(value)
+    fun setVoiceModelProviders(
+        value: List<VoiceModelProviderSetting>,
+        validCredentialIds: Set<String>,
+    ): Boolean =
+        settingsClient.setVoiceModelProviders(value, validCredentialIds)
+    fun setVoiceModelProviders(
+        value: List<VoiceModelProviderSetting>,
+        validCredentialIds: Set<String>,
+        availableProviders: List<VoiceModelProviderSetting>,
+    ): Boolean =
+        settingsClient.setVoiceModelProviders(value, validCredentialIds, availableProviders)
     fun peekSelectedVoiceModelProviderIdExact(): String =
         settingsClient.peekSelectedVoiceModelProviderIdExact()
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
@@ -120,6 +131,17 @@ class PreferencesViewModel(
         settingsClient.peekTextModelProviders(validCredentialIds)
     fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean =
         settingsClient.setTextModelProviders(value)
+    fun setTextModelProviders(
+        value: List<TextModelProviderSetting>,
+        validCredentialIds: Set<String>,
+    ): Boolean =
+        settingsClient.setTextModelProviders(value, validCredentialIds)
+    fun setTextModelProviders(
+        value: List<TextModelProviderSetting>,
+        validCredentialIds: Set<String>,
+        availableProviders: List<TextModelProviderSetting>,
+    ): Boolean =
+        settingsClient.setTextModelProviders(value, validCredentialIds, availableProviders)
 
     fun peekSelectedTextModelProviderId(): String =
         settingsClient.peekSelectedTextModelProviderId()

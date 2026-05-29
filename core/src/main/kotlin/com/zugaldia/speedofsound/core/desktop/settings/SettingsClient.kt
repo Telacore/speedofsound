@@ -1238,10 +1238,23 @@ class SettingsClient(val settingsStore: SettingsStore) {
             .distinctBy { it.id }
             .take(MAX_CREDENTIALS)
 
-    private fun setVoiceModelProviders(
+    fun setVoiceModelProviders(
         value: List<VoiceModelProviderSetting>,
         validCredentialIds: Set<String>,
-        availableProviders: List<VoiceModelProviderSetting> = peekVoiceModelProviders(validCredentialIds),
+    ): Boolean =
+        setVoiceModelProviders(value, validCredentialIds, peekVoiceModelProviders(validCredentialIds))
+
+    fun setVoiceModelProviders(
+        value: List<VoiceModelProviderSetting>,
+        validCredentialIds: Set<String>,
+        availableProviders: List<VoiceModelProviderSetting>,
+    ): Boolean =
+        setVoiceModelProvidersInternal(value, validCredentialIds, availableProviders)
+
+    private fun setVoiceModelProvidersInternal(
+        value: List<VoiceModelProviderSetting>,
+        validCredentialIds: Set<String>,
+        availableProviders: List<VoiceModelProviderSetting>,
     ): Boolean {
         val customProviders = value.normalizedCustomVoiceModelProviders(validCredentialIds)
         val json = Json.encodeToString(customProviders)
@@ -1258,10 +1271,23 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return selectionSaved
     }
 
-    private fun setTextModelProviders(
+    fun setTextModelProviders(
         value: List<TextModelProviderSetting>,
         validCredentialIds: Set<String>,
-        availableProviders: List<TextModelProviderSetting> = peekTextModelProviders(validCredentialIds),
+    ): Boolean =
+        setTextModelProviders(value, validCredentialIds, peekTextModelProviders(validCredentialIds))
+
+    fun setTextModelProviders(
+        value: List<TextModelProviderSetting>,
+        validCredentialIds: Set<String>,
+        availableProviders: List<TextModelProviderSetting>,
+    ): Boolean =
+        setTextModelProvidersInternal(value, validCredentialIds, availableProviders)
+
+    private fun setTextModelProvidersInternal(
+        value: List<TextModelProviderSetting>,
+        validCredentialIds: Set<String>,
+        availableProviders: List<TextModelProviderSetting>,
     ): Boolean {
         val json = Json.encodeToString(value.normalizedTextModelProviders(validCredentialIds))
         val providersSaved = setStringSettingIfChanged(
@@ -1280,8 +1306,8 @@ class SettingsClient(val settingsStore: SettingsStore) {
     private fun normalizeStoredProviderCredentialRefs(validCredentialIds: Set<String>): Boolean {
         val voiceProviders = peekVoiceModelProviders(validCredentialIds)
         val textProviders = peekTextModelProviders(validCredentialIds)
-        val voiceSaved = setVoiceModelProviders(voiceProviders, validCredentialIds, voiceProviders)
-        val textSaved = setTextModelProviders(textProviders, validCredentialIds, textProviders)
+        val voiceSaved = setVoiceModelProvidersInternal(voiceProviders, validCredentialIds, voiceProviders)
+        val textSaved = setTextModelProvidersInternal(textProviders, validCredentialIds, textProviders)
         return voiceSaved && textSaved
     }
 
