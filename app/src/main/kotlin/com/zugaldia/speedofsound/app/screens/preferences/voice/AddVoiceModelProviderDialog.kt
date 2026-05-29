@@ -198,7 +198,12 @@ class AddVoiceModelProviderDialog(
         baseUrlEntry.setupNotifications()
         nameEntry.onNotify("text") { updateAddButtonState() }
         credentialComboRow.onNotify("selected") {
-            selectedCredentialId = getSelectedCredentialId(currentCredentials)
+            val selectedIndex = credentialComboRow.selected
+            selectedCredentialId = if (selectedIndex > 0 && selectedIndex <= currentCredentials.size) {
+                currentCredentials[selectedIndex - 1].id
+            } else {
+                null
+            }
             updateAddButtonState()
         }
         dialogScope.launch {
@@ -236,13 +241,8 @@ class AddVoiceModelProviderDialog(
                 .takeIf { it >= 0 }
                 ?.plus(1)
         } ?: 0
-        selectedCredentialId = getSelectedCredentialId(currentCredentials)
-    }
-
-    private fun getSelectedCredentialId(credentials: List<CredentialSetting>): String? {
-        val selectedIndex = credentialComboRow.selected
-        return if (selectedIndex > 0 && selectedIndex <= credentials.size) {
-            credentials[selectedIndex - 1].id
+        selectedCredentialId = if (credentialComboRow.selected > 0 && credentialComboRow.selected <= currentCredentials.size) {
+            currentCredentials[credentialComboRow.selected - 1].id
         } else {
             null // Index 0 is "None"
         }
