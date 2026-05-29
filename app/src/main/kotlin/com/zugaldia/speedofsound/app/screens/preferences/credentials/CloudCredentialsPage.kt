@@ -148,7 +148,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         row.addSuffix(deleteButton)
         credentialsListBox.append(row)
         deleteButton.onClicked {
-            if (onCredentialDeleted(credential.name)) {
+            if (onCredentialDeleted(credential.id, credential.name)) {
                 credentialsListBox.remove(row)
             }
         }
@@ -161,9 +161,9 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
             "${value.take(CREDENTIAL_MASK_PREFIX_LENGTH)}...${value.takeLast(CREDENTIAL_MASK_SUFFIX_LENGTH)}"
         }
 
-    private fun onCredentialDeleted(credentialName: String): Boolean {
+    private fun onCredentialDeleted(credentialId: String, credentialName: String): Boolean {
         val currentCredentials = viewModel.peekCredentials()
-        val credentialToDelete = currentCredentials.find { it.name == credentialName }
+        val credentialToDelete = currentCredentials.find { it.id == credentialId }
         if (credentialToDelete != null) {
             val textProviders = viewModel.peekTextModelProviders()
             val voiceProviders = viewModel.peekVoiceModelProviders()
@@ -183,8 +183,8 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         }
 
         // Proceed with deletion
-        val updatedCredentials = currentCredentials.filter { it.name != credentialName }
-        logger.info("Removing credential, total is now ${updatedCredentials.size} entries.")
+        val updatedCredentials = currentCredentials.filter { it.id != credentialId }
+        logger.info("Removing credential '$credentialName', total is now ${updatedCredentials.size} entries.")
         viewModel.setCredentials(updatedCredentials)
         updatePlaceholderVisibility()
         return true
