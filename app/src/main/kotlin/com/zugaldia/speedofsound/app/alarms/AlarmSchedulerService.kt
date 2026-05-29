@@ -71,11 +71,13 @@ class AlarmSchedulerService(
                 .thenBy { it.id }
         )
         val activeIds = alarms.map { it.id }.toSet()
-        synchronized(stateLock) {
+        val historyChanged = synchronized(stateLock) {
+            val previousHistoryKeys = lastTriggeredDates.keys.toSet()
             activeAlarms = alarms
             lastTriggeredDates.keys.retainAll(activeIds)
+            previousHistoryKeys != lastTriggeredDates.keys
         }
-        if (schedulerStateReady) {
+        if (schedulerStateReady && historyChanged) {
             persistSchedulerState()
         }
         logger.info("Loaded {} alarm(s).", alarms.size)

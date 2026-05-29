@@ -119,6 +119,41 @@ class AlarmSchedulerServiceTest {
     }
 
     @Test
+    fun `reloading unchanged alarms does not write scheduler state`() {
+        val clock = Clock.fixed(Instant.parse("2026-05-29T09:00:00Z"), ZoneOffset.UTC)
+        val store = MapSettingsStore()
+        val settingsClient = SettingsClient(store)
+        settingsClient.setAlarms(
+            listOf(
+                AlarmSetting(id = "alarm-1", hour = 9, minute = 30),
+            )
+        )
+        settingsClient.setAlarmSchedulerState(
+            AlarmSchedulerState(
+                lastCheckAt = "2026-05-29T08:00:00",
+                lastTriggeredDates = mapOf("alarm-1" to "2026-05-28"),
+            )
+        )
+        val service = AlarmSchedulerService(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+            clock = clock,
+            checkIntervalSeconds = 60,
+        )
+
+        service.reloadAlarms()
+        service.reloadSchedulerState()
+
+        val writesBefore = store.stringWriteCount
+
+        service.reloadAlarms()
+
+        assertEquals(writesBefore, store.stringWriteCount)
+    }
+
+    @Test
     fun `scheduler state changes are normalized back to the store`() {
         val clock = Clock.fixed(Instant.parse("2026-05-29T09:00:00Z"), ZoneOffset.UTC)
         val store = MapSettingsStore()
@@ -183,6 +218,7 @@ class AlarmSchedulerServiceTest {
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
         private val values = initialValues
+        var stringWriteCount: Int = 0
 
         override fun isAvailable(): Boolean = true
 
@@ -190,6 +226,7 @@ class AlarmSchedulerServiceTest {
 
         override fun setString(key: String, value: String): Boolean {
             values[key] = value
+            stringWriteCount += 1
             return true
         }
 
