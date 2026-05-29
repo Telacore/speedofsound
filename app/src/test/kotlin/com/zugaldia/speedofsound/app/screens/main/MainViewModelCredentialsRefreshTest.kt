@@ -102,7 +102,17 @@ class MainViewModelCredentialsRefreshTest {
                     )
                 ),
                 KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-text",
-                KEY_TEXT_MODEL_PROVIDERS to "",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "stale-text",
+                            name = "Bravo",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "gpt-5.4-mini",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
                 KEY_TEXT_PROCESSING_ENABLED to "true",
             )
         )
