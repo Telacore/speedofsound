@@ -304,8 +304,19 @@ class AddTextModelProviderDialog(
             runCatching { plugin.shutdown() }
             GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                 result.fold(
-                    onSuccess = { models -> onModelsFetched(models) },
-                    onFailure = { error -> onFetchError(error) }
+                    onSuccess = { models ->
+                        fetchedModels = models
+                        if (models.isEmpty()) {
+                            updateMessageLabel("No models found", STYLE_CLASS_ERROR)
+                        } else {
+                            updateMessageLabel("Found ${models.size} models", STYLE_CLASS_SUCCESS)
+                            modelComboRow.refreshComboRows(models)
+                        }
+                    },
+                    onFailure = { error ->
+                        val errorMsg = error.message ?: "Unknown error"
+                        updateMessageLabel(errorMsg, STYLE_CLASS_ERROR)
+                    }
                 )
                 fetchButton.sensitive = true
                 false
@@ -353,21 +364,6 @@ class AddTextModelProviderDialog(
             LlmProvider.OPENAI -> OpenAiLlm(OpenAiLlmOptions(
                 apiKey = apiKey, baseUrl = baseUrl, modelId = modelId, disableThinking = disableThinking))
         }
-    }
-
-    private fun onModelsFetched(models: List<TextModel>) {
-        fetchedModels = models
-        if (models.isEmpty()) {
-            updateMessageLabel("No models found", STYLE_CLASS_ERROR)
-        } else {
-            updateMessageLabel("Found ${models.size} models", STYLE_CLASS_SUCCESS)
-            modelComboRow.refreshComboRows(models)
-        }
-    }
-
-    private fun onFetchError(error: Throwable) {
-        val errorMsg = error.message ?: "Unknown error"
-        updateMessageLabel(errorMsg, STYLE_CLASS_ERROR)
     }
 
     private fun updateMessageLabel(message: String, styleClass: String = STYLE_CLASS_ACCENT) {
