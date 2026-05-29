@@ -206,49 +206,6 @@ class MainViewModelCredentialsRefreshTest {
     }
 
     @Test
-    fun `refreshTextProcessingSetting syncs director after llm fallback disables text processing`() {
-        val settingsStore = MapSettingsStore(
-            initialValues = mutableMapOf(
-                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
-                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
-                    listOf(
-                        VoiceModelProviderSetting(
-                            id = "voice-a",
-                            name = "Alpha",
-                            provider = AsrProvider.OPENAI,
-                            modelId = "whisper-1",
-                            baseUrl = "http://localhost:1234/v1",
-                        ),
-                    )
-                ),
-                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "missing-text",
-                KEY_TEXT_MODEL_PROVIDERS to "[]",
-                KEY_TEXT_PROCESSING_ENABLED to "true",
-            )
-        )
-        val settingsClient = SettingsClient(settingsStore)
-        val viewModel = MainViewModel(
-            settingsClient = settingsClient,
-            portalsClient = PortalsClient(portalConnector = {
-                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
-            }),
-        )
-
-        val director = getPrivateField<DefaultDirector>(viewModel, "director")
-        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
-        val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
-        asrProviderManager.registerAsrPlugins()
-
-        invokePrivateUnit(viewModel, "refreshTextProcessingSetting")
-
-        assertEquals(false, settingsClient.loadTextProcessingEnabled())
-        assertFalse(director.getOptions().enableTextProcessing)
-        assertEquals(null, registry.getActive(AppPluginCategory.LLM))
-        assertEquals("Alpha", viewModel.state.currentAsrModel())
-        assertEquals("", viewModel.state.currentLlmModel())
-    }
-
-    @Test
     fun `refreshCredentials stops after fatal asr failure`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(

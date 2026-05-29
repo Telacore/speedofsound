@@ -379,12 +379,6 @@ class MainViewModel(
                     )
                 }
         }
-        val persistedTextProcessingEnabled = settingsClient.peekTextProcessingEnabled()
-        if (persistedTextProcessingEnabled != director.getOptions().enableTextProcessing) {
-            director.updateOptions(
-                director.getOptions().copy(enableTextProcessing = persistedTextProcessingEnabled)
-            )
-        }
         updateModelLabels()
     }
 
