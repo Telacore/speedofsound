@@ -839,18 +839,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
     }
 
-    fun setSelectedTextModelProviderId(value: String): Boolean =
-        setStringSettingIfChanged(
-            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID),
-            normalizeSelectedProviderId(
-                value = value,
-                defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-                availableProviderIds = loadTextModelProviders().map { it.id }.toSet(),
-            ),
-            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
-        )
-
     /*
      * Personalization page
      */
