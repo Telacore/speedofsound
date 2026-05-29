@@ -10,11 +10,12 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_ERROR
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUCCESS
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.STYLE_CLASS_WARNING
+import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.screens.preferences.shared.BaseUrlEntryRow
 import com.zugaldia.speedofsound.app.screens.preferences.shared.CustomServicePreset.Companion.TEXT_SERVICE_PRESETS
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ModelComboRow
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ProviderComboRow
-import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_PROVIDER_CONFIG_NAME_LENGTH
 import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
@@ -54,7 +55,7 @@ import org.slf4j.LoggerFactory
 @Suppress("TooManyFunctions")
 class AddTextModelProviderDialog(
     private val existingNames: Set<String>,
-    private val existingCredentials: List<CredentialSetting>,
+    private val viewModel: PreferencesViewModel,
     private val onProviderAdded: (TextModelProviderSetting) -> Unit
 ) : Dialog() {
     private val logger = LoggerFactory.getLogger(AddTextModelProviderDialog::class.java)
@@ -199,6 +200,7 @@ class AddTextModelProviderDialog(
         }
 
         child = contentBox
+        onClosed { dialogScope.cancel() }
 
         // Initialize state
         loadCredentialList()
@@ -217,6 +219,21 @@ class AddTextModelProviderDialog(
             selectedCredentialId = getSelectedCredentialId()
             updateAddButtonState()
         }
+        dialogScope.launch {
+            viewModel.settingsChanged
+                .filter { it == KEY_CREDENTIALS }
+                .collect {
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        refreshCredentialList()
+                        false
+                    }
+                }
+        }
+    }
+
+    private fun refreshCredentialList() {
+        loadCredentialList(selectedCredentialId)
+        updateAddButtonState()
     }
 
     private fun refreshDialog() {
@@ -227,17 +244,24 @@ class AddTextModelProviderDialog(
         updateAddButtonState()
     }
 
-    private fun loadCredentialList() {
+    private fun loadCredentialList(preservedCredentialId: String? = null) {
+        val credentials = viewModel.peekCredentials()
         val options = mutableListOf("None")
-        options.addAll(existingCredentials.map { it.name })
+        options.addAll(credentials.map { it.name })
         credentialComboRow.model = StringList(options.toTypedArray())
-        credentialComboRow.selected = 0
+        credentialComboRow.selected = preservedCredentialId?.let { credentialId ->
+            credentials.indexOfFirst { it.id == credentialId }
+                .takeIf { it >= 0 }
+                ?.plus(1)
+        } ?: 0
+        selectedCredentialId = getSelectedCredentialId()
     }
 
     private fun getSelectedCredentialId(): String? {
         val selectedIndex = credentialComboRow.selected
-        return if (selectedIndex > 0 && selectedIndex <= existingCredentials.size) {
-            existingCredentials[selectedIndex - 1].id
+        val credentials = viewModel.peekCredentials()
+        return if (selectedIndex > 0 && selectedIndex <= credentials.size) {
+            credentials[selectedIndex - 1].id
         } else {
             null // Index 0 is "None"
         }
@@ -315,7 +339,7 @@ class AddTextModelProviderDialog(
     }
 
     private fun getSelectedCredentialApiKey(): String? = selectedCredentialId?.let { credId ->
-        existingCredentials.find { it.id == credId }?.value
+        viewModel.peekCredentials().find { it.id == credId }?.value
     }
 
     private fun onModelsFetched(models: List<TextModel>) {

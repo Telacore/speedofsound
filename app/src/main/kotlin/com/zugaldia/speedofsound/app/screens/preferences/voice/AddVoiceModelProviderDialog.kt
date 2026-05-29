@@ -10,10 +10,11 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_SUCCESS
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.STYLE_CLASS_WARNING
 import com.zugaldia.speedofsound.app.screens.preferences.shared.BaseUrlEntryRow
+import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.screens.preferences.shared.CustomServicePreset.Companion.VOICE_SERVICE_PRESETS
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ModelComboRow
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ProviderComboRow
-import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_PROVIDER_CONFIG_NAME_LENGTH
 import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
@@ -23,6 +24,13 @@ import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MOD
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_OPENAI_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.asr.getModelsForProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import org.gnome.adw.ComboRow
 import org.gnome.adw.Dialog
 import org.gnome.adw.EntryRow
@@ -39,7 +47,7 @@ import org.slf4j.LoggerFactory
 @Suppress("TooManyFunctions")
 class AddVoiceModelProviderDialog(
     private val existingNames: Set<String>,
-    private val existingCredentials: List<CredentialSetting>,
+    private val viewModel: PreferencesViewModel,
     private val onProviderAdded: (VoiceModelProviderSetting) -> Unit
 ) : Dialog() {
     private val logger = LoggerFactory.getLogger(AddVoiceModelProviderDialog::class.java)
@@ -56,6 +64,7 @@ class AddVoiceModelProviderDialog(
     private var selectedProvider: AsrProvider = AsrProvider.OPENAI
     private var selectedModelId: String = DEFAULT_ASR_OPENAI_MODEL_ID
     private var selectedCredentialId: String? = null
+    private val dialogScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     init {
         title = "Add Voice Model Provider"
@@ -154,6 +163,7 @@ class AddVoiceModelProviderDialog(
         }
 
         child = contentBox
+        onClosed { dialogScope.cancel() }
 
         // Initialize state
         loadCredentialList()
@@ -172,6 +182,21 @@ class AddVoiceModelProviderDialog(
             selectedCredentialId = getSelectedCredentialId()
             updateAddButtonState()
         }
+        dialogScope.launch {
+            viewModel.settingsChanged
+                .filter { it == KEY_CREDENTIALS }
+                .collect {
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        refreshCredentialList()
+                        false
+                    }
+                }
+        }
+    }
+
+    private fun refreshCredentialList() {
+        loadCredentialList(selectedCredentialId)
+        updateAddButtonState()
     }
 
     private fun refreshDialog() {
@@ -181,17 +206,24 @@ class AddVoiceModelProviderDialog(
         updateAddButtonState()
     }
 
-    private fun loadCredentialList() {
+    private fun loadCredentialList(preservedCredentialId: String? = null) {
+        val credentials = viewModel.peekCredentials()
         val options = mutableListOf("None")
-        options.addAll(existingCredentials.map { it.name })
+        options.addAll(credentials.map { it.name })
         credentialComboRow.model = StringList(options.toTypedArray())
-        credentialComboRow.selected = 0
+        credentialComboRow.selected = preservedCredentialId?.let { credentialId ->
+            credentials.indexOfFirst { it.id == credentialId }
+                .takeIf { it >= 0 }
+                ?.plus(1)
+        } ?: 0
+        selectedCredentialId = getSelectedCredentialId()
     }
 
     private fun getSelectedCredentialId(): String? {
         val selectedIndex = credentialComboRow.selected
-        return if (selectedIndex > 0 && selectedIndex <= existingCredentials.size) {
-            existingCredentials[selectedIndex - 1].id
+        val credentials = viewModel.peekCredentials()
+        return if (selectedIndex > 0 && selectedIndex <= credentials.size) {
+            credentials[selectedIndex - 1].id
         } else {
             null // Index 0 is "None"
         }
@@ -243,6 +275,7 @@ class AddVoiceModelProviderDialog(
     }
 
     private fun closeDialog() {
+        dialogScope.cancel()
         close()
     }
 }

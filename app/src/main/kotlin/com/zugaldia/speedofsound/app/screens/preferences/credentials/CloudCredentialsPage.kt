@@ -12,7 +12,11 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_CREDENTIALS
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import org.gnome.adw.ActionRow
 import org.gnome.adw.PreferencesGroup
 import org.gnome.adw.PreferencesPage
@@ -23,10 +27,12 @@ import org.gnome.gtk.Label
 import org.gnome.gtk.ListBox
 import org.gnome.gtk.Orientation
 import org.gnome.gtk.SelectionMode
+import org.gnome.glib.GLib
 import org.slf4j.LoggerFactory
 
 class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : PreferencesPage() {
     private val logger = LoggerFactory.getLogger(CloudCredentialsPage::class.java)
+    private val scope = viewModel.viewModelScope
 
     private val credentialsListBox: ListBox
     private val placeholderBox: Box
@@ -74,12 +80,26 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
 
         add(credentialsGroup)
         loadCredentials()
+        setupNotifications()
     }
 
     private fun loadCredentials() {
         val credentials = viewModel.peekCredentials()
         credentials.sortedBy { it.name.lowercase() }.forEach { credential -> addCredentialToUI(credential) }
         updatePlaceholderVisibility()
+    }
+
+    private fun setupNotifications() {
+        scope.launch {
+            viewModel.settingsChanged
+                .filter { it == KEY_CREDENTIALS }
+                .collect {
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        refresh()
+                        false
+                    }
+                }
+        }
     }
 
     fun refresh() {
