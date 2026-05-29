@@ -112,7 +112,12 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         }
 
         add(credentialsGroup)
-        refreshSnapshots()
+        currentCredentials = viewModel.peekCredentials()
+        run {
+            val currentCredentialIds = currentCredentials.map { it.id }.toSet()
+            currentVoiceProviders = viewModel.peekVoiceModelProviders(currentCredentialIds)
+            currentTextProviders = viewModel.peekTextModelProviders(currentCredentialIds)
+        }
         currentCredentials.sortedBy { it.name.lowercase() }.forEach { credential ->
             val row = ActionRow().apply {
                 title = credential.name
@@ -179,7 +184,12 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
 
     fun refresh() {
         logger.info("Refreshing cloud credentials")
-        refreshSnapshots()
+        currentCredentials = viewModel.peekCredentials()
+        run {
+            val currentCredentialIds = currentCredentials.map { it.id }.toSet()
+            currentVoiceProviders = viewModel.peekVoiceModelProviders(currentCredentialIds)
+            currentTextProviders = viewModel.peekTextModelProviders(currentCredentialIds)
+        }
         credentialsListBox.removeAll()
         currentCredentials.sortedBy { it.name.lowercase() }.forEach { credential ->
             val row = ActionRow().apply {
@@ -240,12 +250,5 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         if (atLimit) {
             logger.info("Credential limit of $MAX_CREDENTIALS reached")
         }
-    }
-
-    private fun refreshSnapshots() {
-        currentCredentials = viewModel.peekCredentials()
-        val currentCredentialIds = currentCredentials.map { it.id }.toSet()
-        currentVoiceProviders = viewModel.peekVoiceModelProviders(currentCredentialIds)
-        currentTextProviders = viewModel.peekTextModelProviders(currentCredentialIds)
     }
 }
