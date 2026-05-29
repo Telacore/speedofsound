@@ -75,9 +75,7 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
             val isFirstLaunch = !settingsClient.peekWelcomeScreenShown()
             if (isFirstLaunch) {
                 WelcomeWindow(this) {
-                    if (!settingsClient.setWelcomeScreenShown(true)) {
-                        logger.warn("Failed to persist welcome screen shown state")
-                    }
+                    persistWelcomeScreenShown()
                     presentMainWindow()
                 }.present()
             } else if (!settingsClient.peekStayHiddenOnActivation()) {
@@ -158,6 +156,12 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
             isHoldingForHiddenStart = false
         }
         mainWindow?.present()
+    }
+
+    private fun persistWelcomeScreenShown() {
+        if (!settingsClient.setWelcomeScreenShown(true)) {
+            logger.warn("Failed to persist welcome screen shown state")
+        }
     }
 
     private fun handleTrigger() {
