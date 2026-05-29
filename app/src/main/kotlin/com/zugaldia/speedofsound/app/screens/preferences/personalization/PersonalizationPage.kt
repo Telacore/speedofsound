@@ -104,7 +104,19 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
         loadValues()
         instructionsTextView.buffer.onChanged {
             if (isRefreshing) return@onChanged
-            enforceTextLimit()
+            val buffer = instructionsTextView.buffer
+            val charCount = buffer.charCount
+            if (charCount > MAX_CUSTOM_CONTEXT_CHARS) {
+                val start = TextIter()
+                val end = TextIter()
+                buffer.getBounds(start, end)
+                val text = buffer.getText(start, end, false)
+                val truncated = text.substring(0, MAX_CUSTOM_CONTEXT_CHARS)
+                buffer.setText(truncated, -1)
+                buffer.getEndIter(end)
+                buffer.placeCursor(end)
+                logger.warn("Text truncated to $MAX_CUSTOM_CONTEXT_CHARS characters")
+            }
             saveInstructionsCounter++
             val currentCounter = saveInstructionsCounter
             GLib.timeoutAdd(GLib.PRIORITY_DEFAULT, SETTINGS_SAVE_DEBOUNCE_MS) {
@@ -154,26 +166,6 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
         if (!viewModel.setCustomContext(text)) {
             logger.warn("Failed to persist custom context")
             refresh()
-        }
-    }
-
-    /**
-     * Enforce character limit on custom context text.
-     * GTK TextView doesn't have a built-in max-length property, so we implement it manually.
-     */
-    private fun enforceTextLimit() {
-        val buffer = instructionsTextView.buffer
-        val charCount = buffer.charCount
-        if (charCount > MAX_CUSTOM_CONTEXT_CHARS) {
-            val start = TextIter()
-            val end = TextIter()
-            buffer.getBounds(start, end)
-            val text = buffer.getText(start, end, false)
-            val truncated = text.substring(0, MAX_CUSTOM_CONTEXT_CHARS)
-            buffer.setText(truncated, -1)
-            buffer.getEndIter(end)
-            buffer.placeCursor(end)
-            logger.warn("Text truncated to $MAX_CUSTOM_CONTEXT_CHARS characters")
         }
     }
 
