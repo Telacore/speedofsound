@@ -79,6 +79,17 @@ class PortalRoutingTest {
     }
 
     @Test
+    fun `shouldAutoStartPortalSession returns false when portal is not supported`() {
+        assertFalse(
+            shouldAutoStartPortalSession(
+                textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NotSupported,
+                isPortalAvailable = true,
+            )
+        )
+    }
+
+    @Test
     fun `shouldPersistClipboardFallback returns true for persistent fallback`() {
         assertTrue(shouldPersistClipboardFallback(ClipboardFallbackPolicy.PERSIST_PREFERENCE))
     }

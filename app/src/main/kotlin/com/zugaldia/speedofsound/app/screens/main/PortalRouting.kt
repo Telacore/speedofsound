@@ -18,7 +18,7 @@ internal fun shouldAutoStartPortalSession(
     isPortalAvailable: Boolean,
 ): Boolean = textOutputMethod == TEXT_OUTPUT_METHOD_PORTAL &&
     isPortalAvailable &&
-    remoteDesktopStatus != RemoteDesktopStatus.Ready
+    remoteDesktopStatus == RemoteDesktopStatus.NeedToken
 
 internal fun resolveRemoteDesktopUiStatus(
     textOutputMethod: String,
