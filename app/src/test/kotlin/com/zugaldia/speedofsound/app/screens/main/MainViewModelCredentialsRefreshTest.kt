@@ -19,6 +19,7 @@ import com.zugaldia.speedofsound.core.plugins.EmptyOptions
 import com.zugaldia.speedofsound.core.plugins.director.DefaultDirector
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
+import com.zugaldia.speedofsound.core.plugins.llm.GoogleLlm
 import com.zugaldia.speedofsound.core.plugins.llm.OpenAiLlm
 import com.zugaldia.stargate.sdk.DesktopPortal
 import kotlinx.serialization.json.Json
@@ -414,6 +415,60 @@ class MainViewModelCredentialsRefreshTest {
     }
 
     @Test
+    fun `refreshTextProcessingSetting activates selected llm when active provider mismatches selection`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "whisper-1",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-b",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-b",
+                            name = "Bravo",
+                            provider = LlmProvider.GOOGLE,
+                            modelId = "gemini-2.5-flash",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val viewModel = MainViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val llmProviderManager = getPrivateField<LlmProviderManager>(viewModel, "llmProviderManager")
+        val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
+        asrProviderManager.registerAsrPlugins()
+        llmProviderManager.registerLlmPlugins()
+
+        registry.setActiveById(AppPluginCategory.LLM, OpenAiLlm.ID)
+
+        invokePrivateBoolean(viewModel, "refreshTextProcessingSetting", true)
+
+        assertEquals("Bravo", viewModel.state.currentLlmModel())
+        assertEquals(true, settingsClient.loadTextProcessingEnabled())
+        assertEquals(GoogleLlm.ID, registry.getActive(AppPluginCategory.LLM)?.id)
+    }
+
+    @Test
     fun `refreshAsrSetting updates labels after asr refresh failure`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -579,6 +634,12 @@ class MainViewModelCredentialsRefreshTest {
 
     private fun invokePrivateString(instance: Any, methodName: String, arg: String) {
         val method = instance.javaClass.getDeclaredMethod(methodName, String::class.java)
+        method.isAccessible = true
+        method.invoke(instance, arg)
+    }
+
+    private fun invokePrivateBoolean(instance: Any, methodName: String, arg: Boolean) {
+        val method = instance.javaClass.getDeclaredMethod(methodName, Boolean::class.javaPrimitiveType)
         method.isAccessible = true
         method.invoke(instance, arg)
     }

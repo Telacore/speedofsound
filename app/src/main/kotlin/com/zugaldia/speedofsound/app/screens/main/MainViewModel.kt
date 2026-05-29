@@ -361,7 +361,11 @@ class MainViewModel(
             director.getOptions().copy(enableTextProcessing = textProcessingEnabled)
         )
         if (textProcessingEnabled) {
-            if (registry.getActive(AppPluginCategory.LLM) == null) {
+            val activeProviderId = registry.getActive(AppPluginCategory.LLM)?.id
+            val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
+            val selectedProvider = settingsClient.peekTextModelProviders().find { it.id == selectedProviderId }
+            val selectedPluginId = selectedProvider?.let { com.zugaldia.speedofsound.core.plugins.llm.pluginIdForProvider(it.provider) }
+            if (activeProviderId == null || activeProviderId != selectedPluginId) {
                 runCatching { llmProviderManager.activateSelectedProvider() }
                     .onFailure { error ->
                         logger.error("Failed to activate LLM provider after enabling text processing: {}", error.message)
