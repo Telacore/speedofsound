@@ -33,8 +33,8 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Resolves a VoiceModelProviderSetting into the appropriate AsrPluginOptions
      */
     fun resolveVoiceProviderOptions(providerSetting: VoiceModelProviderSetting): AsrPluginOptions {
-        val apiKey = providerSetting.credentialId?.let { credId -> getCredentials().find { it.id == credId }?.value }
-        val language = languageFromIso2(getDefaultLanguage()) ?: DEFAULT_LANGUAGE
+        val apiKey = providerSetting.credentialId?.let { credId -> peekCredentials().find { it.id == credId }?.value }
+        val language = languageFromIso2(peekDefaultLanguage()) ?: DEFAULT_LANGUAGE
         return when (providerSetting.provider) {
             AsrProvider.OPENAI -> OpenAiAsrOptions(
                 modelId = providerSetting.modelId,
@@ -64,7 +64,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Resolves a TextModelProviderSetting into the appropriate LlmPluginOptions
      */
     fun resolveTextProviderOptions(providerSetting: TextModelProviderSetting): LlmPluginOptions {
-        val apiKey = providerSetting.credentialId?.let { credId -> getCredentials().find { it.id == credId }?.value }
+        val apiKey = providerSetting.credentialId?.let { credId -> peekCredentials().find { it.id == credId }?.value }
         return when (providerSetting.provider) {
             LlmProvider.ANTHROPIC -> AnthropicLlmOptions(
                 apiKey = apiKey,

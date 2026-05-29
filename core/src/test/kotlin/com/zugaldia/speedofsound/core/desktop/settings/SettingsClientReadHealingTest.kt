@@ -118,6 +118,40 @@ class SettingsClientReadHealingTest {
     }
 
     @Test
+    fun `provider resolution does not heal malformed credential and language settings`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_DEFAULT_LANGUAGE to "EN",
+                KEY_CREDENTIALS to "{bad",
+            )
+        )
+        val client = SettingsClient(store)
+
+        val asrOptions = client.resolveVoiceProviderOptions(
+            VoiceModelProviderSetting(
+                id = "voice-1",
+                name = "Whisper",
+                provider = AsrProvider.SHERPA_WHISPER,
+                modelId = "model-1",
+                credentialId = "cred-1",
+            )
+        )
+        val llmOptions = client.resolveTextProviderOptions(
+            TextModelProviderSetting(
+                id = "text-1",
+                name = "LLM",
+                provider = LlmProvider.OPENAI,
+                modelId = "model-2",
+                credentialId = "cred-1",
+            )
+        )
+
+        assertEquals(com.zugaldia.speedofsound.core.plugins.asr.SherpaWhisperAsrOptions::class, asrOptions::class)
+        assertEquals(com.zugaldia.speedofsound.core.plugins.llm.OpenAiLlmOptions::class, llmOptions::class)
+        assertEquals(0, store.writeCount)
+    }
+
+    @Test
     fun `peek reads do not heal malformed shared settings`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
