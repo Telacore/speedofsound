@@ -52,7 +52,30 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         addButton = Button.withLabel("Add API Key").apply {
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
             onClicked {
-                val dialog = AddCredentialDialog(viewModel) { credential -> onCredentialAdded(credential) }
+                val dialog = AddCredentialDialog(viewModel) { credential ->
+                    if (currentCredentials.size >= MAX_CREDENTIALS) {
+                        logger.warn("Cannot add credential: limit of $MAX_CREDENTIALS reached")
+                        refresh()
+                        false
+                    } else if (currentCredentials.any { it.name == credential.name }) {
+                        logger.warn("Credential with name '${credential.name}' already exists")
+                        refresh()
+                        false
+                    } else {
+                        val updatedCredentials = currentCredentials + credential
+                        logger.info("Adding credential, total is now ${updatedCredentials.size} entries.")
+                        if (!viewModel.setCredentials(updatedCredentials, currentVoiceProviders, currentTextProviders)) {
+                            logger.warn("Failed to persist credential '${credential.name}'")
+                            refresh()
+                            false
+                        } else {
+                            currentCredentials = updatedCredentials
+                            addCredentialToUI(credential)
+                            updatePlaceholderVisibility(currentCredentials)
+                            true
+                        }
+                    }
+                }
                 dialog.present(this@CloudCredentialsPage)
             }
         }
@@ -114,33 +137,6 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         credentialsListBox.removeAll()
         currentCredentials.sortedBy { it.name.lowercase() }.forEach { credential -> addCredentialToUI(credential) }
         updatePlaceholderVisibility(currentCredentials)
-    }
-
-    private fun onCredentialAdded(credential: CredentialSetting): Boolean {
-        if (currentCredentials.size >= MAX_CREDENTIALS) {
-            logger.warn("Cannot add credential: limit of $MAX_CREDENTIALS reached")
-            refresh()
-            return false
-        }
-
-        val exists = currentCredentials.any { it.name == credential.name }
-        if (exists) {
-            logger.warn("Credential with name '${credential.name}' already exists")
-            refresh()
-            return false
-        }
-
-        val updatedCredentials = currentCredentials + credential
-        logger.info("Adding credential, total is now ${updatedCredentials.size} entries.")
-        if (!viewModel.setCredentials(updatedCredentials, currentVoiceProviders, currentTextProviders)) {
-            logger.warn("Failed to persist credential '${credential.name}'")
-            refresh()
-            return false
-        }
-        currentCredentials = updatedCredentials
-        addCredentialToUI(credential)
-        updatePlaceholderVisibility(currentCredentials)
-        return true
     }
 
     private fun addCredentialToUI(credential: CredentialSetting) {
