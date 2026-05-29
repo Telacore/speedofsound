@@ -204,7 +204,12 @@ class AddVoiceModelProviderDialog(
 
     private fun refreshDialog() {
         baseUrlEntry.clear()
-        updateMessageLabel("")
+        messageLabel.label = ""
+        messageLabel.removeCssClass(STYLE_CLASS_ACCENT)
+        messageLabel.removeCssClass(STYLE_CLASS_SUCCESS)
+        messageLabel.removeCssClass(STYLE_CLASS_WARNING)
+        messageLabel.removeCssClass(STYLE_CLASS_ERROR)
+        messageLabel.addCssClass(STYLE_CLASS_ACCENT)
         modelComboRow.refreshComboRows()
         updateAddButtonState()
     }
@@ -235,15 +240,6 @@ class AddVoiceModelProviderDialog(
         val baseUrl = baseUrlEntry.getBaseUrl()
         val modelId = selectedModelId
         addButton.sensitive = validateInput(name, baseUrl, modelId)
-    }
-
-    private fun updateMessageLabel(message: String, styleClass: String = STYLE_CLASS_ACCENT) {
-        messageLabel.label = message
-        messageLabel.removeCssClass(STYLE_CLASS_ACCENT)
-        messageLabel.removeCssClass(STYLE_CLASS_SUCCESS)
-        messageLabel.removeCssClass(STYLE_CLASS_WARNING)
-        messageLabel.removeCssClass(STYLE_CLASS_ERROR)
-        messageLabel.addCssClass(styleClass)
     }
 
     @Suppress("ReturnCount")
