@@ -185,8 +185,9 @@ class SettingsClientNormalizationTest {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
                 KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-voice",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(emptyList<VoiceModelProviderSetting>()),
             ),
-            failingSetStringKeys = setOf(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID),
+            failingSetStringKeys = setOf(KEY_VOICE_MODEL_PROVIDERS),
         )
         val client = SettingsClient(store)
 
@@ -200,16 +201,13 @@ class SettingsClientNormalizationTest {
         val saved = client.setVoiceModelProviders(listOf(provider))
 
         assertEquals(false, saved)
-        assertEquals(
-            Json.encodeToString(listOf(provider)),
-            store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)
-        )
+        assertEquals(Json.encodeToString(emptyList<VoiceModelProviderSetting>()), store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS))
         assertEquals("stale-voice", store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID))
-        assertEquals(1, store.writeCount)
+        assertEquals(0, store.writeCount)
     }
 
     @Test
-    fun `setting credentials reports failure when provider healing write fails`() {
+    fun `setting credentials stops when credential write fails`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
                 KEY_CREDENTIALS to Json.encodeToString(
@@ -243,7 +241,7 @@ class SettingsClientNormalizationTest {
                 ),
                 KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-1",
             ),
-            failingSetStringKeys = setOf(KEY_VOICE_MODEL_PROVIDERS),
+            failingSetStringKeys = setOf(KEY_CREDENTIALS),
         )
         val client = SettingsClient(store)
 
@@ -282,7 +280,7 @@ class SettingsClientNormalizationTest {
                 store.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)
             )
         )
-        assertEquals(2, store.writeCount)
+        assertEquals(0, store.writeCount)
     }
 
     @Test
