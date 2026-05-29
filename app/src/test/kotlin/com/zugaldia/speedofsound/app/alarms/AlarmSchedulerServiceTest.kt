@@ -68,6 +68,55 @@ class AlarmSchedulerServiceTest {
         )
     }
 
+    @Test
+    fun `reloading alarms drops history for removed alarms only`() {
+        val clock = Clock.fixed(Instant.parse("2026-05-29T09:00:00Z"), ZoneOffset.UTC)
+        val store = MapSettingsStore()
+        val settingsClient = SettingsClient(store)
+        settingsClient.setAlarms(
+            listOf(
+                AlarmSetting(id = "alarm-1", hour = 9, minute = 30),
+                AlarmSetting(id = "alarm-2", hour = 10, minute = 0),
+            )
+        )
+        settingsClient.setAlarmSchedulerState(
+            AlarmSchedulerState(
+                lastCheckAt = "2026-05-29T08:00:00",
+                lastTriggeredDates = mapOf(
+                    "alarm-1" to "2026-05-28",
+                    "alarm-2" to "2026-05-28",
+                ),
+            )
+        )
+        val service = AlarmSchedulerService(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+            clock = clock,
+            checkIntervalSeconds = 60,
+        )
+
+        service.reloadAlarms()
+        service.reloadSchedulerState()
+
+        settingsClient.setAlarms(
+            listOf(
+                AlarmSetting(id = "alarm-2", hour = 10, minute = 0),
+            )
+        )
+
+        service.reloadAlarms()
+
+        assertEquals(
+            AlarmSchedulerState(
+                lastCheckAt = "2026-05-29T08:00:00",
+                lastTriggeredDates = mapOf("alarm-2" to "2026-05-28"),
+            ),
+            service.snapshotSchedulerState()
+        )
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
