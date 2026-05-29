@@ -78,7 +78,13 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
 
         addProviderButton = Button.withLabel("Add Provider").apply {
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
-            onClicked { showAddProviderDialog() }
+            onClicked {
+                val dialog = AddTextModelProviderDialog(viewModel) { provider ->
+                    onProviderAdded(provider)
+                }
+
+                dialog.present(this@TextModelsPage)
+            }
         }
 
         providersListBox = ListBox().apply {
@@ -177,7 +183,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
                                 refreshProviders()
                             }
                             KEY_TEXT_PROCESSING_ENABLED -> {
-                                refreshTextProcessingState()
+                                currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
                                 syncEnableSwitch()
                                 updateActiveProviderSensitivity(currentProviders, currentTextProcessingEnabled)
                             }
@@ -270,14 +276,6 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
      * Dialog logic
      */
 
-    private fun showAddProviderDialog() {
-        val dialog = AddTextModelProviderDialog(viewModel) { provider ->
-            onProviderAdded(provider)
-        }
-
-        dialog.present(this)
-    }
-
     private fun onProviderAdded(provider: TextModelProviderSetting): Boolean {
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
@@ -297,7 +295,4 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
     }
 
-    private fun refreshTextProcessingState() {
-        currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
-    }
 }
