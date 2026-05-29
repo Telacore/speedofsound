@@ -231,6 +231,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return legacyState
     }
 
+    fun peekAlarmSchedulerState(): AlarmSchedulerState =
+        readAlarmSchedulerState() ?: loadLegacyAlarmSchedulerState()
+
     fun setAlarmSchedulerState(value: AlarmSchedulerState, emitChange: Boolean = true): Boolean {
         val normalized = value.copy(
             lastCheckAt = value.lastCheckAt?.takeIf { it.isNotBlank() },

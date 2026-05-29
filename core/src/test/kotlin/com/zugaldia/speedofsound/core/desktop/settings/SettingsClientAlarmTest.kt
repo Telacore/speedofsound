@@ -292,6 +292,35 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `peek alarm scheduler state does not migrate legacy keys`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARM_LAST_TRIGGERED_DATES to Json.encodeToString(
+                    mapOf(
+                        "alarm-1" to "2026-05-29",
+                    )
+                ),
+                KEY_ALARM_LAST_CHECK_AT to "2026-05-29T09:15:30",
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(
+            AlarmSchedulerState(
+                lastCheckAt = "2026-05-29T09:15:30",
+                lastTriggeredDates = mapOf(
+                    "alarm-1" to "2026-05-29",
+                ),
+            ),
+            client.peekAlarmSchedulerState()
+        )
+        assertEquals(
+            DEFAULT_ALARM_SCHEDULER_STATE,
+            store.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
+        )
+    }
+
+    @Test
     fun `alarm trigger dates fall back to empty on malformed json`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

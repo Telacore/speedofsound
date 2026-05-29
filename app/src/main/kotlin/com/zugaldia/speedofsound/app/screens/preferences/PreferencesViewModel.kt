@@ -80,6 +80,7 @@ class PreferencesViewModel(
     fun setMaxAlarms(value: Int): Boolean = settingsClient.setMaxAlarms(value)
     fun getAlarmSchedulerState(): AlarmSchedulerState = settingsClient.getAlarmSchedulerState()
     fun setAlarmSchedulerState(value: AlarmSchedulerState): Boolean = settingsClient.setAlarmSchedulerState(value)
+    fun peekAlarmSchedulerState(): AlarmSchedulerState = settingsClient.peekAlarmSchedulerState()
 
     /*
      * Cloud Credentials page

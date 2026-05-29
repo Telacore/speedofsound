@@ -3,6 +3,8 @@ package com.zugaldia.speedofsound.app.screens.preferences.importexport
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
+import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_ALARM_SCHEDULER_STATE
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_SCHEDULER_STATE
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
@@ -109,6 +111,43 @@ class ImportExportManagerTest {
         assertTrue(result.filePath.isNotBlank())
         assertEquals(false, result.alarmSchedulerStateImported)
         assertEquals(AlarmSchedulerState(), settingsClient.getAlarmSchedulerState())
+    }
+
+    @Test
+    fun `export does not migrate legacy alarm scheduler state`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_LAST_TRIGGERED_DATES to Json.encodeToString(
+                    mapOf(
+                        "alarm-1" to "2026-05-29",
+                    )
+                ),
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_LAST_CHECK_AT to "2026-05-29T09:15:30",
+            )
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        val exportPath = manager.export().getOrThrow()
+        val exported = Json.decodeFromString<SettingsExport>(File(exportPath).readText())
+
+        assertEquals(
+            AlarmSchedulerState(
+                lastCheckAt = "2026-05-29T09:15:30",
+                lastTriggeredDates = mapOf("alarm-1" to "2026-05-29"),
+            ),
+            exported.alarmSchedulerState
+        )
+        assertEquals(
+            DEFAULT_ALARM_SCHEDULER_STATE,
+            store.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
+        )
     }
 
     private class MapSettingsStore(

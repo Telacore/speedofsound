@@ -30,7 +30,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
     fun export(): Result<String> = runCatching {
         // We do not export anything that is instance-specific (e.g., portal token). That
         // also includes built-in voice models, which we filter out below.
-        val schedulerState = viewModel.getAlarmSchedulerState()
+        val schedulerState = viewModel.peekAlarmSchedulerState()
         val exportData = SettingsExport(
             defaultLanguage = viewModel.getDefaultLanguage(),
             secondaryLanguage = viewModel.getSecondaryLanguage(),
