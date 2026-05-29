@@ -26,6 +26,25 @@ class PortalsSessionManagerTest {
     }
 
     @Test
+    fun `isMissingRemoteDesktopPortalInterface detects german missing object message`() {
+        val error = RuntimeException(
+            "Kein zugehöriges Objekt für 'org.freedesktop.portal.RemoteDesktop' " +
+                "unter /org/freedesktop/portal/desktop"
+        )
+
+        assertTrue(isMissingRemoteDesktopPortalInterface(error))
+    }
+
+    @Test
+    fun `isMissingRemoteDesktopPortalInterface detects mixed case english dbus error message`() {
+        val error = RuntimeException(
+            "No Such Interface 'org.freedesktop.portal.RemoteDesktop' on object /org/freedesktop/portal/desktop"
+        )
+
+        assertTrue(isMissingRemoteDesktopPortalInterface(error))
+    }
+
+    @Test
     fun `isMissingRemoteDesktopPortalInterface ignores unrelated messages`() {
         val error = RuntimeException("Unable to open microphone permissions due to transient dbus timeout")
 

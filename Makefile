@@ -73,11 +73,25 @@ smoke-help:
 smoke-startup-ci:
 	@echo "Running CI startup smoke checks with timeout $(SMOKE_TIMEOUT_CI) and fatal-on-error $(SMOKE_FAIL_ON_FATAL_CI)."
 	@ci_run_id=$$(date +%s)-$$RANDOM; \
-	ci_cinnamon_timeout="$(SMOKE_TIMEOUT_CI)"; \
-	if [ "$$ci_cinnamon_timeout" -lt "$(SMOKE_TIMEOUT_CI_MIN)" ]; then \
-	  ci_cinnamon_timeout="$(SMOKE_TIMEOUT_CI_MIN)"; \
+	ci_timeout_raw="$(SMOKE_TIMEOUT_CI)"; \
+	ci_timeout_min_raw="$(SMOKE_TIMEOUT_CI_MIN)"; \
+	case "$$ci_timeout_raw" in \
+	  ""|*[!0-9]*) \
+	    echo "Invalid SMOKE_TIMEOUT_CI='$$ci_timeout_raw'; defaulting to 60."; \
+	    ci_timeout_raw=60; \
+	    ;; \
+	esac; \
+	case "$$ci_timeout_min_raw" in \
+	  ""|*[!0-9]*) \
+	    echo "Invalid SMOKE_TIMEOUT_CI_MIN='$$ci_timeout_min_raw'; defaulting to 60."; \
+	    ci_timeout_min_raw=60; \
+	    ;; \
+	esac; \
+	ci_cinnamon_timeout="$$ci_timeout_raw"; \
+	if [ "$$ci_cinnamon_timeout" -lt "$$ci_timeout_min_raw" ]; then \
+	  ci_cinnamon_timeout="$$ci_timeout_min_raw"; \
 	fi; \
-	SMOKE_TIMEOUT="$(SMOKE_TIMEOUT_CI)" \
+	SMOKE_TIMEOUT="$$ci_timeout_raw" \
 	SMOKE_FAIL_ON_FATAL="$(SMOKE_FAIL_ON_FATAL_CI)" \
 	SMOKE_LOG_FILE="/tmp/speedofsound-smoke-startup-$$ci_run_id-main.log" \
 	$(MAKE) smoke-startup && \
