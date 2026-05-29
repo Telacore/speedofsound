@@ -310,6 +310,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         val normalized = value.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)
         val current = settingsStore.getInt(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS)
         if (current == normalized) {
+            normalizeStoredAlarmsToCurrentLimit()
             return true
         }
 
