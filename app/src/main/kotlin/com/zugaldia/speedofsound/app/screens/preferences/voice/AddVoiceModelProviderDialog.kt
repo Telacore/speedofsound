@@ -133,8 +133,21 @@ class AddVoiceModelProviderDialog(
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
             sensitive = false
             onClicked {
-                if (validateAndCreateProvider()) {
-                    closeDialog()
+                val name = nameEntry.text.trim()
+                val baseUrl = baseUrlEntry.getBaseUrl()
+                val modelId = selectedModelId
+                if (validateInput(name, baseUrl, modelId)) {
+                    val config = VoiceModelProviderSetting(
+                        id = generateUniqueId(),
+                        name = name,
+                        provider = selectedProvider,
+                        credentialId = selectedCredentialId,
+                        baseUrl = baseUrl,
+                        modelId = modelId
+                    )
+                    if (onProviderAdded(config)) {
+                        closeDialog()
+                    }
                 }
             }
         }
@@ -252,24 +265,6 @@ class AddVoiceModelProviderDialog(
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
         return true
-    }
-
-    private fun validateAndCreateProvider(): Boolean {
-        val name = nameEntry.text.trim()
-        val baseUrl = baseUrlEntry.getBaseUrl()
-        val modelId = selectedModelId
-        if (!validateInput(name, baseUrl, modelId)) { return false }
-
-        val config = VoiceModelProviderSetting(
-            id = generateUniqueId(),
-            name = name,
-            provider = selectedProvider,
-            credentialId = selectedCredentialId,
-            baseUrl = baseUrl,
-            modelId = modelId
-        )
-
-        return onProviderAdded(config)
     }
 
     private fun closeDialog() {
