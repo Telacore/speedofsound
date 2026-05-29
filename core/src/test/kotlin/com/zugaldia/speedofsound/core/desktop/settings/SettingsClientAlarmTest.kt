@@ -36,6 +36,21 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `setMaxAlarms clears malformed alarm json`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARMS to "{not-json"
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.setMaxAlarms(2)
+
+        assertEquals(emptyList(), client.getAlarms())
+        assertEquals(DEFAULT_ALARMS, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
+    }
+
+    @Test
     fun `setAlarms trims entries to the configured maximum`() {
         val store = MapSettingsStore()
         val client = SettingsClient(store)

@@ -255,11 +255,17 @@ class SettingsClient(val settingsStore: SettingsStore) {
             return
         }
 
-        val decoded = runCatching {
+        val decodeAttempt = runCatching {
             Json.decodeFromString<List<AlarmSetting>>(rawJson)
-        }.getOrElse { error ->
+        }
+        val decoded = decodeAttempt.getOrNull() ?: run {
+            val error = decodeAttempt.exceptionOrNull() ?: IllegalStateException("Malformed alarm JSON")
             logger.error("Failed to decode alarms while applying a new limit", error)
-            emptyList()
+            val clearedJson = Json.encodeToString(emptyList<AlarmSetting>())
+            settingsStore.setString(KEY_ALARMS, clearedJson).also { success ->
+                if (success) _settingsChanged.tryEmit(KEY_ALARMS)
+            }
+            return
         }
         val normalized = normalizeAlarms(decoded)
         if (decoded == normalized) {
