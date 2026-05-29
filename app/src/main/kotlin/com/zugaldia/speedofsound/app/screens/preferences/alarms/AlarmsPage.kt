@@ -143,17 +143,6 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         return true
     }
 
-    private fun deleteAlarm(alarmId: String): Boolean {
-        val updatedAlarms = viewModel.peekAlarms().filterNot { it.id == alarmId }
-        if (!viewModel.setAlarms(updatedAlarms)) {
-            logger.warn("Failed to persist alarm deletion '$alarmId'")
-            refresh()
-            return false
-        }
-        refresh()
-        return true
-    }
-
     private fun addAlarmToUI(alarm: AlarmSetting) {
         val row = ActionRow().apply {
             title = formatAlarmName(alarm)
@@ -184,7 +173,13 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
             upsertAlarm(alarm.copy(enabled = enabledSwitch.active))
         }
         editButton.onClicked { showAlarmEditor(alarm) }
-        deleteButton.onClicked { deleteAlarm(alarm.id) }
+        deleteButton.onClicked {
+            val updatedAlarms = viewModel.peekAlarms().filterNot { it.id == alarm.id }
+            if (!viewModel.setAlarms(updatedAlarms)) {
+                logger.warn("Failed to persist alarm deletion '${alarm.id}'")
+            }
+            refresh()
+        }
     }
 
 }
