@@ -228,14 +228,23 @@ class SettingsClient(val settingsStore: SettingsStore) {
             return true
         }
         val json = Json.encodeToString(normalized)
-        return settingsStore.setString(KEY_ALARM_SCHEDULER_STATE, json).also { success ->
-            if (success) {
-                if (emitChange) {
+        val combinedChanged = currentCombined != normalized
+        val legacyChanged = currentLegacy != normalized
+        val combinedSaved = if (combinedChanged) {
+            settingsStore.setString(KEY_ALARM_SCHEDULER_STATE, json).also { success ->
+                if (success && emitChange) {
                     _settingsChanged.tryEmit(KEY_ALARM_SCHEDULER_STATE)
                 }
-                persistLegacyAlarmSchedulerState(normalized)
             }
+        } else {
+            true
         }
+        val legacySaved = if (legacyChanged) {
+            persistLegacyAlarmSchedulerState(normalized, currentLegacy)
+        } else {
+            true
+        }
+        return combinedSaved && legacySaved
     }
 
     fun loadAlarmLastTriggeredDates(): Map<String, LocalDate> =
@@ -441,17 +450,27 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
-    private fun persistLegacyAlarmSchedulerState(state: AlarmSchedulerState) {
-        val triggerDatesJson = Json.encodeToString(state.lastTriggeredDates)
-        val triggeredDatesSaved = settingsStore.setString(KEY_ALARM_LAST_TRIGGERED_DATES, triggerDatesJson)
-        if (!triggeredDatesSaved) {
-            logger.warn("Failed to persist legacy alarm trigger dates.")
+    private fun persistLegacyAlarmSchedulerState(state: AlarmSchedulerState, currentState: AlarmSchedulerState): Boolean {
+        var saved = true
+
+        if (currentState.lastTriggeredDates != state.lastTriggeredDates) {
+            val triggerDatesJson = Json.encodeToString(state.lastTriggeredDates)
+            val triggeredDatesSaved = settingsStore.setString(KEY_ALARM_LAST_TRIGGERED_DATES, triggerDatesJson)
+            if (!triggeredDatesSaved) {
+                logger.warn("Failed to persist legacy alarm trigger dates.")
+                saved = false
+            }
         }
 
-        val checkAtSaved = settingsStore.setString(KEY_ALARM_LAST_CHECK_AT, state.lastCheckAt ?: DEFAULT_ALARM_LAST_CHECK_AT)
-        if (!checkAtSaved) {
-            logger.warn("Failed to persist legacy alarm last check timestamp.")
+        if (currentState.lastCheckAt != state.lastCheckAt) {
+            val checkAtSaved = settingsStore.setString(KEY_ALARM_LAST_CHECK_AT, state.lastCheckAt ?: DEFAULT_ALARM_LAST_CHECK_AT)
+            if (!checkAtSaved) {
+                logger.warn("Failed to persist legacy alarm last check timestamp.")
+                saved = false
+            }
         }
+
+        return saved
     }
 
     /*

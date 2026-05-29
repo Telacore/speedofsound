@@ -295,6 +295,33 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `setAlarmSchedulerState only rewrites missing legacy keys`() {
+        val normalizedState = AlarmSchedulerState(
+            lastCheckAt = "2026-05-29T09:15:30",
+            lastTriggeredDates = mapOf(
+                "alarm-1" to "2026-05-29",
+                "alarm-2" to "2026-05-30",
+            ),
+        )
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARM_LAST_TRIGGERED_DATES to Json.encodeToString(normalizedState.lastTriggeredDates),
+                KEY_ALARM_LAST_CHECK_AT to normalizedState.lastCheckAt!!,
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(true, client.setAlarmSchedulerState(normalizedState))
+        assertEquals(1, store.stringWriteCount)
+        assertEquals(
+            normalizedState,
+            Json.decodeFromString<AlarmSchedulerState>(
+                store.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
+            )
+        )
+    }
+
+    @Test
     fun `alarm scheduler state falls back to legacy keys`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
