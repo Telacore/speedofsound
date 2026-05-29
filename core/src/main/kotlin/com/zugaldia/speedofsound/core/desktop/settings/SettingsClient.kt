@@ -226,7 +226,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setMaxAlarms(value: Int): Boolean =
         settingsStore.setInt(KEY_MAX_ALARMS, value.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_MAX_ALARMS)
+            if (!success) return@also
+
+            _settingsChanged.tryEmit(KEY_MAX_ALARMS)
+            normalizeStoredAlarmsToCurrentLimit()
         }
 
     private fun normalizeAlarms(value: List<AlarmSetting>): List<AlarmSetting> {
@@ -242,6 +245,29 @@ class SettingsClient(val settingsStore: SettingsStore) {
             .toList()
 
         return sortedUniqueAlarms.take(getMaxAlarms())
+    }
+
+    private fun normalizeStoredAlarmsToCurrentLimit() {
+        val rawJson = settingsStore.getString(KEY_ALARMS, DEFAULT_ALARMS)
+        if (rawJson.isEmpty() || rawJson == DEFAULT_ALARMS) {
+            return
+        }
+
+        val decoded = runCatching {
+            Json.decodeFromString<List<AlarmSetting>>(rawJson)
+        }.getOrElse { error ->
+            logger.error("Failed to decode alarms while applying a new limit", error)
+            emptyList()
+        }
+        val normalized = normalizeAlarms(decoded)
+        if (decoded == normalized) {
+            return
+        }
+
+        val json = Json.encodeToString(normalized)
+        settingsStore.setString(KEY_ALARMS, json).also { success ->
+            if (success) _settingsChanged.tryEmit(KEY_ALARMS)
+        }
     }
 
     /*

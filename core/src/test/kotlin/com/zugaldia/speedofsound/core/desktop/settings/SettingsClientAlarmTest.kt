@@ -17,6 +17,25 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `setMaxAlarms trims already persisted alarms`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        client.setAlarms(
+            listOf(
+                AlarmSetting(id = "alarm-1", hour = 6, minute = 0),
+                AlarmSetting(id = "alarm-2", hour = 7, minute = 0),
+                AlarmSetting(id = "alarm-3", hour = 8, minute = 0),
+            )
+        )
+
+        client.setMaxAlarms(2)
+
+        assertEquals(2, client.getAlarms().size)
+        assertEquals(listOf("alarm-1", "alarm-2"), client.getAlarms().map { it.id })
+    }
+
+    @Test
     fun `setAlarms trims entries to the configured maximum`() {
         val store = MapSettingsStore()
         val client = SettingsClient(store)
