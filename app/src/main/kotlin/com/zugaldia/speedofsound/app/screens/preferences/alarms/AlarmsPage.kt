@@ -42,7 +42,10 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
 
         addButton = Button.withLabel("Add Alarm").apply {
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
-            onClicked { showAlarmEditor() }
+            onClicked {
+                val dialog = AlarmEditorDialog(null) { alarm -> upsertAlarm(alarm) }
+                dialog.present(this@AlarmsPage)
+            }
         }
 
         maxAlarmsRow = SpinRow.withRange(
@@ -143,7 +146,10 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
                 enabledSwitch.onNotify("active") {
                     upsertAlarm(alarm.copy(enabled = enabledSwitch.active))
                 }
-                editButton.onClicked { showAlarmEditor(alarm) }
+                editButton.onClicked {
+                    val dialog = AlarmEditorDialog(alarm) { updatedAlarm -> upsertAlarm(updatedAlarm) }
+                    dialog.present(this@AlarmsPage)
+                }
                 deleteButton.onClicked {
                     val updatedAlarms = viewModel.peekAlarms().filterNot { it.id == alarm.id }
                     if (!viewModel.setAlarms(updatedAlarms)) {
@@ -156,11 +162,6 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         placeholderBox.visible = currentAlarms.isEmpty()
         maxAlarmsRow.value = viewModel.peekMaxAlarms().toDouble()
         addButton.sensitive = currentAlarms.size < viewModel.peekMaxAlarms()
-    }
-
-    private fun showAlarmEditor(existingAlarm: AlarmSetting? = null) {
-        val dialog = AlarmEditorDialog(existingAlarm) { alarm -> upsertAlarm(alarm) }
-        dialog.present(this)
     }
 
     private fun upsertAlarm(alarm: AlarmSetting): Boolean {
