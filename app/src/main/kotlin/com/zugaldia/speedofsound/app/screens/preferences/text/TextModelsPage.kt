@@ -44,6 +44,8 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     private val placeholderBox: Box
     private val addProviderButton: Button
     private var suppressEnableSwitchNotify = false
+    private var currentProviders: List<TextModelProviderSetting> = emptyList()
+    private var currentTextProcessingEnabled: Boolean = false
 
     init {
         title = "Text Models"
@@ -106,23 +108,19 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
 
         add(textProcessingGroup)
         add(providersGroup)
-        renderProviders(
-            providers = viewModel.peekTextModelProviders(),
-            textProcessingEnabled = viewModel.peekTextProcessingEnabled(),
-        )
+        refreshSnapshots()
+        renderProviders(currentProviders, currentTextProcessingEnabled)
         setupNotifications()
     }
 
     fun refreshProviders() {
         logger.info("Refreshing text model providers")
-        renderProviders(
-            providers = viewModel.peekTextModelProviders(),
-            textProcessingEnabled = viewModel.peekTextProcessingEnabled(),
-        )
+        refreshSnapshots()
+        renderProviders(currentProviders, currentTextProcessingEnabled)
     }
 
     private fun syncEnableSwitch() {
-        val enabled = viewModel.peekTextProcessingEnabled()
+        val enabled = currentTextProcessingEnabled
         if (enableSwitch.active == enabled) return
         suppressEnableSwitchNotify = true
         try {
@@ -136,6 +134,8 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         providers: List<TextModelProviderSetting>,
         textProcessingEnabled: Boolean,
     ) {
+        currentProviders = providers
+        currentTextProcessingEnabled = textProcessingEnabled
         providersListBox.removeAll()
         providers.sortedBy { it.name.lowercase() }.forEach { provider -> addProviderToUI(provider) }
         activeProviderComboRow.updateProviders(providers)
@@ -152,11 +152,10 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
             if (!viewModel.setTextProcessingEnabled(enabled)) {
                 logger.warn("Failed to persist text processing state change to $enabled")
                 syncEnableSwitch()
+            } else {
+                currentTextProcessingEnabled = enabled
             }
-            updateActiveProviderSensitivity(
-                viewModel.peekTextModelProviders(),
-                viewModel.peekTextProcessingEnabled(),
-            )
+            updateActiveProviderSensitivity(currentProviders, currentTextProcessingEnabled)
         }
         scope.launch {
             viewModel.settingsChanged
@@ -173,11 +172,9 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
                                 refreshProviders()
                             }
                             KEY_TEXT_PROCESSING_ENABLED -> {
+                                refreshTextProcessingState()
                                 syncEnableSwitch()
-                                updateActiveProviderSensitivity(
-                                    viewModel.peekTextModelProviders(),
-                                    viewModel.peekTextProcessingEnabled(),
-                                )
+                                updateActiveProviderSensitivity(currentProviders, currentTextProcessingEnabled)
                             }
                             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
                             KEY_TEXT_MODEL_PROVIDERS -> {
@@ -237,7 +234,6 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     }
 
     private fun onProviderDeleted(providerId: String): Boolean {
-        val currentProviders = viewModel.peekTextModelProviders()
         val updatedProviders = currentProviders.filter { it.id != providerId }
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
         if (!viewModel.setTextModelProviders(updatedProviders)) {
@@ -245,7 +241,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
             refreshProviders()
             return false
         }
-        renderProviders(updatedProviders, viewModel.peekTextProcessingEnabled())
+        renderProviders(updatedProviders, currentTextProcessingEnabled)
         return true
     }
 
@@ -259,7 +255,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
 
     private fun updateActiveProviderSensitivity(
         providers: List<TextModelProviderSetting>,
-        textProcessingEnabled: Boolean = viewModel.peekTextProcessingEnabled(),
+        textProcessingEnabled: Boolean = currentTextProcessingEnabled,
     ) {
         val hasProviders = providers.isNotEmpty()
         activeProviderComboRow.sensitive = textProcessingEnabled && hasProviders
@@ -278,7 +274,6 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     }
 
     private fun onProviderAdded(provider: TextModelProviderSetting): Boolean {
-        val currentProviders = viewModel.peekTextModelProviders()
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
         if (!viewModel.setTextModelProviders(updatedProviders)) {
@@ -286,7 +281,16 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
             refreshProviders()
             return false
         }
-        renderProviders(updatedProviders, viewModel.peekTextProcessingEnabled())
+        renderProviders(updatedProviders, currentTextProcessingEnabled)
         return true
+    }
+
+    private fun refreshSnapshots() {
+        currentProviders = viewModel.peekTextModelProviders()
+        currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
+    }
+
+    private fun refreshTextProcessingState() {
+        currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
     }
 }

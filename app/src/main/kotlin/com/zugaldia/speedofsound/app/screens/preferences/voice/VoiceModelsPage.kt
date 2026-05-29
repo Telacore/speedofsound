@@ -37,6 +37,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     private val activeProviderComboRow: ActiveProviderComboRow<VoiceModelProviderSetting>
     private val providersListBox: ListBox
     private val addProviderButton: Button
+    private var currentProviders: List<VoiceModelProviderSetting> = emptyList()
 
     init {
         title = "Voice Models"
@@ -77,7 +78,8 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
 
         add(textProcessingGroup)
         add(providersGroup)
-        renderProviders(viewModel.peekVoiceModelProviders())
+        refreshSnapshots()
+        renderProviders(currentProviders)
         setupNotifications()
     }
 
@@ -101,10 +103,12 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
 
     fun refreshProviders() {
         logger.info("Refreshing voice model providers")
-        renderProviders(viewModel.peekVoiceModelProviders())
+        refreshSnapshots()
+        renderProviders(currentProviders)
     }
 
     private fun renderProviders(providers: List<VoiceModelProviderSetting>) {
+        currentProviders = providers
         providersListBox.removeAll()
         providers.sortedBy { it.name.lowercase() }.forEach { provider -> addProviderToUI(provider) }
         activeProviderComboRow.updateProviders(providers)
@@ -159,7 +163,6 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     }
 
     private fun onProviderDeleted(providerId: String): Boolean {
-        val currentProviders = viewModel.peekVoiceModelProviders()
         val updatedProviders = currentProviders.filter { it.id != providerId }
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
         if (!viewModel.setVoiceModelProviders(updatedProviders)) {
@@ -171,7 +174,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         return true
     }
 
-    private fun updateAddProviderButtonState(providers: List<VoiceModelProviderSetting> = viewModel.peekVoiceModelProviders()) {
+    private fun updateAddProviderButtonState(providers: List<VoiceModelProviderSetting> = currentProviders) {
         // Subtract 1 to account for the default provider when checking the limit
         val customProviderCount = providers.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
         val atLimit = customProviderCount >= MAX_VOICE_MODEL_PROVIDERS
@@ -191,7 +194,6 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     }
 
     private fun onProviderAdded(provider: VoiceModelProviderSetting): Boolean {
-        val currentProviders = viewModel.peekVoiceModelProviders()
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
         if (!viewModel.setVoiceModelProviders(updatedProviders)) {
@@ -201,5 +203,9 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         }
         renderProviders(updatedProviders)
         return true
+    }
+
+    private fun refreshSnapshots() {
+        currentProviders = viewModel.peekVoiceModelProviders()
     }
 }

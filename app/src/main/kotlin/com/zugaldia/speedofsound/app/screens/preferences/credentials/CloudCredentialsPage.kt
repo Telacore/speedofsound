@@ -37,6 +37,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     private val credentialsListBox: ListBox
     private val placeholderBox: Box
     private val addButton: Button
+    private var currentCredentials: List<CredentialSetting> = emptyList()
 
     init {
         title = "Cloud Credentials"
@@ -79,14 +80,14 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         }
 
         add(credentialsGroup)
+        refreshSnapshots()
         loadCredentials()
         setupNotifications()
     }
 
     private fun loadCredentials() {
-        val credentials = viewModel.peekCredentials()
-        credentials.sortedBy { it.name.lowercase() }.forEach { credential -> addCredentialToUI(credential) }
-        updatePlaceholderVisibility()
+        currentCredentials.sortedBy { it.name.lowercase() }.forEach { credential -> addCredentialToUI(credential) }
+        updatePlaceholderVisibility(currentCredentials)
     }
 
     private fun setupNotifications() {
@@ -104,6 +105,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
 
     fun refresh() {
         logger.info("Refreshing cloud credentials")
+        refreshSnapshots()
         credentialsListBox.removeAll()
         loadCredentials()
     }
@@ -114,7 +116,6 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     }
 
     private fun onCredentialAdded(credential: CredentialSetting): Boolean {
-        val currentCredentials = viewModel.peekCredentials()
         if (currentCredentials.size >= MAX_CREDENTIALS) {
             logger.warn("Cannot add credential: limit of $MAX_CREDENTIALS reached")
             refresh()
@@ -135,8 +136,9 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
             refresh()
             return false
         }
+        currentCredentials = updatedCredentials
         addCredentialToUI(credential)
-        updatePlaceholderVisibility()
+        updatePlaceholderVisibility(currentCredentials)
         return true
     }
 
@@ -166,10 +168,9 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
             "..."
         } else {
             "${value.take(CREDENTIAL_MASK_PREFIX_LENGTH)}...${value.takeLast(CREDENTIAL_MASK_SUFFIX_LENGTH)}"
-        }
+    }
 
     private fun onCredentialDeleted(credentialId: String, credentialName: String): Boolean {
-        val currentCredentials = viewModel.peekCredentials()
         val credentialToDelete = currentCredentials.find { it.id == credentialId }
         if (credentialToDelete != null) {
             val currentCredentialIds = currentCredentials.map { it.id }.toSet()
@@ -198,12 +199,12 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
             refresh()
             return false
         }
-        updatePlaceholderVisibility()
+        currentCredentials = updatedCredentials
+        updatePlaceholderVisibility(currentCredentials)
         return true
     }
 
-    private fun updatePlaceholderVisibility() {
-        val credentials = viewModel.peekCredentials()
+    private fun updatePlaceholderVisibility(credentials: List<CredentialSetting> = currentCredentials) {
         val hasCredentials = credentials.isNotEmpty()
         val atLimit = credentials.size >= MAX_CREDENTIALS
         credentialsListBox.visible = hasCredentials
@@ -212,5 +213,9 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         if (atLimit) {
             logger.info("Credential limit of $MAX_CREDENTIALS reached")
         }
+    }
+
+    private fun refreshSnapshots() {
+        currentCredentials = viewModel.peekCredentials()
     }
 }
