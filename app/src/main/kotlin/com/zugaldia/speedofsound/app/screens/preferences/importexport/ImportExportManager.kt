@@ -35,6 +35,8 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         // We do not export anything that is instance-specific (e.g., portal token). That
         // also includes built-in voice models, which we filter out below.
         val schedulerState = viewModel.peekAlarmSchedulerState()
+        val credentials = viewModel.peekCredentials()
+        val credentialIds = credentials.map { it.id }.toSet()
         val exportData = SettingsExport(
             defaultLanguage = viewModel.peekDefaultLanguage(),
             secondaryLanguage = viewModel.peekSecondaryLanguage(),
@@ -48,12 +50,12 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
                 lastCheckAt = schedulerState.lastCheckAt,
                 lastTriggeredDates = schedulerState.lastTriggeredDates,
             ),
-            credentials = viewModel.peekCredentials(),
-            voiceModelProviders = viewModel.peekVoiceModelProviders()
+            credentials = credentials,
+            voiceModelProviders = viewModel.peekVoiceModelProviders(credentialIds)
                 .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
-                .normalizedCredentialRefs(viewModel.peekCredentials().map { it.id }.toSet()),
-            textModelProviders = viewModel.peekTextModelProviders()
-                .normalizedCredentialRefs(viewModel.peekCredentials().map { it.id }.toSet()),
+                .normalizedCredentialRefs(credentialIds),
+            textModelProviders = viewModel.peekTextModelProviders(credentialIds)
+                .normalizedCredentialRefs(credentialIds),
             sanitizeSpecialChars = viewModel.peekSanitizeSpecialChars(),
             postHideDelayMs = viewModel.peekPostHideDelayMs(),
             typingDelayMs = viewModel.peekTypingDelayMs(),

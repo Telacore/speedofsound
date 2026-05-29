@@ -579,6 +579,7 @@ class ImportExportManagerTest {
         assertEquals("text-1", exported.textModelProviders.first().id)
         assertEquals(50, exported.maxAlarms)
         assertEquals(emptyList<AlarmSetting>(), exported.alarms)
+        assertEquals(1, store.stringReadCount(com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS))
     }
 
     @Test
@@ -961,10 +962,14 @@ class ImportExportManagerTest {
     ) : SettingsStore {
         private val values = initialValues
         var writeCount: Int = 0
+        private val stringReadCounts = mutableMapOf<String, Int>()
 
         override fun isAvailable(): Boolean = true
 
-        override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
+        override fun getString(key: String, defaultValue: String): String {
+            stringReadCounts[key] = (stringReadCounts[key] ?: 0) + 1
+            return values[key] ?: defaultValue
+        }
 
         override fun setString(key: String, value: String): Boolean {
             if (key in failingStringKeys) {
@@ -1003,6 +1008,8 @@ class ImportExportManagerTest {
             writeCount += 1
             return true
         }
+
+        fun stringReadCount(key: String): Int = stringReadCounts[key] ?: 0
 
         fun rawValue(key: String): String? = values[key]
     }

@@ -712,8 +712,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return getLocalVoiceModelProviders() + customProviders
     }
 
-    fun peekVoiceModelProviders(): List<VoiceModelProviderSetting> {
-        val validCredentialIds = peekCredentials().map { it.id }.toSet()
+    fun peekVoiceModelProviders(): List<VoiceModelProviderSetting> =
+        peekVoiceModelProviders(peekCredentials().map { it.id }.toSet())
+
+    fun peekVoiceModelProviders(validCredentialIds: Set<String>): List<VoiceModelProviderSetting> {
         val customProviders = peekNormalizedJsonListSetting<VoiceModelProviderSetting>(
             key = KEY_VOICE_MODEL_PROVIDERS,
             defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
@@ -904,8 +906,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
     }
 
-    fun peekTextModelProviders(): List<TextModelProviderSetting> {
-        val validCredentialIds = peekCredentials().map { it.id }.toSet()
+    fun peekTextModelProviders(): List<TextModelProviderSetting> =
+        peekTextModelProviders(peekCredentials().map { it.id }.toSet())
+
+    fun peekTextModelProviders(validCredentialIds: Set<String>): List<TextModelProviderSetting> {
         return peekNormalizedJsonListSetting(
             key = KEY_TEXT_MODEL_PROVIDERS,
             defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,

@@ -94,6 +94,8 @@ class PreferencesViewModel(
      */
 
     fun peekVoiceModelProviders(): List<VoiceModelProviderSetting> = settingsClient.peekVoiceModelProviders()
+    fun peekVoiceModelProviders(validCredentialIds: Set<String>): List<VoiceModelProviderSetting> =
+        settingsClient.peekVoiceModelProviders(validCredentialIds)
     fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean =
         settingsClient.setVoiceModelProviders(value)
     fun peekSelectedVoiceModelProviderIdExact(): String =
@@ -109,6 +111,8 @@ class PreferencesViewModel(
     fun setTextProcessingEnabled(value: Boolean): Boolean = settingsClient.setTextProcessingEnabled(value)
 
     fun peekTextModelProviders(): List<TextModelProviderSetting> = settingsClient.peekTextModelProviders()
+    fun peekTextModelProviders(validCredentialIds: Set<String>): List<TextModelProviderSetting> =
+        settingsClient.peekTextModelProviders(validCredentialIds)
     fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean =
         settingsClient.setTextModelProviders(value)
 
