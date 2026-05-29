@@ -105,7 +105,14 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
         instructionsTextView.buffer.onChanged {
             if (isRefreshing) return@onChanged
             enforceTextLimit()
-            scheduleSaveInstructions()
+            saveInstructionsCounter++
+            val currentCounter = saveInstructionsCounter
+            GLib.timeoutAdd(GLib.PRIORITY_DEFAULT, SETTINGS_SAVE_DEBOUNCE_MS) {
+                if (saveInstructionsCounter == currentCounter) {
+                    saveInstructions()
+                }
+                false // Don't repeat
+            }
         }
     }
 
@@ -125,22 +132,6 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
             loadValues()
         } finally {
             isRefreshing = false
-        }
-    }
-
-    /**
-     * Schedule a save operation after the user stops typing using a counter-based debounced approach.
-     * This avoids unnecessary disk writes with every keystroke.
-     * Future alternative: use Kotlin coroutines with Flow.debounce() for automatic cancellation.
-     */
-    private fun scheduleSaveInstructions() {
-        saveInstructionsCounter++
-        val currentCounter = saveInstructionsCounter
-        GLib.timeoutAdd(GLib.PRIORITY_DEFAULT, SETTINGS_SAVE_DEBOUNCE_MS) {
-            if (saveInstructionsCounter == currentCounter) {
-                saveInstructions()
-            }
-            false // Don't repeat
         }
     }
 
