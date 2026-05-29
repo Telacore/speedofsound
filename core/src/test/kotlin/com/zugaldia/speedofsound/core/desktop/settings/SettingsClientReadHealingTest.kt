@@ -51,6 +51,23 @@ class SettingsClientReadHealingTest {
         assertEquals(1, store.writeCount)
     }
 
+    @Test
+    fun `malformed language settings are healed on read`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_DEFAULT_LANGUAGE to "EN",
+                KEY_SECONDARY_LANGUAGE to "zz",
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(DEFAULT_LANGUAGE.iso2, client.getDefaultLanguage())
+        assertEquals(DEFAULT_SECONDARY_LANGUAGE.iso2, client.getSecondaryLanguage())
+        assertEquals(DEFAULT_LANGUAGE.iso2, store.getString(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2))
+        assertEquals(DEFAULT_SECONDARY_LANGUAGE.iso2, store.getString(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2))
+        assertEquals(2, store.writeCount)
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {

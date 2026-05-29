@@ -139,13 +139,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
      */
 
     fun getDefaultLanguage(): String =
-        settingsStore.getString(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2)
+        readLanguageSetting(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2)
 
     fun setDefaultLanguage(value: String): Boolean =
         setStringSettingIfChanged(KEY_DEFAULT_LANGUAGE, getDefaultLanguage(), value, KEY_DEFAULT_LANGUAGE)
 
     fun getSecondaryLanguage(): String =
-        settingsStore.getString(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
+        readLanguageSetting(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
 
     fun setSecondaryLanguage(value: String): Boolean =
         setStringSettingIfChanged(KEY_SECONDARY_LANGUAGE, getSecondaryLanguage(), value, KEY_SECONDARY_LANGUAGE)
@@ -832,6 +832,21 @@ class SettingsClient(val settingsStore: SettingsStore) {
         } else {
             settingsStore.setString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
             DEFAULT_TEXT_OUTPUT_METHOD
+        }
+    }
+
+    private fun readLanguageSetting(key: String, defaultValue: String): String {
+        val raw = settingsStore.getString(key, defaultValue)
+        val normalized = raw.trim().lowercase()
+        val parsed = languageFromIso2(normalized)?.iso2
+        return if (parsed != null) {
+            if (raw != parsed) {
+                settingsStore.setString(key, parsed)
+            }
+            parsed
+        } else {
+            settingsStore.setString(key, defaultValue)
+            defaultValue
         }
     }
 
