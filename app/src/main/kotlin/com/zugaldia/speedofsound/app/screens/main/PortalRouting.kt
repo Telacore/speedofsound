@@ -41,7 +41,9 @@ internal fun shouldPersistClipboardFallback(policy: ClipboardFallbackPolicy): Bo
 internal fun shouldRestorePortalOutput(
     textOutputMethod: String,
     activeTextOutputId: String?,
+    remoteDesktopStatus: RemoteDesktopStatus,
     isPortalAvailable: Boolean,
 ): Boolean = textOutputMethod == TEXT_OUTPUT_METHOD_PORTAL &&
     isPortalAvailable &&
+    remoteDesktopStatus != RemoteDesktopStatus.NotSupported &&
     activeTextOutputId != PortalTextOutput.ID

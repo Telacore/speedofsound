@@ -106,6 +106,7 @@ class PortalRoutingTest {
             shouldRestorePortalOutput(
                 textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
                 activeTextOutputId = com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput.ID,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.Ready,
                 isPortalAvailable = true,
             )
         )
@@ -117,6 +118,19 @@ class PortalRoutingTest {
             shouldRestorePortalOutput(
                 textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
                 activeTextOutputId = PortalTextOutput.ID,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.Ready,
+                isPortalAvailable = true,
+            )
+        )
+    }
+
+    @Test
+    fun `shouldRestorePortalOutput returns false when portal is not supported`() {
+        assertFalse(
+            shouldRestorePortalOutput(
+                textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                activeTextOutputId = com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput.ID,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NotSupported,
                 isPortalAvailable = true,
             )
         )

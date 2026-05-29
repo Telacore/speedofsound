@@ -180,10 +180,12 @@ class MainViewModel(
         if (shouldRestorePortalOutput(
                 settingsClient.getTextOutputMethod(),
                 (registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? TextOutputPlugin<*>)?.id,
+                activeRemoteDesktopStatus,
                 portalsClient.isPortalAvailable,
             )
         ) {
             activateSelectedTextOutput()
+            updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
         }
         if (shouldAttemptPortalReconnect(settingsClient.getTextOutputMethod())) {
             portalsSessionManager.attemptReconnect(viewModelScope)
