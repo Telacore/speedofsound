@@ -78,103 +78,108 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             throw IllegalStateException("Unsupported export version: ${exportData.version}")
         }
 
-        requireWrite(viewModel.setDefaultLanguage(exportData.defaultLanguage), "default language")
-        requireWrite(viewModel.setSecondaryLanguage(exportData.secondaryLanguage), "secondary language")
-        requireWrite(viewModel.setBackgroundRecording(exportData.backgroundRecording), "background recording")
-        requireWrite(viewModel.setHideInsteadOfMinimize(exportData.hideInsteadOfMinimize), "hide instead of minimize")
-        requireWrite(viewModel.setStayHiddenOnActivation(exportData.stayHiddenOnActivation), "stay hidden on activation")
-        requireWrite(viewModel.setAppendSpace(exportData.appendSpace), "append space")
-        requireWrite(viewModel.setMaxAlarms(exportData.maxAlarms), "max alarms")
+        val snapshot = captureImportSnapshot()
 
-        val existingAlarms = viewModel.peekAlarms()
-        val existingAlarmIds = existingAlarms.map { it.id }.toSet()
-        val newAlarms = exportData.alarms.filter { it.id !in existingAlarmIds }
-        requireWrite(viewModel.setAlarms(existingAlarms + newAlarms), "alarms")
-        val importedAlarmIds = viewModel.peekAlarms().map { it.id }.toSet()
-        val alarmsAdded = importedAlarmIds.count { it !in existingAlarmIds }
+        try {
+            requireWrite(viewModel.setDefaultLanguage(exportData.defaultLanguage), "default language")
+            requireWrite(viewModel.setSecondaryLanguage(exportData.secondaryLanguage), "secondary language")
+            requireWrite(viewModel.setBackgroundRecording(exportData.backgroundRecording), "background recording")
+            requireWrite(viewModel.setHideInsteadOfMinimize(exportData.hideInsteadOfMinimize), "hide instead of minimize")
+            requireWrite(viewModel.setStayHiddenOnActivation(exportData.stayHiddenOnActivation), "stay hidden on activation")
+            requireWrite(viewModel.setAppendSpace(exportData.appendSpace), "append space")
+            requireWrite(viewModel.setMaxAlarms(exportData.maxAlarms), "max alarms")
 
-        exportData.alarmSchedulerState?.let { schedulerState ->
-            val filteredSchedulerState = schedulerState.copy(
-                lastTriggeredDates = schedulerState.lastTriggeredDates.filterKeys { it in importedAlarmIds }
-            )
+            val existingAlarms = snapshot.alarms
+            val existingAlarmIds = existingAlarms.map { it.id }.toSet()
+            val newAlarms = exportData.alarms.filter { it.id !in existingAlarmIds }
+            requireWrite(viewModel.setAlarms(existingAlarms + newAlarms), "alarms")
+            val importedAlarmIds = viewModel.peekAlarms().map { it.id }.toSet()
+            val alarmsAdded = importedAlarmIds.count { it !in existingAlarmIds }
+
+            exportData.alarmSchedulerState?.let { schedulerState ->
+                val filteredSchedulerState = schedulerState.copy(
+                    lastTriggeredDates = schedulerState.lastTriggeredDates.filterKeys { it in importedAlarmIds }
+                )
+                requireWrite(
+                    viewModel.setAlarmSchedulerState(filteredSchedulerState),
+                    "alarm scheduler state",
+                )
+            }
+            requireWrite(viewModel.setSanitizeSpecialChars(exportData.sanitizeSpecialChars), "sanitize special chars")
+            requireWrite(viewModel.setPostHideDelayMs(exportData.postHideDelayMs), "post hide delay")
+            requireWrite(viewModel.setTypingDelayMs(exportData.typingDelayMs), "typing delay")
+            requireWrite(viewModel.setCustomContext(exportData.customContext), "custom context")
+
+            val existingCredentials = snapshot.credentials
+            val existingCredentialIds = existingCredentials.map { it.id }.toSet()
+            val newCredentials = exportData.credentials.filter { it.id !in existingCredentialIds }
+            if (newCredentials.isNotEmpty()) {
+                requireWrite(viewModel.setCredentials(existingCredentials + newCredentials), "credentials")
+            }
+            val importedCredentialIds = viewModel.peekCredentials().map { it.id }.toSet()
+            val credentialsAdded = importedCredentialIds.count { it !in existingCredentialIds }
+
+            val existingVoiceProviders = snapshot.voiceProviders
+            val existingVoiceIds = existingVoiceProviders.map { it.id }.toSet()
+            val existingCustomVoiceIds = existingVoiceProviders
+                .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+                .map { it.id }
+                .toSet()
+            val newVoiceProviders = exportData.voiceModelProviders.filter { it.id !in existingVoiceIds }
+            val normalizedVoiceProviders = (existingVoiceProviders + newVoiceProviders).normalizedCredentialRefs(importedCredentialIds)
+            if (normalizedVoiceProviders != existingVoiceProviders) {
+                requireWrite(viewModel.setVoiceModelProviders(normalizedVoiceProviders), "voice model providers")
+            }
+            val importedVoiceIds = viewModel.peekVoiceModelProviders()
+                .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+                .map { it.id }
+                .toSet()
+            val voiceProvidersAdded = importedVoiceIds.count { it !in existingCustomVoiceIds }
             requireWrite(
-                viewModel.setAlarmSchedulerState(filteredSchedulerState),
-                "alarm scheduler state",
+                viewModel.setSelectedVoiceModelProviderId(snapshot.selectedVoiceProviderId),
+                "selected voice model provider",
             )
-        }
 
-        requireWrite(viewModel.setSanitizeSpecialChars(exportData.sanitizeSpecialChars), "sanitize special chars")
-        requireWrite(viewModel.setPostHideDelayMs(exportData.postHideDelayMs), "post hide delay")
-        requireWrite(viewModel.setTypingDelayMs(exportData.typingDelayMs), "typing delay")
-        requireWrite(viewModel.setCustomContext(exportData.customContext), "custom context")
-        val wasTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
+            val existingTextProviders = snapshot.textProviders
+            val existingTextIds = existingTextProviders.map { it.id }.toSet()
+            val newTextProviders = exportData.textModelProviders.filter { it.id !in existingTextIds }
+            val normalizedTextProviders = (existingTextProviders + newTextProviders).normalizedCredentialRefs(importedCredentialIds)
+            if (normalizedTextProviders != existingTextProviders) {
+                requireWrite(viewModel.setTextModelProviders(normalizedTextProviders), "text model providers")
+            }
+            val importedTextIds = viewModel.peekTextModelProviders().map { it.id }.toSet()
+            val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
+            requireWrite(
+                viewModel.setSelectedTextModelProviderId(snapshot.selectedTextProviderId),
+                "selected text model provider",
+            )
+            if (snapshot.textProcessingEnabled && viewModel.peekTextModelProviders().isNotEmpty()) {
+                requireWrite(viewModel.setTextProcessingEnabled(true), "text processing enabled")
+            }
 
-        val existingCredentials = viewModel.peekCredentials()
-        val existingCredentialIds = existingCredentials.map { it.id }.toSet()
-        val newCredentials = exportData.credentials.filter { it.id !in existingCredentialIds }
-        if (newCredentials.isNotEmpty()) {
-            requireWrite(viewModel.setCredentials(existingCredentials + newCredentials), "credentials")
-        }
-        val importedCredentialIds = viewModel.peekCredentials().map { it.id }.toSet()
-        val credentialsAdded = importedCredentialIds.count { it !in existingCredentialIds }
+            val existingVocabSet = snapshot.customVocabulary.toSet()
+            val newVocabWords = exportData.customVocabulary.filter { it !in existingVocabSet }
+            if (newVocabWords.isNotEmpty()) {
+                requireWrite(viewModel.setCustomVocabulary(snapshot.customVocabulary + newVocabWords), "custom vocabulary")
+            }
+            val importedVocabulary = viewModel.peekCustomVocabulary()
+            val vocabularyWordsAdded = importedVocabulary.count { it !in existingVocabSet }
 
-        val existingVoiceProviders = viewModel.peekVoiceModelProviders()
-        val existingVoiceIds = existingVoiceProviders.map { it.id }.toSet()
-        val existingCustomVoiceIds = existingVoiceProviders
-            .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
-            .map { it.id }
-            .toSet()
-        val newVoiceProviders = exportData.voiceModelProviders.filter { it.id !in existingVoiceIds }
-        val normalizedVoiceProviders = (existingVoiceProviders + newVoiceProviders).normalizedCredentialRefs(importedCredentialIds)
-        if (normalizedVoiceProviders != existingVoiceProviders) {
-            requireWrite(viewModel.setVoiceModelProviders(normalizedVoiceProviders), "voice model providers")
+            logger.info("Imported settings from: ${inputFile.absolutePath}")
+            ImportResult(
+                filePath = inputFile.absolutePath,
+                alarmsAdded = alarmsAdded,
+                credentialsAdded = credentialsAdded,
+                voiceProvidersAdded = voiceProvidersAdded,
+                textProvidersAdded = textProvidersAdded,
+                vocabularyWordsAdded = vocabularyWordsAdded,
+                alarmSchedulerStateImported = exportData.alarmSchedulerState != null
+            )
+        } catch (error: Throwable) {
+            logger.warn("Import failed, restoring previous settings snapshot", error)
+            restoreImportSnapshot(snapshot)
+            throw error
         }
-        val importedVoiceIds = viewModel.peekVoiceModelProviders()
-            .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
-            .map { it.id }
-            .toSet()
-        val voiceProvidersAdded = importedVoiceIds.count { it !in existingCustomVoiceIds }
-        requireWrite(
-            viewModel.setSelectedVoiceModelProviderId(viewModel.peekSelectedVoiceModelProviderId()),
-            "selected voice model provider",
-        )
-
-        val existingTextProviders = viewModel.peekTextModelProviders()
-        val existingTextIds = existingTextProviders.map { it.id }.toSet()
-        val newTextProviders = exportData.textModelProviders.filter { it.id !in existingTextIds }
-        val normalizedTextProviders = (existingTextProviders + newTextProviders).normalizedCredentialRefs(importedCredentialIds)
-        if (normalizedTextProviders != existingTextProviders) {
-            requireWrite(viewModel.setTextModelProviders(normalizedTextProviders), "text model providers")
-        }
-        val importedTextIds = viewModel.peekTextModelProviders().map { it.id }.toSet()
-        val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
-        requireWrite(
-            viewModel.setSelectedTextModelProviderId(viewModel.peekSelectedTextModelProviderId()),
-            "selected text model provider",
-        )
-        if (wasTextProcessingEnabled && viewModel.peekTextModelProviders().isNotEmpty()) {
-            requireWrite(viewModel.setTextProcessingEnabled(true), "text processing enabled")
-        }
-
-        val existingVocabulary = viewModel.peekCustomVocabulary()
-        val existingVocabSet = existingVocabulary.toSet()
-        val newVocabWords = exportData.customVocabulary.filter { it !in existingVocabSet }
-        if (newVocabWords.isNotEmpty()) {
-            requireWrite(viewModel.setCustomVocabulary(existingVocabulary + newVocabWords), "custom vocabulary")
-        }
-        val importedVocabulary = viewModel.peekCustomVocabulary()
-        val vocabularyWordsAdded = importedVocabulary.count { it !in existingVocabSet }
-
-        logger.info("Imported settings from: ${inputFile.absolutePath}")
-        ImportResult(
-            filePath = inputFile.absolutePath,
-            alarmsAdded = alarmsAdded,
-            credentialsAdded = credentialsAdded,
-            voiceProvidersAdded = voiceProvidersAdded,
-            textProvidersAdded = textProvidersAdded,
-            vocabularyWordsAdded = vocabularyWordsAdded,
-            alarmSchedulerStateImported = exportData.alarmSchedulerState != null
-        )
     }
 
     private fun decodeExportData(inputFile: java.io.File): SettingsExport {
@@ -218,6 +223,86 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             throw IllegalStateException("Failed to save $operation during import")
         }
     }
+
+    private fun captureImportSnapshot(): ImportSnapshot =
+        ImportSnapshot(
+            defaultLanguage = viewModel.peekDefaultLanguage(),
+            secondaryLanguage = viewModel.peekSecondaryLanguage(),
+            backgroundRecording = viewModel.peekBackgroundRecording(),
+            hideInsteadOfMinimize = viewModel.peekHideInsteadOfMinimize(),
+            stayHiddenOnActivation = viewModel.peekStayHiddenOnActivation(),
+            appendSpace = viewModel.peekAppendSpace(),
+            maxAlarms = viewModel.peekMaxAlarms(),
+            alarms = viewModel.peekAlarms(),
+            sanitizeSpecialChars = viewModel.peekSanitizeSpecialChars(),
+            postHideDelayMs = viewModel.peekPostHideDelayMs(),
+            typingDelayMs = viewModel.peekTypingDelayMs(),
+            customContext = viewModel.peekCustomContext(),
+            credentials = viewModel.peekCredentials(),
+            voiceProviders = viewModel.peekVoiceModelProviders(),
+            selectedVoiceProviderId = viewModel.peekSelectedVoiceModelProviderId(),
+            textProviders = viewModel.peekTextModelProviders(),
+            selectedTextProviderId = viewModel.peekSelectedTextModelProviderId(),
+            textProcessingEnabled = viewModel.peekTextProcessingEnabled(),
+            customVocabulary = viewModel.peekCustomVocabulary(),
+            alarmSchedulerState = viewModel.peekAlarmSchedulerState(),
+        )
+
+    private fun restoreImportSnapshot(snapshot: ImportSnapshot) {
+        restoreWrite("default language") { viewModel.setDefaultLanguage(snapshot.defaultLanguage) }
+        restoreWrite("secondary language") { viewModel.setSecondaryLanguage(snapshot.secondaryLanguage) }
+        restoreWrite("background recording") { viewModel.setBackgroundRecording(snapshot.backgroundRecording) }
+        restoreWrite("hide instead of minimize") { viewModel.setHideInsteadOfMinimize(snapshot.hideInsteadOfMinimize) }
+        restoreWrite("stay hidden on activation") { viewModel.setStayHiddenOnActivation(snapshot.stayHiddenOnActivation) }
+        restoreWrite("append space") { viewModel.setAppendSpace(snapshot.appendSpace) }
+        restoreWrite("max alarms") { viewModel.setMaxAlarms(snapshot.maxAlarms) }
+        restoreWrite("alarms") { viewModel.setAlarms(snapshot.alarms) }
+        restoreWrite("alarm scheduler state") { viewModel.setAlarmSchedulerState(snapshot.alarmSchedulerState) }
+        restoreWrite("sanitize special chars") { viewModel.setSanitizeSpecialChars(snapshot.sanitizeSpecialChars) }
+        restoreWrite("post hide delay") { viewModel.setPostHideDelayMs(snapshot.postHideDelayMs) }
+        restoreWrite("typing delay") { viewModel.setTypingDelayMs(snapshot.typingDelayMs) }
+        restoreWrite("custom context") { viewModel.setCustomContext(snapshot.customContext) }
+        restoreWrite("credentials") { viewModel.setCredentials(snapshot.credentials) }
+        restoreWrite("voice model providers") { viewModel.setVoiceModelProviders(snapshot.voiceProviders) }
+        restoreWrite("selected voice model provider") {
+            viewModel.setSelectedVoiceModelProviderId(snapshot.selectedVoiceProviderId)
+        }
+        restoreWrite("text model providers") { viewModel.setTextModelProviders(snapshot.textProviders) }
+        restoreWrite("selected text model provider") {
+            viewModel.setSelectedTextModelProviderId(snapshot.selectedTextProviderId)
+        }
+        restoreWrite("text processing enabled") { viewModel.setTextProcessingEnabled(snapshot.textProcessingEnabled) }
+        restoreWrite("custom vocabulary") { viewModel.setCustomVocabulary(snapshot.customVocabulary) }
+    }
+
+    private fun restoreWrite(label: String, write: () -> Boolean) {
+        if (!write()) {
+            logger.warn("Failed to restore {} after import failure", label)
+        }
+    }
+
+    private data class ImportSnapshot(
+        val defaultLanguage: String,
+        val secondaryLanguage: String,
+        val backgroundRecording: Boolean,
+        val hideInsteadOfMinimize: Boolean,
+        val stayHiddenOnActivation: Boolean,
+        val appendSpace: Boolean,
+        val maxAlarms: Int,
+        val alarms: List<com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting>,
+        val sanitizeSpecialChars: Boolean,
+        val postHideDelayMs: Int,
+        val typingDelayMs: Int,
+        val customContext: String,
+        val credentials: List<com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting>,
+        val voiceProviders: List<VoiceModelProviderSetting>,
+        val selectedVoiceProviderId: String,
+        val textProviders: List<TextModelProviderSetting>,
+        val selectedTextProviderId: String,
+        val textProcessingEnabled: Boolean,
+        val customVocabulary: List<String>,
+        val alarmSchedulerState: AlarmSchedulerState,
+    )
 
     companion object {
         const val EXPORT_FILENAME = "$APPLICATION_SHORT-preferences.json"

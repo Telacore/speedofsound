@@ -114,8 +114,60 @@ class ImportExportManagerTest {
     }
 
     @Test
+    fun `import applies imported max alarms before merging alarms`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_MAX_ALARMS to "1",
+            )
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(
+            Json.encodeToString(
+                SettingsExport(
+                    version = 6,
+                    maxAlarms = 3,
+                    alarms = listOf(
+                        AlarmSetting(
+                            id = "alarm-1",
+                            name = "Morning",
+                            hour = 6,
+                            minute = 0,
+                            enabled = false,
+                        ),
+                        AlarmSetting(
+                            id = "alarm-2",
+                            name = "Evening",
+                            hour = 18,
+                            minute = 0,
+                            enabled = false,
+                        ),
+                    ),
+                )
+            )
+        )
+
+        val result = manager.importSettings().getOrThrow()
+
+        assertEquals(2, result.alarmsAdded)
+        assertEquals(3, settingsClient.loadMaxAlarms())
+        assertEquals(2, settingsClient.loadAlarms().size)
+    }
+
+    @Test
     fun `import aborts when credential write fails`() {
         val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_DEFAULT_LANGUAGE to "de",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_MAX_ALARMS to "7",
+            ),
             failingStringKeys = setOf(com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS)
         )
         val settingsClient = SettingsClient(store)
@@ -157,7 +209,10 @@ class ImportExportManagerTest {
         }
 
         assertTrue(exception.message?.contains("Failed to save credentials during import") == true)
-        assertEquals(0, store.writeCount)
+        assertEquals("de", store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_DEFAULT_LANGUAGE))
+        assertEquals(7, settingsClient.loadMaxAlarms())
+        assertEquals(emptyList<CredentialSetting>(), settingsClient.peekCredentials())
+        assertEquals(emptyList<VoiceModelProviderSetting>(), settingsClient.peekVoiceModelProviders().filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys })
         assertEquals(null, store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS))
         assertEquals(null, store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS))
     }
