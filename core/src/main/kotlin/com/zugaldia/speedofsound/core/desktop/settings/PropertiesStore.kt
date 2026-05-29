@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.core.desktop.settings
 
 import com.zugaldia.speedofsound.core.io.AtomicFileWriter
 import com.zugaldia.speedofsound.core.getDataDir
+import com.zugaldia.speedofsound.core.models.voice.resolveSafeChildPath
 import org.slf4j.LoggerFactory
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -15,7 +16,7 @@ open class PropertiesStore(
 ) : SettingsStore {
     private val logger = LoggerFactory.getLogger(PropertiesStore::class.java)
     private val properties = Properties()
-    private val filePath = baseDir.resolve(filename).toFile()
+    private val filePath = resolveSafeChildPath(baseDir, filename).toFile()
     private val writeLock = Any()
 
     init {

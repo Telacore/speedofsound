@@ -2,6 +2,8 @@ package com.zugaldia.speedofsound.core.desktop.settings
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -49,6 +51,20 @@ class PropertiesStoreTest {
         assertEquals(true, reloaded.getBoolean("enabled", false))
         assertEquals(7, reloaded.getInt("limit", 0))
         assertEquals(listOf("a", "b"), reloaded.getStringArray("tags", emptyList()))
+    }
+
+    @Test
+    fun `constructor rejects traversal filenames`() {
+        val baseDir = Files.createTempDirectory("speedofsound-properties-store-path")
+        try {
+            val exception = assertFailsWith<IllegalArgumentException> {
+                PropertiesStore(filename = "../outside.properties", baseDir = baseDir)
+            }
+
+            assertTrue(exception.message?.contains("escapes model directory") == true)
+        } finally {
+            baseDir.toFile().deleteRecursively()
+        }
     }
 
     private class CountingPropertiesStore(
