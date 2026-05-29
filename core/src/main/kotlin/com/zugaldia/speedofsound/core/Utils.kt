@@ -43,9 +43,15 @@ fun languageFromIso2(iso2: String): Language? =
  * @param fallbackPath path segments under $HOME to use when no XDG variable is set (APPLICATION_SHORT is appended)
  * @param snapSubDir optional subdirectory to append under SNAP_USER_COMMON (e.g. "cache")
  */
-private fun resolveAppDir(xdgEnvVar: String, fallbackPath: List<String>, snapSubDir: String? = null): Path {
-    val snapUserCommon = System.getenv("SNAP_USER_COMMON") // In a Snap
-    val xdgDir = System.getenv(xdgEnvVar) // Typically, in a Flatpak
+internal fun resolveAppDir(
+    xdgEnvVar: String,
+    fallbackPath: List<String>,
+    snapSubDir: String? = null,
+    env: Map<String, String> = System.getenv(),
+    userHome: String = System.getProperty("user.home"),
+): Path {
+    val snapUserCommon = env["SNAP_USER_COMMON"] // In a Snap
+    val xdgDir = env[xdgEnvVar] // Typically, in a Flatpak
     val appDir = if (!snapUserCommon.isNullOrEmpty()) {
         if (snapSubDir != null) Paths.get(snapUserCommon, snapSubDir) else Paths.get(snapUserCommon)
     } else if (!xdgDir.isNullOrEmpty()) {
@@ -55,14 +61,17 @@ private fun resolveAppDir(xdgEnvVar: String, fallbackPath: List<String>, snapSub
             Paths.get(xdgDir, APPLICATION_SHORT)
         }
     } else {
-        val home = System.getProperty("user.home")
-        Paths.get(home, *fallbackPath.toTypedArray(), APPLICATION_SHORT)
+        Paths.get(userHome, *fallbackPath.toTypedArray(), APPLICATION_SHORT)
     }
 
-    // Ensure it exists
     val dir = appDir.toFile()
-    if (!dir.exists()) {
-        dir.mkdirs()
+    when {
+        dir.exists() && !dir.isDirectory -> {
+            throw IllegalStateException("Application directory path is not a directory: ${dir.absolutePath}")
+        }
+        !dir.exists() && !dir.mkdirs() -> {
+            throw IllegalStateException("Could not create application directory: ${dir.absolutePath}")
+        }
     }
 
     return appDir

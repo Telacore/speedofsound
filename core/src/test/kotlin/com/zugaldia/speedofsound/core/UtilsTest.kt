@@ -3,10 +3,12 @@ package com.zugaldia.speedofsound.core
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.io.path.createTempDirectory
 
 class UtilsTest {
 
@@ -74,6 +76,28 @@ class UtilsTest {
         val cacheDir = getCacheDir()
         assertTrue(cacheDir.toFile().exists())
         assertTrue(cacheDir.toFile().isDirectory)
+    }
+
+    @Test
+    fun `resolveAppDir rejects file-backed xdg directories`() {
+        val tempDir = createTempDirectory("sos-utils")
+        try {
+            val xdgDataHome = tempDir.resolve("xdg-data-home").toFile()
+            xdgDataHome.writeText("not-a-directory")
+
+            val exception = assertFailsWith<IllegalStateException> {
+                resolveAppDir(
+                    xdgEnvVar = "XDG_DATA_HOME",
+                    fallbackPath = listOf(".local", "share"),
+                    env = mapOf("XDG_DATA_HOME" to xdgDataHome.absolutePath),
+                    userHome = tempDir.toString(),
+                )
+            }
+
+            assertTrue(exception.message?.contains("not a directory") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
     }
 
     @Test
