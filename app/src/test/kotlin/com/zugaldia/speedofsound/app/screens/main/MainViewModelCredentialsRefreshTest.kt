@@ -466,7 +466,7 @@ class MainViewModelCredentialsRefreshTest {
         assertEquals("Bravo", viewModel.state.currentLlmModel())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertEquals(GoogleLlm.ID, registry.getActive(AppPluginCategory.LLM)?.id)
-        assertEquals(3, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
+        assertEquals(2, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
     }
 
     @Test
