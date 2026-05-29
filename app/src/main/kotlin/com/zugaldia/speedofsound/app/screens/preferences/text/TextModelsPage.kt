@@ -141,7 +141,10 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
             if (suppressEnableSwitchNotify) return@onNotify
             val enabled = enableSwitch.active
             logger.info("Text processing enabled: $enabled")
-            viewModel.setTextProcessingEnabled(enabled)
+            if (!viewModel.setTextProcessingEnabled(enabled)) {
+                logger.warn("Failed to persist text processing state change to $enabled")
+                syncEnableSwitch()
+            }
             updateActiveProviderSensitivity()
         }
         scope.launch {
