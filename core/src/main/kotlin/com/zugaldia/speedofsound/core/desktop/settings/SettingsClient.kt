@@ -139,7 +139,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         readPortalsRestoreToken()
 
     fun peekPortalsRestoreToken(): String =
-        normalizePortalsRestoreToken(settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN))
+        peekValidatedSetting(
+            key = KEY_PORTALS_RESTORE_TOKEN,
+            defaultValue = DEFAULT_PORTALS_RESTORE_TOKEN,
+            parse = ::normalizePortalsRestoreToken,
+        )
 
     fun loadStartupState() {
         loadWelcomeScreenShown()
@@ -1002,6 +1006,38 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
+    private inline fun <T> readValidatedSetting(
+        key: String,
+        defaultValue: T,
+        parse: (String) -> T?,
+        normalize: (T) -> T = { it },
+        write: (T) -> Boolean,
+    ): T {
+        val raw = settingsStore.getString(key, defaultValue.toString())
+        val parsed = parse(raw)
+        return if (parsed != null) {
+            val normalized = normalize(parsed)
+            if (raw != normalized.toString()) {
+                write(normalized)
+            }
+            normalized
+        } else {
+            write(defaultValue)
+            defaultValue
+        }
+    }
+
+    private inline fun <T> peekValidatedSetting(
+        key: String,
+        defaultValue: T,
+        parse: (String) -> T?,
+        normalize: (T) -> T = { it },
+    ): T {
+        val raw = settingsStore.getString(key, defaultValue.toString())
+        val parsed = parse(raw) ?: return defaultValue
+        return normalize(parsed)
+    }
+
     private fun setStringSettingIfChanged(
         key: String,
         currentRawValue: String,
@@ -1110,66 +1146,72 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun readBooleanSetting(key: String, defaultValue: Boolean): Boolean {
-        val raw = settingsStore.getString(key, defaultValue.toString())
-        val parsed = when {
-            raw.equals("true", ignoreCase = true) -> true
-            raw.equals("false", ignoreCase = true) -> false
-            else -> null
-        }
-
-        return if (parsed != null) {
-            if (raw != parsed.toString()) {
-                settingsStore.setBoolean(key, parsed)
-            }
-            parsed
-        } else {
-            settingsStore.setBoolean(key, defaultValue)
-            defaultValue
-        }
+        return readValidatedSetting(
+            key = key,
+            defaultValue = defaultValue,
+            parse = { raw ->
+                when {
+                    raw.equals("true", ignoreCase = true) -> true
+                    raw.equals("false", ignoreCase = true) -> false
+                    else -> null
+                }
+            },
+            write = { value -> settingsStore.setBoolean(key, value) },
+        )
     }
 
     private fun peekBooleanSetting(key: String, defaultValue: Boolean): Boolean {
-        val raw = settingsStore.getString(key, defaultValue.toString())
-        return when {
-            raw.equals("true", ignoreCase = true) -> true
-            raw.equals("false", ignoreCase = true) -> false
-            else -> defaultValue
-        }
+        return peekValidatedSetting(
+            key = key,
+            defaultValue = defaultValue,
+            parse = { raw ->
+                when {
+                    raw.equals("true", ignoreCase = true) -> true
+                    raw.equals("false", ignoreCase = true) -> false
+                    else -> null
+                }
+            },
+        )
     }
 
     private fun readTextOutputMethod(): String {
-        val raw = settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
-        val normalized = raw.trim().lowercase()
-        return if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
-            if (raw != normalized) {
-                settingsStore.setString(KEY_TEXT_OUTPUT_METHOD, normalized)
-            }
-            normalized
-        } else {
-            settingsStore.setString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
-            DEFAULT_TEXT_OUTPUT_METHOD
-        }
+        return readValidatedSetting(
+            key = KEY_TEXT_OUTPUT_METHOD,
+            defaultValue = DEFAULT_TEXT_OUTPUT_METHOD,
+            parse = { raw ->
+                val normalized = raw.trim().lowercase()
+                if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+                    normalized
+                } else {
+                    null
+                }
+            },
+            write = { value -> settingsStore.setString(KEY_TEXT_OUTPUT_METHOD, value) },
+        )
     }
 
     private fun peekTextOutputMethodValue(): String {
-        val raw = settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
-        val normalized = raw.trim().lowercase()
-        return if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
-            normalized
-        } else {
-            DEFAULT_TEXT_OUTPUT_METHOD
-        }
+        return peekValidatedSetting(
+            key = KEY_TEXT_OUTPUT_METHOD,
+            defaultValue = DEFAULT_TEXT_OUTPUT_METHOD,
+            parse = { raw ->
+                val normalized = raw.trim().lowercase()
+                if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+                    normalized
+                } else {
+                    null
+                }
+            },
+        )
     }
 
     private fun readPortalsRestoreToken(): String {
-        val raw = settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN)
-        val normalized = normalizePortalsRestoreToken(raw)
-        return if (raw != normalized) {
-            settingsStore.setString(KEY_PORTALS_RESTORE_TOKEN, normalized)
-            normalized
-        } else {
-            raw
-        }
+        return readValidatedSetting(
+            key = KEY_PORTALS_RESTORE_TOKEN,
+            defaultValue = DEFAULT_PORTALS_RESTORE_TOKEN,
+            parse = ::normalizePortalsRestoreToken,
+            write = { value -> settingsStore.setString(KEY_PORTALS_RESTORE_TOKEN, value) },
+        )
     }
 
     private fun normalizePortalsRestoreToken(value: String): String = value.trim()
@@ -1184,19 +1226,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun readCustomContext(): String {
-        val raw = settingsStore.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT)
-        val normalized = normalizeCustomContext(raw)
-        return if (raw != normalized) {
-            settingsStore.setString(KEY_CUSTOM_CONTEXT, normalized)
-            normalized
-        } else {
-            raw
-        }
+        return readValidatedSetting(
+            key = KEY_CUSTOM_CONTEXT,
+            defaultValue = DEFAULT_CUSTOM_CONTEXT,
+            parse = ::normalizeCustomContext,
+            write = { value -> settingsStore.setString(KEY_CUSTOM_CONTEXT, value) },
+        )
     }
 
     private fun peekCustomContextValue(): String {
-        val raw = settingsStore.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT)
-        return normalizeCustomContext(raw)
+        return peekValidatedSetting(
+            key = KEY_CUSTOM_CONTEXT,
+            defaultValue = DEFAULT_CUSTOM_CONTEXT,
+            parse = ::normalizeCustomContext,
+        )
     }
 
     private fun normalizeCustomContext(value: String): String =
@@ -1401,24 +1444,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun readLanguageSetting(key: String, defaultValue: String): String {
-        val raw = settingsStore.getString(key, defaultValue)
-        val normalized = raw.trim().lowercase()
-        val parsed = languageFromIso2(normalized)?.iso2
-        return if (parsed != null) {
-            if (raw != parsed) {
-                settingsStore.setString(key, parsed)
-            }
-            parsed
-        } else {
-            settingsStore.setString(key, defaultValue)
-            defaultValue
-        }
+        return readValidatedSetting(
+            key = key,
+            defaultValue = defaultValue,
+            parse = { raw -> languageFromIso2(raw.trim().lowercase())?.iso2 },
+            write = { value -> settingsStore.setString(key, value) },
+        )
     }
 
     private fun peekLanguageSetting(key: String, defaultValue: String): String {
-        val raw = settingsStore.getString(key, defaultValue)
-        val normalized = raw.trim().lowercase()
-        return languageFromIso2(normalized)?.iso2 ?: defaultValue
+        return peekValidatedSetting(
+            key = key,
+            defaultValue = defaultValue,
+            parse = { raw -> languageFromIso2(raw.trim().lowercase())?.iso2 },
+        )
     }
 
     private fun normalizeLanguageForSave(value: String, defaultValue: String): String =
@@ -1429,18 +1468,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
         defaultValue: Int,
         normalize: (Int) -> Int = { it },
     ): Int {
-        val raw = settingsStore.getString(key, defaultValue.toString())
-        val parsed = raw.toIntOrNull()
-        return if (parsed != null) {
-            val normalized = normalize(parsed)
-            if (raw != normalized.toString()) {
-                settingsStore.setInt(key, normalized)
-            }
-            normalized
-        } else {
-            settingsStore.setInt(key, defaultValue)
-            defaultValue
-        }
+        return readValidatedSetting(
+            key = key,
+            defaultValue = defaultValue,
+            parse = String::toIntOrNull,
+            normalize = normalize,
+            write = { value -> settingsStore.setInt(key, value) },
+        )
     }
 
     private fun peekIntSetting(
@@ -1448,9 +1482,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         defaultValue: Int,
         normalize: (Int) -> Int = { it },
     ): Int {
-        val raw = settingsStore.getString(key, defaultValue.toString())
-        val parsed = raw.toIntOrNull() ?: return defaultValue
-        return normalize(parsed)
+        return peekValidatedSetting(
+            key = key,
+            defaultValue = defaultValue,
+            parse = String::toIntOrNull,
+            normalize = normalize,
+        )
     }
 
     private fun List<String>.normalizedCustomVocabulary(): List<String> =
