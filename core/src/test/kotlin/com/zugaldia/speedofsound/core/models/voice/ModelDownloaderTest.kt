@@ -1,83 +1,84 @@
 package com.zugaldia.speedofsound.core.models.voice
 
-import com.zugaldia.speedofsound.core.io.AtomicFileWriter
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
 import kotlin.io.path.createTempDirectory
-import java.io.IOException
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.test.assertFailsWith
+import kotlinx.coroutines.runBlocking
+import java.io.File
 
 class ModelDownloaderTest {
-    @Test
-    fun `writeFileAtomically writes complete file and preserves bytes`() {
-        val tempDir = createTempDirectory("sos-downloader")
-        try {
-            val destination = tempDir.resolve("model.tar.bz2").toFile()
-            val bytes = ByteArray(1024) { it.toByte() }
+    private val tempDirs = mutableListOf<File>()
 
-            val result = AtomicFileWriter.write(destination) { tempFile ->
-                tempFile.writeBytes(bytes)
-            }
+    @AfterTest
+    fun cleanup() {
+        tempDirs.forEach { it.deleteRecursively() }
+        tempDirs.clear()
+    }
+
+    @Test
+    fun `downloadFile overwrites existing file with downloaded bytes`() = runBlocking {
+        val tempDir = createTempDirectory("sos-downloader").toFile()
+        tempDirs += tempDir
+        val destination = tempDir.resolve("model.bin")
+        destination.writeText("old")
+
+        val downloader = createDownloader("fresh")
+        downloader.use {
+            val result = it.downloadFile("https://example.com/model.bin", destination)
 
             assertTrue(result.isSuccess)
-            assertTrue(destination.exists())
-            assertEquals(bytes.size.toLong(), destination.length())
-            assertTrue(destination.readBytes().contentEquals(bytes))
-        } finally {
-            tempDir.toFile().deleteRecursively()
         }
+
+        assertEquals("fresh", destination.readText())
     }
 
     @Test
-    fun `writeFileAtomically does not leave destination behind on failure`() {
-        val tempDir = createTempDirectory("sos-downloader-failure")
-        try {
-            val destination = tempDir.resolve("model.tar.bz2").toFile()
+    fun `downloadFile fails when destination is a directory`() = runBlocking {
+        val tempDir = createTempDirectory("sos-downloader-dir").toFile()
+        tempDirs += tempDir
+        val destination = tempDir.resolve("model.bin")
+        destination.mkdirs()
 
-            val result = AtomicFileWriter.write(destination) { tempFile ->
-                tempFile.writeBytes(byteArrayOf(1, 2, 3))
-                throw IllegalStateException("boom")
-            }
+        val downloader = createDownloader("fresh")
+        downloader.use {
+            val result = it.downloadFile("https://example.com/model.bin", destination)
 
             assertTrue(result.isFailure)
-            assertFalse(destination.exists())
-        } finally {
-            tempDir.toFile().deleteRecursively()
+            assertTrue(destination.exists())
+            assertTrue(destination.isDirectory)
         }
     }
 
     @Test
-    fun `shouldSkipExistingDownload only skips completed files`() {
-        val tempDir = createTempDirectory("sos-downloader-skip")
-        try {
-            val destination = tempDir.resolve("model.tar.bz2").toFile()
+    fun `downloadFile replaces a zero length file`() = runBlocking {
+        val tempDir = createTempDirectory("sos-downloader-empty").toFile()
+        tempDirs += tempDir
+        val destination = tempDir.resolve("model.bin")
+        destination.writeText("")
 
-            assertFalse(ModelDownloader.shouldSkipExistingDownload(destination))
+        val downloader = createDownloader("fresh")
+        downloader.use {
+            val result = it.downloadFile("https://example.com/model.bin", destination)
 
-            destination.writeText("")
-            assertFalse(ModelDownloader.shouldSkipExistingDownload(destination))
-
-            destination.writeText("payload")
-            assertTrue(ModelDownloader.shouldSkipExistingDownload(destination))
-        } finally {
-            tempDir.toFile().deleteRecursively()
+            assertTrue(result.isSuccess)
         }
+
+        assertFalse(destination.readText().isEmpty())
+        assertEquals("fresh", destination.readText())
     }
 
-    @Test
-    fun `shouldSkipExistingDownload rejects directory destinations`() {
-        val tempDir = createTempDirectory("sos-downloader-dir")
-        try {
-            val destination = tempDir.resolve("model.tar.bz2").toFile()
-            destination.mkdirs()
-
-            assertFailsWith<IOException> {
-                ModelDownloader.shouldSkipExistingDownload(destination)
-            }
-        } finally {
-            tempDir.toFile().deleteRecursively()
+    private fun createDownloader(content: String): ModelDownloader {
+        val mockEngine = MockEngine { _ ->
+            respond(content = content)
         }
+        val client = HttpClient(mockEngine)
+
+        return ModelDownloader(client)
     }
 }

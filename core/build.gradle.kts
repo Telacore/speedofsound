@@ -29,6 +29,7 @@ dependencies {
     implementation(libs.openai)
 
     testImplementation(kotlin("test"))
+    testImplementation(libs.ktorClientMock)
 }
 
 tasks.flatpakGradleGenerator {

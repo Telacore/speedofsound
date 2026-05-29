@@ -17,23 +17,16 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.io.File
-import java.io.IOException
 
 /**
  * Handles downloading files from URLs with progress reporting.
  * Uses a shared Ktor HTTP client with CIO engine for coroutine-based downloads.
  * This class implements Closeable and must be closed when no longer needed to release resources.
  */
-class ModelDownloader : Closeable {
+class ModelDownloader(
+    private val client: HttpClient = createDefaultClient()
+) : Closeable {
     private val log: Logger = LoggerFactory.getLogger(ModelDownloader::class.java)
-
-    private val client = HttpClient(CIO) {
-        install(HttpTimeout) {
-            requestTimeoutMillis = REQUEST_TIMEOUT_MINUTES * SECONDS_IN_MINUTE * MILLIS_IN_SECOND
-            connectTimeoutMillis = CONNECTION_TIMEOUT_SECONDS * MILLIS_IN_SECOND
-            socketTimeoutMillis = SOCKET_TIMEOUT_SECONDS * MILLIS_IN_SECOND
-        }
-    }
 
     private val _progressFlow = MutableSharedFlow<DownloadProgress>(replay = 0)
     val progressFlow: SharedFlow<DownloadProgress> = _progressFlow.asSharedFlow()
@@ -47,6 +40,14 @@ class ModelDownloader : Closeable {
         private const val SOCKET_TIMEOUT_SECONDS = 30L
         private const val PERCENTAGE_MULTIPLIER = 100
         private const val PROGRESS_EMISSION_THRESHOLD = 1
+
+        private fun createDefaultClient(): HttpClient = HttpClient(CIO) {
+            install(HttpTimeout) {
+                requestTimeoutMillis = REQUEST_TIMEOUT_MINUTES * SECONDS_IN_MINUTE * MILLIS_IN_SECOND
+                connectTimeoutMillis = CONNECTION_TIMEOUT_SECONDS * MILLIS_IN_SECOND
+                socketTimeoutMillis = SOCKET_TIMEOUT_SECONDS * MILLIS_IN_SECOND
+            }
+        }
     }
 
     /**
@@ -74,11 +75,6 @@ class ModelDownloader : Closeable {
         url: String,
         destination: File
     ): Result<Unit> = runCatching {
-        if (shouldSkipExistingDownload(destination)) {
-            log.info("File already exists at: ${destination.absolutePath}")
-            return@runCatching
-        }
-
         log.info("Downloading file from $url to ${destination.absolutePath}")
 
         // Ensure parent directory exists
@@ -125,23 +121,5 @@ class ModelDownloader : Closeable {
 
     override fun close() {
         client.close()
-    }
-
-    internal companion object {
-        internal fun shouldSkipExistingDownload(destination: File): Boolean {
-            if (!destination.exists()) {
-                return false
-            }
-
-            if (destination.isDirectory) {
-                throw IOException("Destination path is a directory: ${destination.absolutePath}")
-            }
-
-            if (!destination.isFile) {
-                throw IOException("Destination path is not a regular file: ${destination.absolutePath}")
-            }
-
-            return destination.length() > 0
-        }
     }
 }
