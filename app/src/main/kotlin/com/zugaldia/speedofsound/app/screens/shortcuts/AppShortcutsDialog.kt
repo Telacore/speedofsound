@@ -13,7 +13,7 @@ private const val SHORTCUTS_UI_RESOURCE = "/shortcuts.xml"
 fun buildShortcutsWindow(): ShortcutsWindow {
     val shortcutsUi = object {}.javaClass.getResourceAsStream(SHORTCUTS_UI_RESOURCE)
         ?.bufferedReader()
-        ?.readText()
+        ?.use { it.readText() }
         ?: throw IllegalStateException("Could not load shortcuts XML resource: $SHORTCUTS_UI_RESOURCE")
 
     val builder = GtkBuilder()

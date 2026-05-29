@@ -67,6 +67,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
     fun importSettings(): Result<ImportResult> = runCatching {
         val inputFile = getDataDir().resolve(EXPORT_FILENAME).toFile()
         check(inputFile.exists()) { "Export file not found: ${inputFile.absolutePath}" }
+        check(inputFile.isFile) { "Export file is not a regular file: ${inputFile.absolutePath}" }
 
         val exportData = prettyJson.decodeFromString<SettingsExport>(inputFile.readText())
         if (exportData.version !in 1..6) {

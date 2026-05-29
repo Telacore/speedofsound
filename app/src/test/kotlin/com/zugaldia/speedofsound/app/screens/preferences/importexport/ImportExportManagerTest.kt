@@ -18,6 +18,7 @@ import kotlinx.serialization.json.Json
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import java.io.File
 
@@ -203,6 +204,26 @@ class ImportExportManagerTest {
 
         assertTrue(result.filePath.isNotBlank())
         assertEquals(DEFAULT_ALARMS, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
+    }
+
+    @Test
+    fun `import rejects directory export paths`() {
+        exportFile.mkdirs()
+
+        val settingsClient = SettingsClient(MapSettingsStore())
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        val result = manager.importSettings()
+
+        assertFailsWith<IllegalStateException> {
+            result.getOrThrow()
+        }
     }
 
     private class MapSettingsStore(
