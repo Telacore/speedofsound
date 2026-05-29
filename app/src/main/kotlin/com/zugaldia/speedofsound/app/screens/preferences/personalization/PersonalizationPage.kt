@@ -139,8 +139,14 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
                 addCssClass(STYLE_CLASS_FLAT)
                 valign = Align.CENTER
                 onClicked {
-                    val updatedVocabulary = currentVocabulary().filterNot { it == row.title }
-                    if (saveVocabulary(updatedVocabulary)) {
+                    val updatedVocabulary = mutableListOf<String>()
+                    var child = vocabularyListBox.firstChild
+                    while (child != null) {
+                        if (child is ActionRow) { updatedVocabulary.add(child.title) }
+                        child = child.nextSibling
+                    }
+                    val filteredVocabulary = updatedVocabulary.filterNot { it == row.title }
+                    if (saveVocabulary(filteredVocabulary)) {
                         vocabularyListBox.remove(row)
                     }
                 }
@@ -210,15 +216,27 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
             return
         }
 
-        val updatedVocabulary = currentVocabulary() + word
-        if (saveVocabulary(updatedVocabulary)) {
+        val updatedVocabulary = mutableListOf<String>()
+        var child = vocabularyListBox.firstChild
+        while (child != null) {
+            if (child is ActionRow) { updatedVocabulary.add(child.title) }
+            child = child.nextSibling
+        }
+        val vocabularyWithNewWord = updatedVocabulary + word
+        if (saveVocabulary(vocabularyWithNewWord)) {
             val row = ActionRow().apply { title = word }
             val deleteButton = Button.fromIconName(ICON_TRASH).apply {
                 addCssClass(STYLE_CLASS_FLAT)
                 valign = Align.CENTER
                 onClicked {
-                    val updatedVocabulary = currentVocabulary().filterNot { it == row.title }
-                    if (saveVocabulary(updatedVocabulary)) {
+                    val updatedVocabulary = mutableListOf<String>()
+                    var child = vocabularyListBox.firstChild
+                    while (child != null) {
+                        if (child is ActionRow) { updatedVocabulary.add(child.title) }
+                        child = child.nextSibling
+                    }
+                    val filteredVocabulary = updatedVocabulary.filterNot { it == row.title }
+                    if (saveVocabulary(filteredVocabulary)) {
                         vocabularyListBox.remove(row)
                     }
                 }
@@ -230,13 +248,4 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
         }
     }
 
-    private fun currentVocabulary(): List<String> {
-        val vocabulary = mutableListOf<String>()
-        var child = vocabularyListBox.firstChild
-        while (child != null) {
-            if (child is ActionRow) { vocabulary.add(child.title) }
-            child = child.nextSibling
-        }
-        return vocabulary
-    }
 }
