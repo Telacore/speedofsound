@@ -154,7 +154,10 @@ class AddTextModelProviderDialog(
 
         val cancelButton = Button.withLabel("Cancel").apply {
             tooltipText = "Discard changes and close the dialog"
-            onClicked { closeDialog() }
+            onClicked {
+                dialogScope.cancel()
+                close()
+            }
         }
 
         testButton = Button.withLabel("Test").apply {
@@ -182,7 +185,8 @@ class AddTextModelProviderDialog(
                         disableThinking = disableThinkingRow.active
                     )
                     if (onProviderAdded(config)) {
-                        closeDialog()
+                        dialogScope.cancel()
+                        close()
                     }
                 }
             }
@@ -380,11 +384,6 @@ class AddTextModelProviderDialog(
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
         return true
-    }
-
-    private fun closeDialog() {
-        dialogScope.cancel()
-        close()
     }
 
     private fun refreshSnapshots() {
