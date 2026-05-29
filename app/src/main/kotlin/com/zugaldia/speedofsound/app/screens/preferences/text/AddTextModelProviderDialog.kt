@@ -19,6 +19,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_PROVIDER_CONFIG_NAME_LENGTH
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_TEXT_MODEL_PROVIDERS
+import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
 import com.zugaldia.speedofsound.core.isValidUrl
@@ -217,7 +218,7 @@ class AddTextModelProviderDialog(
     private fun setupNotifications() {
         nameEntry.onNotify("text") { updateAddButtonState() }
         credentialComboRow.onNotify("selected") {
-            selectedCredentialId = getSelectedCredentialId()
+            selectedCredentialId = getSelectedCredentialId(viewModel.peekCredentials())
             updateAddButtonState()
         }
         dialogScope.launch {
@@ -255,12 +256,11 @@ class AddTextModelProviderDialog(
                 .takeIf { it >= 0 }
                 ?.plus(1)
         } ?: 0
-        selectedCredentialId = getSelectedCredentialId()
+        selectedCredentialId = getSelectedCredentialId(credentials)
     }
 
-    private fun getSelectedCredentialId(): String? {
+    private fun getSelectedCredentialId(credentials: List<CredentialSetting>): String? {
         val selectedIndex = credentialComboRow.selected
-        val credentials = viewModel.peekCredentials()
         return if (selectedIndex > 0 && selectedIndex <= credentials.size) {
             credentials[selectedIndex - 1].id
         } else {
@@ -325,7 +325,8 @@ class AddTextModelProviderDialog(
     }
 
     private fun createTemporaryPlugin(): LlmPlugin<*> {
-        val apiKey = getSelectedCredentialApiKey()
+        val credentials = viewModel.peekCredentials()
+        val apiKey = getSelectedCredentialApiKey(credentials)
         val baseUrl = baseUrlEntry.getBaseUrl()
         val modelId = selectedModelId
         val disableThinking = disableThinkingRow.active
@@ -339,8 +340,8 @@ class AddTextModelProviderDialog(
         }
     }
 
-    private fun getSelectedCredentialApiKey(): String? = selectedCredentialId?.let { credId ->
-        viewModel.peekCredentials().find { it.id == credId }?.value
+    private fun getSelectedCredentialApiKey(credentials: List<CredentialSetting>): String? = selectedCredentialId?.let { credId ->
+        credentials.find { it.id == credId }?.value
     }
 
     private fun onModelsFetched(models: List<TextModel>) {
@@ -371,8 +372,9 @@ class AddTextModelProviderDialog(
     private fun validateInput(name: String, baseUrl: String?, modelId: String?): Boolean {
         if (name.isEmpty()) { return false }
         if (name.length > MAX_PROVIDER_CONFIG_NAME_LENGTH) { return false }
-        if (viewModel.peekTextModelProviders().size >= MAX_TEXT_MODEL_PROVIDERS) { return false }
-        if (viewModel.peekTextModelProviders().any { it.name == name }) { return false }
+        val providers = viewModel.peekTextModelProviders()
+        if (providers.size >= MAX_TEXT_MODEL_PROVIDERS) { return false }
+        if (providers.any { it.name == name }) { return false }
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
         return true

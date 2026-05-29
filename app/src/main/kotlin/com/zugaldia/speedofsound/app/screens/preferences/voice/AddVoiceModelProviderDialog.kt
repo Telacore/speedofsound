@@ -18,6 +18,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_PROVIDER_CONFIG_NAME_LENGTH
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_VOICE_MODEL_PROVIDERS
+import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
 import com.zugaldia.speedofsound.core.isValidUrl
@@ -180,7 +181,7 @@ class AddVoiceModelProviderDialog(
     private fun setupNotifications() {
         nameEntry.onNotify("text") { updateAddButtonState() }
         credentialComboRow.onNotify("selected") {
-            selectedCredentialId = getSelectedCredentialId()
+            selectedCredentialId = getSelectedCredentialId(viewModel.peekCredentials())
             updateAddButtonState()
         }
         dialogScope.launch {
@@ -217,12 +218,11 @@ class AddVoiceModelProviderDialog(
                 .takeIf { it >= 0 }
                 ?.plus(1)
         } ?: 0
-        selectedCredentialId = getSelectedCredentialId()
+        selectedCredentialId = getSelectedCredentialId(credentials)
     }
 
-    private fun getSelectedCredentialId(): String? {
+    private fun getSelectedCredentialId(credentials: List<CredentialSetting>): String? {
         val selectedIndex = credentialComboRow.selected
-        val credentials = viewModel.peekCredentials()
         return if (selectedIndex > 0 && selectedIndex <= credentials.size) {
             credentials[selectedIndex - 1].id
         } else {
@@ -250,9 +250,10 @@ class AddVoiceModelProviderDialog(
     private fun validateInput(name: String, baseUrl: String?, modelId: String?): Boolean {
         if (name.isEmpty()) { return false }
         if (name.length > MAX_PROVIDER_CONFIG_NAME_LENGTH) { return false }
-        val customProviderCount = viewModel.peekVoiceModelProviders().count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+        val providers = viewModel.peekVoiceModelProviders()
+        val customProviderCount = providers.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
         if (customProviderCount >= MAX_VOICE_MODEL_PROVIDERS) { return false }
-        if (viewModel.peekVoiceModelProviders().any { it.name == name }) { return false }
+        if (providers.any { it.name == name }) { return false }
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
         return true
