@@ -139,10 +139,7 @@ class MainViewModel(
                 llmProviderManager.activateSelectedProvider()
                 activateSelectedTextOutput()
                 registry.setActiveById(AppPluginCategory.DIRECTOR, DefaultDirector.ID)
-                if (
-                    !portalsClient.isPortalAvailable &&
-                    settingsClient.getTextOutputMethod() != TEXT_OUTPUT_METHOD_CLIPBOARD
-                ) {
+                if (shouldForceClipboardFallback(settingsClient.getTextOutputMethod(), portalsClient.isPortalAvailable)) {
                     switchToClipboardFallback("Desktop portal is not available for this session.")
                     updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
                 }
@@ -176,7 +173,9 @@ class MainViewModel(
 
         // Check if the portal session needs reconnection. This typically happens when the user locks the screen and
         // comes back. The remote desktop session is closed in those circumstances for security reasons.
-        portalsSessionManager.attemptReconnect(viewModelScope)
+        if (shouldAttemptPortalReconnect(settingsClient.getTextOutputMethod())) {
+            portalsSessionManager.attemptReconnect(viewModelScope)
+        }
         logger.info("Trigger action invoked.")
         toggleListening()
     }
@@ -339,10 +338,7 @@ class MainViewModel(
     private fun refreshTextOutputMethodSetting() {
         runCatching { activateSelectedTextOutput() }
             .onSuccess {
-                if (
-                    settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_PORTAL &&
-                    activeRemoteDesktopStatus == RemoteDesktopStatus.NotSupported
-                ) {
+                if (shouldForceClipboardFallback(settingsClient.getTextOutputMethod(), portalsClient.isPortalAvailable)) {
                     switchToClipboardFallback("Remote desktop portal is not supported on this system.")
                     return@onSuccess
                 }
