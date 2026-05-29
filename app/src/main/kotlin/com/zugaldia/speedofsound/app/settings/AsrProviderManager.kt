@@ -68,6 +68,7 @@ class AsrProviderManager(
             // No provider configured or a previously available provider was removed.
             // We fall back to the default local ASR plugin and model.
             settingsClient.setSelectedVoiceModelProviderId(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID)
+            applyAsrOptions(SherpaWhisperAsr.ID, SherpaWhisperAsrOptions())
             SherpaWhisperAsr.ID
         }
         val shouldActivate = setActive || selectedProvider == null || currentActiveId != pluginId

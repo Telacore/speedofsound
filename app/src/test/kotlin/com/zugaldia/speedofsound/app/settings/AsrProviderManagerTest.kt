@@ -90,6 +90,33 @@ class AsrProviderManagerTest {
     }
 
     @Test
+    fun `activateSelectedProvider activates whisper when no custom provider matches the default selection`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+                KEY_VOICE_MODEL_PROVIDERS to "",
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val inactivePlugin = RecordingPlugin(id = "ASR_INACTIVE")
+        val fallbackPlugin = RecordingPlugin(id = SherpaWhisperAsr.ID)
+
+        registry.register(AppPluginCategory.ASR, inactivePlugin)
+        registry.register(AppPluginCategory.ASR, fallbackPlugin)
+        registry.setActiveById(AppPluginCategory.ASR, inactivePlugin.id)
+
+        AsrProviderManager(registry, settingsClient).activateSelectedProvider()
+
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
+        assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
+        assertEquals(1, inactivePlugin.enableCount)
+        assertEquals(1, inactivePlugin.disableCount)
+        assertEquals(1, fallbackPlugin.enableCount)
+        assertEquals(0, fallbackPlugin.disableCount)
+    }
+
+    @Test
     fun `activateSelectedProvider falls back to whisper when selected provider activation leaves no active plugin`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
