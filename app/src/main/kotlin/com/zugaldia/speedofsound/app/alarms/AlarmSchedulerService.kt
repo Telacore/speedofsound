@@ -47,9 +47,11 @@ class AlarmSchedulerService(
 
         schedulerStateReady = false
         reloadAlarms()
-        reloadSchedulerState()
+        val schedulerStateChanged = reloadSchedulerState()
         schedulerStateReady = true
-        persistSchedulerState()
+        if (schedulerStateChanged) {
+            persistSchedulerState()
+        }
         settingsJob = scope.launch {
             settingsClient.settingsChanged.collect { key ->
                 onSettingsChanged(key)
@@ -83,22 +85,25 @@ class AlarmSchedulerService(
         logger.info("Loaded {} alarm(s).", alarms.size)
     }
 
-    internal fun reloadSchedulerState() {
+    internal fun reloadSchedulerState(): Boolean {
         val schedulerState = settingsClient.loadAlarmSchedulerState()
         val now = LocalDateTime.now(clock)
-        synchronized(stateLock) {
-            lastTriggeredDates.clear()
-            lastTriggeredDates.putAll(
-                schedulerState.lastTriggeredDates.mapNotNull { (alarmId, dateValue) ->
-                    runCatching { LocalDate.parse(dateValue) }
-                        .getOrNull()
-                        ?.let { parsedDate -> alarmId to parsedDate }
-                }
-            )
-            lastTriggeredDates.keys.retainAll(activeAlarms.map { it.id }.toSet())
-            lastCheckAt = schedulerState.lastCheckAt?.let { rawValue ->
+        return synchronized(stateLock) {
+            val activeIds = activeAlarms.map { it.id }.toSet()
+            val nextTriggeredDates = schedulerState.lastTriggeredDates.mapNotNull { (alarmId, dateValue) ->
+                runCatching { LocalDate.parse(dateValue) }
+                    .getOrNull()
+                    ?.let { parsedDate -> alarmId to parsedDate }
+            }.toMap().filterKeys { it in activeIds }
+            val nextLastCheckAt = schedulerState.lastCheckAt?.let { rawValue ->
                 runCatching { LocalDateTime.parse(rawValue) }.getOrNull()
             }?.takeIf { !it.isAfter(now) }
+
+            val changed = lastTriggeredDates != nextTriggeredDates || lastCheckAt != nextLastCheckAt
+            lastTriggeredDates.clear()
+            lastTriggeredDates.putAll(nextTriggeredDates)
+            lastCheckAt = nextLastCheckAt
+            changed
         }
         logger.info("Loaded alarm scheduler state.")
     }
@@ -107,8 +112,8 @@ class AlarmSchedulerService(
         when (key) {
             KEY_ALARMS -> reloadAlarms()
             KEY_ALARM_SCHEDULER_STATE, KEY_ALARM_LAST_TRIGGERED_DATES, KEY_ALARM_LAST_CHECK_AT -> {
-                reloadSchedulerState()
-                if (schedulerStateReady) {
+                val schedulerStateChanged = reloadSchedulerState()
+                if (schedulerStateReady && schedulerStateChanged) {
                     persistSchedulerState()
                 }
             }
