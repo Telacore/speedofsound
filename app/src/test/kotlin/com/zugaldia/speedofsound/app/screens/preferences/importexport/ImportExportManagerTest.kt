@@ -8,12 +8,14 @@ import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_ALARM_SCHEDULER_STATE
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_ALARMS
+import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_SCHEDULER_STATE
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_PROCESSING_ENABLED
+import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
@@ -215,6 +217,61 @@ class ImportExportManagerTest {
         assertEquals(emptyList<VoiceModelProviderSetting>(), settingsClient.peekVoiceModelProviders().filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys })
         assertEquals(null, store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS))
         assertEquals(null, store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS))
+    }
+
+    @Test
+    fun `import restores exact whisper selection after rollback`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = com.zugaldia.speedofsound.core.plugins.asr.AsrProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            ),
+            failingStringKeys = setOf(com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS),
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(
+            Json.encodeToString(
+                SettingsExport(
+                    version = 6,
+                    credentials = listOf(
+                        CredentialSetting(
+                            id = "cred-1",
+                            type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY,
+                            name = "Primary",
+                            value = "secret",
+                        )
+                    ),
+                )
+            )
+        )
+
+        assertFailsWith<IllegalStateException> {
+            manager.importSettings().getOrThrow()
+        }
+
+        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, settingsClient.peekSelectedVoiceModelProviderIdExact())
+        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, settingsClient.loadSelectedVoiceModelProviderId())
+        assertEquals(
+            DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
+        )
     }
 
     @Test
