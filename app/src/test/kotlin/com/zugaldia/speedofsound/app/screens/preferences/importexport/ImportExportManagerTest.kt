@@ -804,6 +804,7 @@ class ImportExportManagerTest {
         assertEquals(MAX_VOICE_MODEL_PROVIDERS - 1, result.voiceProvidersAdded)
         assertEquals(MAX_TEXT_MODEL_PROVIDERS - 1, result.textProvidersAdded)
         assertEquals(MAX_VOCABULARY_WORDS - 1, result.vocabularyWordsAdded)
+        assertEquals(2, store.stringReadCount(com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS))
         assertEquals(MAX_CREDENTIALS, settingsClient.loadCredentials().size)
         assertEquals(
             MAX_VOICE_MODEL_PROVIDERS,

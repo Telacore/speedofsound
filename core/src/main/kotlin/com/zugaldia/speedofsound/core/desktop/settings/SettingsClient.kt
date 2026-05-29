@@ -782,9 +782,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun peekSelectedVoiceModelProviderIdExact(): String =
         settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID).trim()
 
-    fun setSelectedVoiceModelProviderId(value: String): Boolean =
-        setSelectedVoiceModelProviderId(value, peekVoiceModelProviders())
-
     fun setSelectedVoiceModelProviderId(
         value: String,
         availableProviders: List<VoiceModelProviderSetting>,
@@ -879,9 +876,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
             availableProviders = availableProviders,
         )
-
-    fun setSelectedTextModelProviderId(value: String): Boolean =
-        setSelectedTextModelProviderId(value, peekTextModelProviders())
 
     fun setSelectedTextModelProviderId(
         value: String,

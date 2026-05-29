@@ -76,7 +76,11 @@ class LlmProviderManager(
                     )
                 }
             if (selectedProviderId.isNotEmpty()) {
-                if (!settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)) {
+                if (!settingsClient.setSelectedTextModelProviderId(
+                        DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+                        availableProviders,
+                    )
+                ) {
                     logger.warn(
                         "Could not persist default LLM selection while removing missing provider {}",
                         selectedProviderId,
@@ -137,7 +141,11 @@ class LlmProviderManager(
             return
         }
         if (selectedProviderId.isNotBlank()) {
-            if (!settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)) {
+            if (!settingsClient.setSelectedTextModelProviderId(
+                    DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+                    availableProviders,
+                )
+            ) {
                 logger.warn(
                     "Could not persist default LLM selection after activation left no active provider",
                 )

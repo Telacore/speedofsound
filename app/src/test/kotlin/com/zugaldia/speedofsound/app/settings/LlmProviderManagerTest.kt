@@ -40,6 +40,8 @@ class LlmProviderManagerTest {
 
         manager.refreshProviderConfiguration()
 
+        assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
+        assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId())
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
@@ -200,6 +202,8 @@ class LlmProviderManagerTest {
 
         LlmProviderManager(registry, settingsClient).activateSelectedProvider()
 
+        assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
+        assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
         assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId())
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))

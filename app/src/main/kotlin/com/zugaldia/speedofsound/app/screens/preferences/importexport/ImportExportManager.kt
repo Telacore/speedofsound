@@ -177,7 +177,10 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             val importedTextIds = normalizedTextProviders.map { it.id }.toSet()
             val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
             requireWrite(
-                viewModel.setSelectedTextModelProviderId(snapshot.selectedTextProviderId),
+                viewModel.setSelectedTextModelProviderId(
+                    snapshot.selectedTextProviderId,
+                    snapshot.textProviders,
+                ),
                 "selected text model provider",
             )
             if (snapshot.textProcessingEnabled && normalizedTextProviders.isNotEmpty()) {

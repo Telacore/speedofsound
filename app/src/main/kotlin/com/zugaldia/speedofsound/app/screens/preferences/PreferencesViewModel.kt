@@ -117,8 +117,6 @@ class PreferencesViewModel(
         settingsClient.setVoiceModelProviders(value, validCredentialIds, availableProviders)
     fun peekSelectedVoiceModelProviderIdExact(): String =
         settingsClient.peekSelectedVoiceModelProviderIdExact()
-    fun setSelectedVoiceModelProviderId(value: String): Boolean =
-        settingsClient.setSelectedVoiceModelProviderId(value)
     fun setSelectedVoiceModelProviderId(
         value: String,
         availableProviders: List<VoiceModelProviderSetting>,
@@ -151,8 +149,6 @@ class PreferencesViewModel(
 
     fun peekSelectedTextModelProviderId(): String =
         settingsClient.peekSelectedTextModelProviderId()
-    fun setSelectedTextModelProviderId(value: String): Boolean =
-        settingsClient.setSelectedTextModelProviderId(value)
     fun setSelectedTextModelProviderId(
         value: String,
         availableProviders: List<TextModelProviderSetting>,
