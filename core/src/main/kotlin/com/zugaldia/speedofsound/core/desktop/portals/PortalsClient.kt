@@ -32,7 +32,7 @@ private const val SHORTCUT_DESCRIPTION = "Start or stop voice typing"
 @Suppress("TooManyFunctions")
 class PortalsClient(
     private val portalConnector: () -> Result<DesktopPortal> = { runCatching { DesktopPortal.connect() } },
-) : PortalsSessionClient {
+) : PortalsSessionClient, AutoCloseable {
     companion object {
         private const val KEY_SYMBOL_HEX_RADIX = 16
     }
@@ -59,6 +59,14 @@ class PortalsClient(
                 logger.error("Failed to connect to Desktop Portal: {}", error.message)
             }
             .getOrNull()
+    }
+
+    override fun close() {
+        val cachedPortal = portal ?: return
+        portal = null
+        shortcutsSessionHandle = null
+        runCatching { cachedPortal.close() }
+            .onFailure { error -> logger.warn("Failed to close Desktop Portal connection: {}", error.message) }
     }
 
     override val isPortalAvailable: Boolean

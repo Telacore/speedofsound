@@ -90,6 +90,7 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
             logger.info("Application shutting down.")
             statusNotifierService?.close()
             mainViewModel.shutdown()
+            portalsClient.close()
         }
     }
 
