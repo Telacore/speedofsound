@@ -148,10 +148,13 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     }
 
     private fun addCredentialToUI(credential: CredentialSetting) {
-        val maskedValue = maskCredentialValue(credential.value)
         val row = ActionRow().apply {
             title = credential.name
-            subtitle = maskedValue
+            subtitle = if (credential.value.length < MIN_CREDENTIAL_LENGTH_FOR_MASKING) {
+                "..."
+            } else {
+                "${credential.value.take(CREDENTIAL_MASK_PREFIX_LENGTH)}...${credential.value.takeLast(CREDENTIAL_MASK_SUFFIX_LENGTH)}"
+            }
         }
 
         val deleteButton = Button.fromIconName(ICON_TRASH).apply {
@@ -166,13 +169,6 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
                 credentialsListBox.remove(row)
             }
         }
-    }
-
-    private fun maskCredentialValue(value: String): String =
-        if (value.length < MIN_CREDENTIAL_LENGTH_FOR_MASKING) {
-            "..."
-        } else {
-            "${value.take(CREDENTIAL_MASK_PREFIX_LENGTH)}...${value.takeLast(CREDENTIAL_MASK_SUFFIX_LENGTH)}"
     }
 
     private fun onCredentialDeleted(credentialId: String, credentialName: String): Boolean {
