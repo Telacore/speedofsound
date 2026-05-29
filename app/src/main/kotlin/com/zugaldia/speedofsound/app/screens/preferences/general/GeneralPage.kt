@@ -135,7 +135,21 @@ class GeneralPage(private val viewModel: PreferencesViewModel) : PreferencesPage
         }
 
         add(globalShortcutGroup)
-        if (isSandboxed()) setupGlobalShortcutsSession() else showManualSetupRow()
+        if (isSandboxed()) {
+            logger.info("[Shortcut] isSandboxed=true, attempting to create global shortcuts session")
+            scope.launch {
+                val sessionResult = viewModel.createGlobalShortcutsSession()
+                if (sessionResult.isSuccess) {
+                    logger.info("[Shortcut] Session created successfully, proceeding to list shortcuts")
+                    handleSessionCreated()
+                } else {
+                    logger.warn("[Shortcut] Session creation failed: {}", sessionResult.exceptionOrNull()?.message)
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) { showManualSetupRow(); false }
+                }
+            }
+        } else {
+            showManualSetupRow()
+        }
 
         add(languageGroup)
         add(outputGroup)
@@ -175,23 +189,6 @@ class GeneralPage(private val viewModel: PreferencesViewModel) : PreferencesPage
         stayHiddenOnActivationRow.active = viewModel.peekStayHiddenOnActivation()
         backgroundRecordingRow.active = viewModel.peekBackgroundRecording()
         hideInsteadOfMinimizeRow.active = viewModel.peekHideInsteadOfMinimize()
-    }
-
-    /*
-     * Step 0: Can we establish a session?
-     */
-    private fun setupGlobalShortcutsSession() {
-        logger.info("[Shortcut] isSandboxed=true, attempting to create global shortcuts session")
-        scope.launch {
-            val sessionResult = viewModel.createGlobalShortcutsSession()
-            if (sessionResult.isSuccess) {
-                logger.info("[Shortcut] Session created successfully, proceeding to list shortcuts")
-                handleSessionCreated()
-            } else {
-                logger.warn("[Shortcut] Session creation failed: {}", sessionResult.exceptionOrNull()?.message)
-                GLib.idleAdd(GLib.PRIORITY_DEFAULT) { showManualSetupRow(); false }
-            }
-        }
     }
 
     /*
