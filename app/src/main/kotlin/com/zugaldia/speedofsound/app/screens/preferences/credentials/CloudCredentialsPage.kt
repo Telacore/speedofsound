@@ -165,10 +165,18 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         val currentCredentials = viewModel.peekCredentials()
         val credentialToDelete = currentCredentials.find { it.name == credentialName }
         if (credentialToDelete != null) {
-            val providers = viewModel.peekTextModelProviders()
-            val referencingProviders = providers.filter { it.credentialId == credentialToDelete.id }
+            val textProviders = viewModel.peekTextModelProviders()
+            val voiceProviders = viewModel.peekVoiceModelProviders()
+            val referencingProviders = buildList {
+                addAll(textProviders.filter { it.credentialId == credentialToDelete.id }.map {
+                    "Text: ${it.name}"
+                })
+                addAll(voiceProviders.filter { it.credentialId == credentialToDelete.id }.map {
+                    "Voice: ${it.name}"
+                })
+            }
             if (referencingProviders.isNotEmpty()) {
-                val providerNames = referencingProviders.joinToString(", ") { it.name }
+                val providerNames = referencingProviders.joinToString(", ")
                 logger.warn("Cannot delete credential '$credentialName': used by providers: $providerNames")
                 return false
             }
