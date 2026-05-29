@@ -126,7 +126,10 @@ class AddVoiceModelProviderDialog(
         }
 
         val cancelButton = Button.withLabel("Cancel").apply {
-            onClicked { closeDialog() }
+            onClicked {
+                dialogScope.cancel()
+                close()
+            }
         }
 
         addButton = Button.withLabel("Add").apply {
@@ -146,7 +149,8 @@ class AddVoiceModelProviderDialog(
                         modelId = modelId
                     )
                     if (onProviderAdded(config)) {
-                        closeDialog()
+                        dialogScope.cancel()
+                        close()
                     }
                 }
             }
@@ -265,11 +269,6 @@ class AddVoiceModelProviderDialog(
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
         return true
-    }
-
-    private fun closeDialog() {
-        dialogScope.cancel()
-        close()
     }
 
     private fun refreshSnapshots() {
