@@ -60,12 +60,12 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
         }
 
         for (component in model.components) {
-            val sourceFile = File(extractedModelDir, component.name)
+            val sourceFile = resolveSafeChildPath(extractedModelDir.toPath(), component.name).toFile()
             if (!sourceFile.exists()) {
                 throw IllegalStateException("Required file not found in archive: $modelId/${component.name}")
             }
 
-            val destFile = modelPath.resolve(component.name).toFile()
+            val destFile = resolveSafeChildPath(modelPath, component.name).toFile()
             AtomicFileWriter.write(destFile) { tempFile ->
                 fileSystem.copyFile(sourceFile, tempFile, overwrite = true)
             }.getOrThrow()
@@ -82,10 +82,10 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
         ensureModelDirectory(modelPath)
         for (component in model.components) {
             val resourcePath = "/models/asr/${component.name}"
+            val outputFile = resolveSafeChildPath(modelPath, component.name).toFile()
             val inputStream = resourceLoader.loadResource(resourcePath)
                 ?: throw IllegalStateException("Resource not found: $resourcePath")
 
-            val outputFile = modelPath.resolve(component.name).toFile()
             inputStream.use { input ->
                 AtomicFileWriter.write(outputFile) { tempFile ->
                     tempFile.outputStream().use { output ->
@@ -102,6 +102,14 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
                 }.getOrThrow()
             }
         }
+    }
+
+    private fun resolveSafeChildPath(basePath: Path, childName: String): Path {
+        val resolved = basePath.resolve(childName).normalize()
+        if (!resolved.startsWith(basePath.normalize())) {
+            throw IllegalArgumentException("Path escapes model directory: $childName")
+        }
+        return resolved
     }
 
     private fun ensureModelDirectory(modelPath: Path) {

@@ -138,4 +138,50 @@ class ModelFileManagerTest {
             tempDir.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    fun `copyModelFiles rejects traversal component names`() {
+        val tempDir = createTempDirectory("sos-test")
+        try {
+            val manager = createFileManager(tempDir)
+            val archiveTempDir = tempDir.resolve("archive").toFile()
+            val modelDir = archiveTempDir.resolve("test-model")
+            modelDir.mkdirs()
+            val maliciousModel = testModel.copy(
+                components = listOf(VoiceModelFile(name = "../outside.onnx"))
+            )
+
+            val exception = assertFailsWith<IllegalArgumentException> {
+                manager.copyModelFiles(archiveTempDir, "test-model", maliciousModel).getOrThrow()
+            }
+
+            assertNotNull(exception.message)
+            assertTrue(exception.message?.contains("escapes model directory") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `extractDefaultModelFromResources rejects traversal component names`() {
+        val tempDir = createTempDirectory("sos-test")
+        try {
+            val manager = createFileManager(tempDir)
+            val maliciousModel = testModel.copy(
+                components = listOf(VoiceModelFile(name = "../outside.onnx"))
+            )
+            val resourceLoader = object : ResourceLoader {
+                override fun loadResource(path: String): InputStream = ByteArray(16) { it.toByte() }.inputStream()
+            }
+
+            val exception = assertFailsWith<IllegalArgumentException> {
+                manager.extractDefaultModelFromResources("test-model", maliciousModel, resourceLoader).getOrThrow()
+            }
+
+            assertNotNull(exception.message)
+            assertTrue(exception.message?.contains("escapes model directory") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
 }
