@@ -291,7 +291,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
 
     private fun refreshSnapshots() {
         currentCredentials = viewModel.peekCredentials()
-        currentProviders = viewModel.peekTextModelProviders()
+        currentProviders = viewModel.peekTextModelProviders(currentCredentials.map { it.id }.toSet())
         currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
     }
 

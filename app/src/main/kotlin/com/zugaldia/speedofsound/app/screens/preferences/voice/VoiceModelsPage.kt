@@ -211,7 +211,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
 
     private fun refreshSnapshots() {
         currentCredentials = viewModel.peekCredentials()
-        currentProviders = viewModel.peekVoiceModelProviders()
+        currentProviders = viewModel.peekVoiceModelProviders(currentCredentials.map { it.id }.toSet())
     }
 
     private fun currentCredentialIds(): Set<String> = currentCredentials.map { it.id }.toSet()

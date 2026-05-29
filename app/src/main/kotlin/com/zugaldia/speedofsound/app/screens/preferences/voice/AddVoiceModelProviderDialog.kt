@@ -287,6 +287,6 @@ class AddVoiceModelProviderDialog(
 
     private fun refreshSnapshots() {
         currentCredentials = viewModel.peekCredentials()
-        currentProviders = viewModel.peekVoiceModelProviders()
+        currentProviders = viewModel.peekVoiceModelProviders(currentCredentials.map { it.id }.toSet())
     }
 }

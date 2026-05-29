@@ -408,6 +408,6 @@ class AddTextModelProviderDialog(
 
     private fun refreshSnapshots() {
         currentCredentials = viewModel.peekCredentials()
-        currentProviders = viewModel.peekTextModelProviders()
+        currentProviders = viewModel.peekTextModelProviders(currentCredentials.map { it.id }.toSet())
     }
 }
