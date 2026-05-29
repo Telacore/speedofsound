@@ -759,6 +759,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
         )
 
+    /**
+     * Stores the selected ASR provider exactly as provided.
+     *
+     * Used for the Whisper fallback path, which may need to persist a provider ID before the local
+     * Whisper model becomes visible in the provider list.
+     */
+    fun setSelectedVoiceModelProviderIdExact(value: String): Boolean =
+        setStringSettingIfChanged(
+            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID),
+            value.trim(),
+            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
+        )
+
     private fun readSelectedProviderId(
         key: String,
         defaultValue: String,

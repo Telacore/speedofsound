@@ -59,6 +59,7 @@ class AsrProviderManager(
         val providers = settingsClient.peekVoiceModelProviders()
         val selectedProvider = providers.find { it.id == selectedProviderId }
         val currentActiveId = registry.getActive(AppPluginCategory.ASR)?.id
+        val selectedProviderMissing = selectedProvider == null
         val pluginId = if (selectedProvider != null) {
             val options = settingsClient.resolveVoiceProviderOptions(selectedProvider)
             val id = pluginIdForProvider(selectedProvider.provider)
@@ -67,12 +68,11 @@ class AsrProviderManager(
         } else {
             // No provider configured or a previously available provider was removed.
             // We fall back to the default local ASR plugin and model.
-            settingsClient.setSelectedVoiceModelProviderId(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID)
             applyAsrOptions(SherpaWhisperAsr.ID, SherpaWhisperAsrOptions())
             SherpaWhisperAsr.ID
         }
-        val shouldActivate = setActive || selectedProvider == null || currentActiveId != pluginId
 
+        val shouldActivate = setActive || selectedProviderMissing || currentActiveId != pluginId
         if (shouldActivate) {
             runCatching { registry.setActiveById(AppPluginCategory.ASR, pluginId) }
                 .onFailure { error ->
@@ -85,7 +85,11 @@ class AsrProviderManager(
                 }
         }
 
-        if (registry.getActive(AppPluginCategory.ASR) != null) {
+        val activeAsrId = registry.getActive(AppPluginCategory.ASR)?.id
+        if (activeAsrId != null) {
+            if (selectedProviderMissing && activeAsrId == SherpaWhisperAsr.ID) {
+                settingsClient.setSelectedVoiceModelProviderIdExact(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID)
+            }
             return
         }
 
@@ -95,9 +99,8 @@ class AsrProviderManager(
 
         logger.warn(
             "No active ASR provider after applying {}; falling back to local whisper",
-            pluginId
+            pluginId,
         )
-        settingsClient.setSelectedVoiceModelProviderId(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID)
         runCatching { registry.setActiveById(AppPluginCategory.ASR, SherpaWhisperAsr.ID) }
             .onFailure { error ->
                 logger.error(
@@ -110,6 +113,9 @@ class AsrProviderManager(
                     "Failed to activate fallback ASR provider ${SherpaWhisperAsr.ID}"
                 )
             }
+        if (registry.getActive(AppPluginCategory.ASR)?.id == SherpaWhisperAsr.ID) {
+            settingsClient.setSelectedVoiceModelProviderIdExact(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID)
+        }
     }
 
     /**

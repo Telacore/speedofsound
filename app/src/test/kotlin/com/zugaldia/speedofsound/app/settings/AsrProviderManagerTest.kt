@@ -11,6 +11,7 @@ import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.EmptyOptions
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
+import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.asr.OpenAiAsr
 import com.zugaldia.speedofsound.core.plugins.asr.SherpaWhisperAsr
 import kotlinx.serialization.json.Json
@@ -40,6 +41,45 @@ class AsrProviderManagerTest {
         AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
 
         assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
+        assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
+        assertEquals(1, activePlugin.enableCount)
+        assertEquals(1, activePlugin.disableCount)
+        assertEquals(1, fallbackPlugin.enableCount)
+        assertEquals(0, fallbackPlugin.disableCount)
+    }
+
+    @Test
+    fun `refreshProviderConfiguration persists exact whisper fallback when selected provider is missing and custom providers exist`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "custom-provider",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val activePlugin = RecordingPlugin(id = "ASR_OPENAI")
+        val fallbackPlugin = RecordingPlugin(id = SherpaWhisperAsr.ID)
+
+        registry.register(AppPluginCategory.ASR, activePlugin)
+        registry.register(AppPluginCategory.ASR, fallbackPlugin)
+        registry.setActiveById(AppPluginCategory.ASR, activePlugin.id)
+
+        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
+
+        assertEquals(
+            DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
+            settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID),
+        )
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)
