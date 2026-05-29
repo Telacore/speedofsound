@@ -77,6 +77,31 @@ class LlmProviderManagerTest {
     }
 
     @Test
+    fun `peekCurrentProviderName does not read credentials for selected provider`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-a",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-a",
+                            name = "Alpha",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-a",
+                            credentialId = "cred-1",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val manager = LlmProviderManager(AppPluginRegistry(), settingsClient)
+
+        assertEquals("Alpha", manager.peekCurrentProviderName())
+        assertEquals(0, settingsStore.stringReadCount(KEY_CREDENTIALS))
+    }
+
+    @Test
     fun `refreshProviderConfiguration shows active llm name when clearing missing provider fails`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(

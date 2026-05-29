@@ -51,6 +51,31 @@ class AsrProviderManagerTest {
     }
 
     @Test
+    fun `peekCurrentProviderName does not read credentials for selected provider`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-a",
+                            credentialId = "cred-1",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val manager = AsrProviderManager(AppPluginRegistry(), settingsClient)
+
+        assertEquals("Alpha", manager.peekCurrentProviderName())
+        assertEquals(0, settingsStore.stringReadCount(KEY_CREDENTIALS))
+    }
+
+    @Test
     fun `refreshProviderConfiguration persists exact whisper fallback when selected provider is missing and custom providers exist`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(

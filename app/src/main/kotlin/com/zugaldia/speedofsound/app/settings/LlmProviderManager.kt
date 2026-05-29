@@ -174,7 +174,9 @@ class LlmProviderManager(
         if (runtimeTextProcessingEnabled == false) {
             return ""
         }
-        val selectedProvider = settingsClient.peekSelectedTextModelProvider()
+        val availableProviders = settingsClient.peekTextModelProviders(emptySet())
+        val selectedProviderId = settingsClient.peekSelectedTextModelProviderId(availableProviders)
+        val selectedProvider = availableProviders.find { it.id == selectedProviderId }
         if (selectedProvider != null) {
             return selectedProvider.name
         }
