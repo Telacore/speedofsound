@@ -101,7 +101,31 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
         add(instructionsGroup)
         add(vocabularyGroup)
 
-        loadValues()
+        val instructions = viewModel.peekCustomContext()
+        instructionsTextView.buffer.setText(instructions, -1)
+        val vocabulary = viewModel.peekCustomVocabulary()
+        vocabulary.sortedWith(String.CASE_INSENSITIVE_ORDER).forEach { word ->
+            val row = ActionRow().apply { title = word }
+            val deleteButton = Button.fromIconName(ICON_TRASH).apply {
+                addCssClass(STYLE_CLASS_FLAT)
+                valign = Align.CENTER
+                onClicked {
+                    val updatedVocabulary = mutableListOf<String>()
+                    var child = vocabularyListBox.firstChild
+                    while (child != null) {
+                        if (child is ActionRow) { updatedVocabulary.add(child.title) }
+                        child = child.nextSibling
+                    }
+                    val filteredVocabulary = updatedVocabulary.filterNot { it == row.title }
+                    if (saveVocabulary(filteredVocabulary)) {
+                        vocabularyListBox.remove(row)
+                    }
+                }
+            }
+
+            row.addSuffix(deleteButton)
+            vocabularyListBox.append(row)
+        }
         instructionsTextView.buffer.onChanged {
             if (isRefreshing) return@onChanged
             val buffer = instructionsTextView.buffer
@@ -128,41 +152,36 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
         }
     }
 
-    private fun loadValues() {
-        val instructions = viewModel.peekCustomContext()
-        instructionsTextView.buffer.setText(instructions, -1)
-
-        val vocabulary = viewModel.peekCustomVocabulary()
-        vocabulary.sortedWith(String.CASE_INSENSITIVE_ORDER).forEach { word ->
-            val row = ActionRow().apply { title = word }
-            val deleteButton = Button.fromIconName(ICON_TRASH).apply {
-                addCssClass(STYLE_CLASS_FLAT)
-                valign = Align.CENTER
-                onClicked {
-                    val updatedVocabulary = mutableListOf<String>()
-                    var child = vocabularyListBox.firstChild
-                    while (child != null) {
-                        if (child is ActionRow) { updatedVocabulary.add(child.title) }
-                        child = child.nextSibling
-                    }
-                    val filteredVocabulary = updatedVocabulary.filterNot { it == row.title }
-                    if (saveVocabulary(filteredVocabulary)) {
-                        vocabularyListBox.remove(row)
-                    }
-                }
-            }
-
-            row.addSuffix(deleteButton)
-            vocabularyListBox.append(row)
-        }
-    }
-
     fun refresh() {
         logger.info("Refreshing personalization settings")
         isRefreshing = true
         try {
             vocabularyListBox.removeAll()
-            loadValues()
+            val instructions = viewModel.peekCustomContext()
+            instructionsTextView.buffer.setText(instructions, -1)
+            val vocabulary = viewModel.peekCustomVocabulary()
+            vocabulary.sortedWith(String.CASE_INSENSITIVE_ORDER).forEach { word ->
+                val row = ActionRow().apply { title = word }
+                val deleteButton = Button.fromIconName(ICON_TRASH).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                    onClicked {
+                        val updatedVocabulary = mutableListOf<String>()
+                        var child = vocabularyListBox.firstChild
+                        while (child != null) {
+                            if (child is ActionRow) { updatedVocabulary.add(child.title) }
+                            child = child.nextSibling
+                        }
+                        val filteredVocabulary = updatedVocabulary.filterNot { it == row.title }
+                        if (saveVocabulary(filteredVocabulary)) {
+                            vocabularyListBox.remove(row)
+                        }
+                    }
+                }
+
+                row.addSuffix(deleteButton)
+                vocabularyListBox.append(row)
+            }
         } finally {
             isRefreshing = false
         }
