@@ -115,4 +115,27 @@ class ModelFileManagerTest {
             tempDir.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    fun `extractDefaultModelFromResources rejects file-backed model directories`() {
+        val tempDir = createTempDirectory("sos-test")
+        try {
+            val manager = createFileManager(tempDir)
+            val modelPath = manager.getModelPath("test-model").toFile()
+            modelPath.deleteRecursively()
+            modelPath.writeText("not-a-directory")
+            val resourceLoader = object : ResourceLoader {
+                override fun loadResource(path: String): InputStream = ByteArray(16) { it.toByte() }.inputStream()
+            }
+
+            val exception = assertFailsWith<IllegalStateException> {
+                manager.extractDefaultModelFromResources("test-model", testModel, resourceLoader).getOrThrow()
+            }
+
+            assertNotNull(exception.message)
+            assertTrue(exception.message?.contains("not a directory") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
 }

@@ -53,6 +53,7 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
      */
     fun copyModelFiles(tempDir: File, modelId: String, model: VoiceModel): Result<Unit> = runCatching {
         val modelPath = getModelPath(modelId)
+        ensureModelDirectory(modelPath)
         val extractedModelDir = File(tempDir, modelId)
         if (!extractedModelDir.exists() || !extractedModelDir.isDirectory) {
             throw IllegalStateException("Expected directory not found in archive: $modelId")
@@ -78,6 +79,7 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
         modelId: String, model: VoiceModel, resourceLoader: ResourceLoader
     ): Result<Unit> = runCatching {
         val modelPath = getModelPath(modelId)
+        ensureModelDirectory(modelPath)
         for (component in model.components) {
             val resourcePath = "/models/asr/${component.name}"
             val inputStream = resourceLoader.loadResource(resourcePath)
@@ -98,6 +100,18 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
                         )
                     }
                 }.getOrThrow()
+            }
+        }
+    }
+
+    private fun ensureModelDirectory(modelPath: Path) {
+        val modelDir = modelPath.toFile()
+        when {
+            modelDir.exists() && !modelDir.isDirectory -> {
+                throw IllegalStateException("Model path is not a directory: ${modelDir.absolutePath}")
+            }
+            !modelDir.exists() && !modelDir.mkdirs() -> {
+                throw IllegalStateException("Could not create model directory: ${modelDir.absolutePath}")
             }
         }
     }
