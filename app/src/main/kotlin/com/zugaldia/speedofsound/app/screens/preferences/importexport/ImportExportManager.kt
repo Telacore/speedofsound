@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.app.screens.preferences.importexport
 
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.APPLICATION_SHORT
+import com.zugaldia.speedofsound.core.io.AtomicFileWriter
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
@@ -56,7 +57,9 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         )
 
         val outputFile = getDataDir().resolve(EXPORT_FILENAME).toFile()
-        outputFile.writeText(prettyJson.encodeToString(exportData))
+        AtomicFileWriter.write(outputFile) { tempFile ->
+            tempFile.writeText(prettyJson.encodeToString(exportData))
+        }.getOrThrow()
         logger.info("Exported settings to: ${outputFile.absolutePath}")
         outputFile.absolutePath
     }

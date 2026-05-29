@@ -6,7 +6,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
-internal object AtomicFileWriter {
+object AtomicFileWriter {
     fun write(destination: File, writeAction: (File) -> Unit): Result<Unit> = runCatching {
         destination.parentFile?.mkdirs()
         val tempFile = createTempSiblingFile(destination)
