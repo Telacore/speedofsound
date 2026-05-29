@@ -123,13 +123,13 @@ class AddCredentialDialog(
             val apiKey = apiKeyEntry.text.trim()
             addButton.sensitive = validateInput(name, apiKey, currentCredentials)
         }
-        refreshCredentialSnapshot()
+        currentCredentials = viewModel.peekCredentials()
         dialogScope.launch {
             viewModel.settingsChanged
                 .filter { it == KEY_CREDENTIALS }
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                        refreshCredentialSnapshot()
+                        currentCredentials = viewModel.peekCredentials()
                         val name = nameEntry.text.trim()
                         val apiKey = apiKeyEntry.text.trim()
                         addButton.sensitive = validateInput(name, apiKey, currentCredentials)
@@ -165,7 +165,4 @@ class AddCredentialDialog(
         return true
     }
 
-    private fun refreshCredentialSnapshot() {
-        currentCredentials = viewModel.peekCredentials()
-    }
 }
