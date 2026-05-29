@@ -1,13 +1,10 @@
 package com.zugaldia.speedofsound.core.models.voice
 
 import com.zugaldia.speedofsound.core.FatalStartupException
+import com.zugaldia.speedofsound.core.io.AtomicFileWriter
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -68,9 +65,9 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
             }
 
             val destFile = modelPath.resolve(component.name).toFile()
-            writeAtomically(destFile) { tempFile ->
+            AtomicFileWriter.write(destFile) { tempFile ->
                 fileSystem.copyFile(sourceFile, tempFile, overwrite = true)
-            }
+            }.getOrThrow()
         }
     }
 
@@ -88,66 +85,20 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
 
             val outputFile = modelPath.resolve(component.name).toFile()
             inputStream.use { input ->
-                writeAtomically(
-                    outputFile,
-                    writeAction = { tempFile ->
-                        FileOutputStream(tempFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    },
-                    postWriteValidation = { tempFile ->
-                        if (isLfsPointer(tempFile)) {
-                            throw FatalStartupException(
-                                "Model file '${component.name}' is a Git LFS pointer, not a real model file. " +
-                                    "The repository was likely cloned without Git LFS. " +
-                                    "See CONTRIBUTING.md for setup instructions."
-                            )
-                        }
+                AtomicFileWriter.write(outputFile) { tempFile ->
+                    tempFile.outputStream().use { output ->
+                        input.copyTo(output)
                     }
-                )
+
+                    if (isLfsPointer(tempFile)) {
+                        throw FatalStartupException(
+                            "Model file '${component.name}' is a Git LFS pointer, not a real model file. " +
+                                "The repository was likely cloned without Git LFS. " +
+                            "See CONTRIBUTING.md for setup instructions."
+                        )
+                    }
+                }.getOrThrow()
             }
-        }
-    }
-
-    private inline fun writeAtomically(
-        destination: File,
-        writeAction: (File) -> Unit,
-        postWriteValidation: (File) -> Unit = {},
-    ) {
-        destination.parentFile?.mkdirs()
-        val tempFile = createTempSiblingFile(destination)
-        try {
-            writeAction(tempFile)
-            postWriteValidation(tempFile)
-            moveTempFile(tempFile, destination)
-        } finally {
-            if (tempFile.exists()) {
-                tempFile.delete()
-            }
-        }
-    }
-
-    private fun createTempSiblingFile(destination: File): File {
-        val parentPath = destination.parentFile?.toPath() ?: Path.of(".")
-        val rawPrefix = destination.name.ifBlank { "model" }
-        val prefix = if (rawPrefix.length < 3) rawPrefix.padEnd(3, '_') else rawPrefix
-        return Files.createTempFile(parentPath, prefix, ".tmp").toFile()
-    }
-
-    private fun moveTempFile(tempFile: File, destination: File) {
-        try {
-            Files.move(
-                tempFile.toPath(),
-                destination.toPath(),
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.ATOMIC_MOVE,
-            )
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(
-                tempFile.toPath(),
-                destination.toPath(),
-                StandardCopyOption.REPLACE_EXISTING,
-            )
         }
     }
 

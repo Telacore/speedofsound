@@ -1,5 +1,6 @@
 package com.zugaldia.speedofsound.core.audio
 
+import com.zugaldia.speedofsound.core.io.AtomicFileWriter
 import com.zugaldia.speedofsound.core.audio.AudioConstants.AUDIO_FORMAT_PCM
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -136,9 +137,9 @@ class AudioManagerTest {
         val tempFile = Files.createTempFile("test-atomic-audio", ".wav").toFile()
         try {
             val bytes = ByteArray(256) { it.toByte() }
-            val success = AudioManager.writeFileAtomically(tempFile) { file ->
+            val success = AtomicFileWriter.write(tempFile) { file ->
                 file.writeBytes(bytes)
-            }
+            }.isSuccess
 
             assertTrue(success)
             assertEquals(bytes.size.toLong(), tempFile.length())
@@ -152,10 +153,10 @@ class AudioManagerTest {
     fun `writeFileAtomically removes temp output on failure`() {
         val tempFile = Files.createTempFile("test-atomic-audio-failure", ".wav").toFile()
         try {
-            val success = AudioManager.writeFileAtomically(tempFile) { file ->
+            val success = AtomicFileWriter.write(tempFile) { file ->
                 file.writeBytes(byteArrayOf(1, 2, 3))
                 throw IllegalStateException("boom")
-            }
+            }.isFailure
 
             assertFalse(success)
             assertFalse(tempFile.exists())

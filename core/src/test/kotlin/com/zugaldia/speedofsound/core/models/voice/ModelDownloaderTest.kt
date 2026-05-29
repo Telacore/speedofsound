@@ -1,5 +1,6 @@
 package com.zugaldia.speedofsound.core.models.voice
 
+import com.zugaldia.speedofsound.core.io.AtomicFileWriter
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,7 +15,7 @@ class ModelDownloaderTest {
             val destination = tempDir.resolve("model.tar.bz2").toFile()
             val bytes = ByteArray(1024) { it.toByte() }
 
-            val result = writeFileAtomically(destination) { tempFile ->
+            val result = AtomicFileWriter.write(destination) { tempFile ->
                 tempFile.writeBytes(bytes)
             }
 
@@ -33,7 +34,7 @@ class ModelDownloaderTest {
         try {
             val destination = tempDir.resolve("model.tar.bz2").toFile()
 
-            val result = writeFileAtomically(destination) { tempFile ->
+            val result = AtomicFileWriter.write(destination) { tempFile ->
                 tempFile.writeBytes(byteArrayOf(1, 2, 3))
                 throw IllegalStateException("boom")
             }

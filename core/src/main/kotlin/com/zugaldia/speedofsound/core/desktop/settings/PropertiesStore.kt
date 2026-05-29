@@ -1,15 +1,12 @@
 package com.zugaldia.speedofsound.core.desktop.settings
 
+import com.zugaldia.speedofsound.core.io.AtomicFileWriter
 import com.zugaldia.speedofsound.core.getDataDir
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import java.util.Properties
 
 open class PropertiesStore(
@@ -40,31 +37,10 @@ open class PropertiesStore(
     }
 
     protected open fun save(): Boolean = try {
-        filePath.parentFile?.mkdirs()
-        val parentPath = filePath.toPath().parent ?: filePath.parentFile?.toPath()
-        val tempFile = createTempFile(parentPath, filePath)
-        try {
+        AtomicFileWriter.write(filePath) { tempFile ->
             FileOutputStream(tempFile).use { properties.store(it, null) }
-            try {
-                Files.move(
-                    tempFile.toPath(),
-                    filePath.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING,
-                    StandardCopyOption.ATOMIC_MOVE,
-                )
-            } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(
-                    tempFile.toPath(),
-                    filePath.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING,
-                )
-            }
-            true
-        } finally {
-            if (tempFile.exists()) {
-                tempFile.delete()
-            }
-        }
+        }.getOrThrow()
+        true
     } catch (e: IOException) {
         logger.error("Error saving properties to $filePath: ${e.message}")
         false
@@ -115,11 +91,6 @@ open class PropertiesStore(
             properties.setProperty(key, value)
             return save()
         }
-    }
-
-    private fun createTempFile(parentPath: Path?, targetFile: File): File {
-        val dir = parentPath ?: targetFile.parentFile?.toPath() ?: Path.of(".")
-        return Files.createTempFile(dir, targetFile.name, ".tmp").toFile()
     }
 
     companion object {
