@@ -99,13 +99,28 @@ class AlarmEditorDialog(
             description = "Apply a common repeat pattern in one click."
             add(Box(Orientation.HORIZONTAL, DEFAULT_BOX_SPACING).apply {
                 append(Button.withLabel("Daily").apply {
-                    onClicked { selectRepeatDays(allAlarmRepeatDays()) }
+                    onClicked {
+                        val selectedDays = allAlarmRepeatDays().toSet()
+                        repeatDayRows.forEach { (day, row) ->
+                            row.active = day in selectedDays
+                        }
+                    }
                 })
                 append(Button.withLabel("Weekdays").apply {
-                    onClicked { selectRepeatDays(weekdayAlarmRepeatDays()) }
+                    onClicked {
+                        val selectedDays = weekdayAlarmRepeatDays().toSet()
+                        repeatDayRows.forEach { (day, row) ->
+                            row.active = day in selectedDays
+                        }
+                    }
                 })
                 append(Button.withLabel("Weekends").apply {
-                    onClicked { selectRepeatDays(weekendAlarmRepeatDays()) }
+                    onClicked {
+                        val selectedDays = weekendAlarmRepeatDays().toSet()
+                        repeatDayRows.forEach { (day, row) ->
+                            row.active = day in selectedDays
+                        }
+                    }
                 })
             })
         }
@@ -172,13 +187,6 @@ class AlarmEditorDialog(
             append(repeatPresetGroup)
             append(repeatDaysGroup)
             append(buttonBox)
-        }
-    }
-
-    private fun selectRepeatDays(repeatDays: List<AlarmRepeatDay>) {
-        val selectedDays = repeatDays.toSet()
-        repeatDayRows.forEach { (day, row) ->
-            row.active = day in selectedDays
         }
     }
 
