@@ -22,7 +22,7 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
      */
     fun getModelPath(modelId: String): Path {
         val dataDir = pathProvider.getDataDir()
-        val modelPath = dataDir.resolve("models").resolve(modelId)
+        val modelPath = resolveSafeChildPath(dataDir.resolve("models"), modelId)
         if (!fileSystem.exists(modelPath)) {
             fileSystem.mkdirs(modelPath)
         }
@@ -54,7 +54,7 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
     fun copyModelFiles(tempDir: File, modelId: String, model: VoiceModel): Result<Unit> = runCatching {
         val modelPath = getModelPath(modelId)
         ensureModelDirectory(modelPath)
-        val extractedModelDir = File(tempDir, modelId)
+        val extractedModelDir = resolveSafeChildPath(tempDir.toPath(), modelId).toFile()
         if (!extractedModelDir.exists() || !extractedModelDir.isDirectory) {
             throw IllegalStateException("Expected directory not found in archive: $modelId")
         }

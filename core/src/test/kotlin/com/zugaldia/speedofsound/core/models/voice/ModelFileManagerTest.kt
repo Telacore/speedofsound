@@ -95,6 +95,43 @@ class ModelFileManagerTest {
     }
 
     @Test
+    fun `getModelPath rejects traversal model ids`() {
+        val tempDir = createTempDirectory("sos-test")
+        try {
+            val manager = createFileManager(tempDir)
+
+            val exception = assertFailsWith<IllegalArgumentException> {
+                manager.getModelPath("../outside")
+            }
+
+            assertNotNull(exception.message)
+            assertTrue(exception.message?.contains("escapes model directory") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `isModelDownloaded rejects traversal component names`() {
+        val tempDir = createTempDirectory("sos-test")
+        try {
+            val manager = createFileManager(tempDir)
+            val maliciousModel = testModel.copy(
+                components = listOf(VoiceModelFile(name = "../outside.onnx"))
+            )
+
+            val exception = assertFailsWith<IllegalArgumentException> {
+                manager.isModelDownloaded("test-model", maliciousModel)
+            }
+
+            assertNotNull(exception.message)
+            assertTrue(exception.message?.contains("escapes model directory") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `extractDefaultModelFromResources writes complete file atomically`() {
         val tempDir = createTempDirectory("sos-test")
         try {
@@ -153,6 +190,24 @@ class ModelFileManagerTest {
 
             val exception = assertFailsWith<IllegalArgumentException> {
                 manager.copyModelFiles(archiveTempDir, "test-model", maliciousModel).getOrThrow()
+            }
+
+            assertNotNull(exception.message)
+            assertTrue(exception.message?.contains("escapes model directory") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `copyModelFiles rejects traversal model ids`() {
+        val tempDir = createTempDirectory("sos-test")
+        try {
+            val manager = createFileManager(tempDir)
+            val maliciousModel = testModel.copy()
+
+            val exception = assertFailsWith<IllegalArgumentException> {
+                manager.copyModelFiles(tempDir.toFile(), "../outside", maliciousModel).getOrThrow()
             }
 
             assertNotNull(exception.message)
