@@ -38,11 +38,10 @@ import org.gnome.gtk.Orientation
 import org.gnome.gtk.Separator
 
 class MainWindow(
-    app: Application,
+    private val app: Application,
     private val viewModel: MainViewModel,
     private val settingsClient: SettingsClient,
     private val portalsClient: PortalsClient,
-    private val onClosed: () -> Unit = {},
 ) : ApplicationWindow() {
     private val audioWidget: AudioWidget
     private val portalsBanner: Banner
@@ -54,6 +53,7 @@ class MainWindow(
     // A better way is likely to prevent the pipeline to trigger to start with:
     // https://github.com/zugaldia/speedofsound/issues/29
     private var shouldHideOnCompletion = true
+    private var isQuitRequested = false
 
     init {
         application = app
@@ -92,8 +92,12 @@ class MainWindow(
         }
 
         onCloseRequest {
-            onClosed()
-            false
+            if (isQuitRequested) {
+                false
+            } else {
+                goAway()
+                true
+            }
         }
         connectSignals()
         viewModel.start()
@@ -240,7 +244,8 @@ class MainWindow(
     }
 
     private fun onQuit() {
+        isQuitRequested = true
         viewModel.cancelListening()
-        close()
+        app.quit()
     }
 }

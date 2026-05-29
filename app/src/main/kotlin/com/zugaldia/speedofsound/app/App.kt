@@ -125,13 +125,7 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
 
     private fun ensureMainWindow() {
         if (mainWindow == null) {
-            mainWindow = MainWindow(
-                this,
-                mainViewModel,
-                settingsClient,
-                portalsClient,
-                onClosed = { mainWindow = null },
-            )
+            mainWindow = MainWindow(this, mainViewModel, settingsClient, portalsClient)
         }
     }
 
