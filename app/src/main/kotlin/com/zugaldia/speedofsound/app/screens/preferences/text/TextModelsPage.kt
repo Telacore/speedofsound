@@ -46,6 +46,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     private val addProviderButton: Button
     private var suppressEnableSwitchNotify = false
     private var currentCredentials: List<CredentialSetting> = emptyList()
+    private var currentCredentialIds: Set<String> = emptySet()
     private var currentProviders: List<TextModelProviderSetting> = emptyList()
     private var currentTextProcessingEnabled: Boolean = false
 
@@ -60,7 +61,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         }
 
         activeProviderComboRow = ActiveProviderComboRow(
-            getSelectedProviderId = { viewModel.peekSelectedTextModelProviderId(currentCredentialIds()) },
+            getSelectedProviderId = { viewModel.peekSelectedTextModelProviderId(currentCredentialIds) },
             setSelectedProviderId = { value, providers ->
                 viewModel.setSelectedTextModelProviderId(value, providers)
             },
@@ -240,7 +241,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     private fun onProviderDeleted(providerId: String): Boolean {
         val updatedProviders = currentProviders.filter { it.id != providerId }
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds(), updatedProviders)) {
+        if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
             logger.warn("Failed to persist text provider deletion '$providerId'")
             refreshProviders()
             return false
@@ -280,7 +281,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     private fun onProviderAdded(provider: TextModelProviderSetting): Boolean {
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds(), updatedProviders)) {
+        if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
             logger.warn("Failed to persist text provider '${provider.name}'")
             refreshProviders()
             return false
@@ -291,13 +292,12 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
 
     private fun refreshSnapshots() {
         currentCredentials = viewModel.peekCredentials()
-        currentProviders = viewModel.peekTextModelProviders(currentCredentials.map { it.id }.toSet())
+        currentCredentialIds = currentCredentials.map { it.id }.toSet()
+        currentProviders = viewModel.peekTextModelProviders(currentCredentialIds)
         currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
     }
 
     private fun refreshTextProcessingState() {
         currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
     }
-
-    private fun currentCredentialIds(): Set<String> = currentCredentials.map { it.id }.toSet()
 }
