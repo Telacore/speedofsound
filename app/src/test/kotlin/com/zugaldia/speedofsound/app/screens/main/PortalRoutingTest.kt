@@ -157,4 +157,23 @@ class PortalRoutingTest {
             )
         )
     }
+
+    @Test
+    fun `resolveTextOutputPluginId forces clipboard when fallback is requested`() {
+        assertEquals(
+            com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput.ID,
+            resolveTextOutputPluginId(
+                textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                forceClipboard = true,
+            )
+        )
+    }
+
+    @Test
+    fun `resolveTextOutputPluginId returns portal when portal is selected`() {
+        assertEquals(
+            PortalTextOutput.ID,
+            resolveTextOutputPluginId(textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL)
+        )
+    }
 }

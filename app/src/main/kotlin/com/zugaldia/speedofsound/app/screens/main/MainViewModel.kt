@@ -432,12 +432,17 @@ class MainViewModel(
     }
 
     private fun activateSelectedTextOutput() {
-        val pluginId = if (settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_CLIPBOARD) {
-            ClipboardTextOutput.ID
-        } else {
-            PortalTextOutput.ID
-        }
-        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, pluginId)
+        activateTextOutput()
+    }
+
+    private fun activateTextOutput(forceClipboard: Boolean = false) {
+        registry.setActiveById(
+            AppPluginCategory.TEXT_OUTPUT,
+            resolveTextOutputPluginId(
+                settingsClient.getTextOutputMethod(),
+                forceClipboard = forceClipboard,
+            ),
+        )
     }
 
     private fun switchToClipboardFallback(
@@ -457,7 +462,7 @@ class MainViewModel(
                         )
                     }
             }
-            activateSelectedTextOutput()
+            activateTextOutput(forceClipboard = true)
         }
             .onFailure { error ->
                 logger.error("Failed to switch to clipboard fallback: {}", error.message)

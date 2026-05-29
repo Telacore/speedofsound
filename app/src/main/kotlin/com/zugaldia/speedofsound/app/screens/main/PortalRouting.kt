@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.app.screens.main
 
 import com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus
+import com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput
 import com.zugaldia.speedofsound.app.plugins.textoutput.PortalTextOutput
 import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_CLIPBOARD
 import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL
@@ -28,6 +29,15 @@ internal fun resolveRemoteDesktopUiStatus(
     RemoteDesktopStatus.Ready
 } else {
     remoteDesktopStatus
+}
+
+internal fun resolveTextOutputPluginId(
+    textOutputMethod: String,
+    forceClipboard: Boolean = false,
+): String = if (forceClipboard || textOutputMethod == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+    ClipboardTextOutput.ID
+} else {
+    PortalTextOutput.ID
 }
 
 internal enum class ClipboardFallbackPolicy {
