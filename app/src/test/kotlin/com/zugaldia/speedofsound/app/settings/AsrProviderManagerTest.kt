@@ -1,6 +1,8 @@
 package com.zugaldia.speedofsound.app.settings
 
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_DEFAULT_LANGUAGE
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
@@ -166,6 +168,17 @@ class AsrProviderManagerTest {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
                 KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-provider",
+                KEY_DEFAULT_LANGUAGE to "de",
+                KEY_CREDENTIALS to Json.encodeToString(
+                    listOf(
+                        com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting(
+                            id = "cred-1",
+                            type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY,
+                            name = "Primary",
+                            value = "secret",
+                        )
+                    )
+                ),
                 KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
                     listOf(
                         VoiceModelProviderSetting(
@@ -195,8 +208,10 @@ class AsrProviderManagerTest {
 
         AsrProviderManager(registry, settingsClient).activateSelectedProvider()
 
-        assertEquals("voice-a", settingsClient.loadSelectedVoiceModelProviderId())
+        assertEquals("voice-a", settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID))
         assertSame(activePlugin, registry.getActive(AppPluginCategory.ASR))
+        assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
+        assertEquals(1, settingsStore.stringReadCount(KEY_DEFAULT_LANGUAGE))
         assertEquals(1, inactivePlugin.enableCount)
         assertEquals(1, inactivePlugin.disableCount)
         assertEquals(1, activePlugin.enableCount)
@@ -393,10 +408,14 @@ class AsrProviderManagerTest {
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
         private val values = initialValues
+        private val stringReadCounts = mutableMapOf<String, Int>()
 
         override fun isAvailable(): Boolean = true
 
-        override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
+        override fun getString(key: String, defaultValue: String): String {
+            stringReadCounts[key] = (stringReadCounts[key] ?: 0) + 1
+            return values[key] ?: defaultValue
+        }
 
         override fun setString(key: String, value: String): Boolean {
             values[key] = value
@@ -428,5 +447,7 @@ class AsrProviderManagerTest {
             values[key] = value.toString()
             return true
         }
+
+        fun stringReadCount(key: String): Int = stringReadCounts[key] ?: 0
     }
 }

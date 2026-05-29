@@ -33,8 +33,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Resolves a VoiceModelProviderSetting into the appropriate AsrPluginOptions
      */
     fun resolveVoiceProviderOptions(providerSetting: VoiceModelProviderSetting): AsrPluginOptions {
-        val apiKey = providerSetting.credentialId?.let { credId -> peekCredentials().find { it.id == credId }?.value }
-        val language = languageFromIso2(peekDefaultLanguage()) ?: DEFAULT_LANGUAGE
+        return resolveVoiceProviderOptions(
+            providerSetting = providerSetting,
+            credentials = peekCredentials(),
+            defaultLanguageIso2 = peekDefaultLanguage(),
+        )
+    }
+
+    fun resolveVoiceProviderOptions(
+        providerSetting: VoiceModelProviderSetting,
+        credentials: List<CredentialSetting>,
+        defaultLanguageIso2: String,
+    ): AsrPluginOptions {
+        val apiKey = providerSetting.credentialId?.let { credId -> credentials.find { it.id == credId }?.value }
+        val language = languageFromIso2(defaultLanguageIso2) ?: DEFAULT_LANGUAGE
         return when (providerSetting.provider) {
             AsrProvider.OPENAI -> OpenAiAsrOptions(
                 modelId = providerSetting.modelId,
@@ -64,7 +76,17 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Resolves a TextModelProviderSetting into the appropriate LlmPluginOptions
      */
     fun resolveTextProviderOptions(providerSetting: TextModelProviderSetting): LlmPluginOptions {
-        val apiKey = providerSetting.credentialId?.let { credId -> peekCredentials().find { it.id == credId }?.value }
+        return resolveTextProviderOptions(
+            providerSetting = providerSetting,
+            credentials = peekCredentials(),
+        )
+    }
+
+    fun resolveTextProviderOptions(
+        providerSetting: TextModelProviderSetting,
+        credentials: List<CredentialSetting>,
+    ): LlmPluginOptions {
+        val apiKey = providerSetting.credentialId?.let { credId -> credentials.find { it.id == credId }?.value }
         return when (providerSetting.provider) {
             LlmProvider.ANTHROPIC -> AnthropicLlmOptions(
                 apiKey = apiKey,

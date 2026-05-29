@@ -100,7 +100,8 @@ class LlmProviderManager(
             return
         }
         val pluginId = pluginIdForProvider(selectedProvider.provider)
-        val options = settingsClient.resolveTextProviderOptions(selectedProvider)
+        val credentials = settingsClient.peekCredentials()
+        val options = settingsClient.resolveTextProviderOptions(selectedProvider, credentials)
         applyLlmOptions(pluginId, options)
 
         if (setActive || currentActiveId != pluginId) {

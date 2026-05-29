@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.app.settings
 
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_PROCESSING_ENABLED
@@ -137,9 +138,10 @@ class LlmProviderManagerTest {
 
         LlmProviderManager(registry, settingsClient).activateSelectedProvider()
 
-        assertEquals("text-a", settingsClient.loadSelectedTextModelProviderId())
+        assertEquals("text-a", settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID))
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertEquals(1, inactivePlugin.enableCount)
         assertEquals(1, inactivePlugin.disableCount)
         assertEquals(1, activePlugin.enableCount)
@@ -382,10 +384,14 @@ class LlmProviderManagerTest {
         private val failOnSetStringKeys: Set<String> = emptySet(),
     ) : SettingsStore {
         private val values = initialValues
+        private val stringReadCounts = mutableMapOf<String, Int>()
 
         override fun isAvailable(): Boolean = true
 
-        override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
+        override fun getString(key: String, defaultValue: String): String {
+            stringReadCounts[key] = (stringReadCounts[key] ?: 0) + 1
+            return values[key] ?: defaultValue
+        }
 
         override fun setString(key: String, value: String): Boolean {
             if (key in failOnSetStringKeys) {
@@ -420,5 +426,7 @@ class LlmProviderManagerTest {
             values[key] = value.toString()
             return true
         }
+
+        fun stringReadCount(key: String): Int = stringReadCounts[key] ?: 0
     }
 }
