@@ -116,11 +116,6 @@ class AddCredentialDialog(
         nameEntry.onNotify("text") { updateAddButtonState() }
         apiKeyEntry.onNotify("text") { updateAddButtonState() }
         refreshCredentialSnapshot()
-        setupNotifications()
-        onClosed { dialogScope.cancel() }
-    }
-
-    private fun setupNotifications() {
         dialogScope.launch {
             viewModel.settingsChanged
                 .filter { it == KEY_CREDENTIALS }
@@ -132,6 +127,7 @@ class AddCredentialDialog(
                     }
                 }
         }
+        onClosed { dialogScope.cancel() }
     }
 
     private fun updateAddButtonState() {
