@@ -336,8 +336,9 @@ class MainViewModel(
         )
     }
 
-    private fun refreshTextProcessingSetting() {
-        val textProcessingEnabled = settingsClient.peekTextProcessingEnabled()
+    private fun refreshTextProcessingSetting(
+        textProcessingEnabled: Boolean = settingsClient.peekTextProcessingEnabled(),
+    ) {
         director.updateOptions(
             director.getOptions().copy(enableTextProcessing = textProcessingEnabled)
         )
@@ -526,7 +527,7 @@ class MainViewModel(
         if (settingsClient.peekTextProcessingEnabled()) {
             settingsClient.setTextProcessingEnabled(false)
         }
-        refreshTextProcessingSetting()
+        refreshTextProcessingSetting(false)
     }
 
     private fun updateModelLabels() {

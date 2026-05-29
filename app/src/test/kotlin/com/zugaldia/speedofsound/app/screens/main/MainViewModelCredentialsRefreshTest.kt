@@ -16,6 +16,7 @@ import com.zugaldia.speedofsound.core.plugins.AppPlugin
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.EmptyOptions
+import com.zugaldia.speedofsound.core.plugins.director.DefaultDirector
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
 import com.zugaldia.speedofsound.core.plugins.llm.OpenAiLlm
@@ -23,6 +24,7 @@ import com.zugaldia.stargate.sdk.DesktopPortal
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertSame
 
 class MainViewModelCredentialsRefreshTest {
@@ -193,6 +195,62 @@ class MainViewModelCredentialsRefreshTest {
         assertEquals("Alpha", viewModel.state.currentAsrModel())
         assertEquals("", viewModel.state.currentLlmModel())
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
+    }
+
+    @Test
+    fun `handleStartupLlmFailure disables runtime text processing even when persistence fails`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "whisper-1",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-a",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-a",
+                            name = "Bravo",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "gpt-5.4-mini",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+            ),
+            failOnBooleanKeys = setOf(KEY_TEXT_PROCESSING_ENABLED),
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val viewModel = MainViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val director = getPrivateField<DefaultDirector>(viewModel, "director")
+        val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
+        asrProviderManager.registerAsrPlugins()
+        asrProviderManager.activateSelectedProvider()
+        registry.register(AppPluginCategory.LLM, FailingEnablePlugin(OpenAiLlm.ID))
+
+        invokePrivateThrowable(viewModel, "handleStartupLlmFailure", IllegalStateException("boom"))
+
+        assertEquals(true, settingsClient.loadTextProcessingEnabled())
+        assertFalse(director.getOptions().enableTextProcessing)
+        assertEquals(null, registry.getActive(AppPluginCategory.LLM))
+        assertEquals("Alpha", viewModel.state.currentAsrModel())
+        assertEquals("", viewModel.state.currentLlmModel())
     }
 
     @Test
@@ -386,6 +444,7 @@ class MainViewModelCredentialsRefreshTest {
 
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
+        private val failOnBooleanKeys: Set<String> = emptySet(),
     ) : SettingsStore {
         private val values = initialValues
 
@@ -412,6 +471,9 @@ class MainViewModelCredentialsRefreshTest {
             values[key]?.toBooleanStrictOrNull() ?: defaultValue
 
         override fun setBoolean(key: String, value: Boolean): Boolean {
+            if (key in failOnBooleanKeys) {
+                return false
+            }
             values[key] = value.toString()
             return true
         }
