@@ -726,10 +726,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
      */
 
     fun getCustomContext(): String =
-        settingsStore.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT)
+        readCustomContext()
 
     fun setCustomContext(value: String): Boolean =
-        setStringSettingIfChanged(KEY_CUSTOM_CONTEXT, getCustomContext(), value, KEY_CUSTOM_CONTEXT)
+        setStringSettingIfChanged(
+            KEY_CUSTOM_CONTEXT,
+            settingsStore.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT),
+            normalizeCustomContext(value),
+            KEY_CUSTOM_CONTEXT
+        )
 
     fun getCustomVocabulary(): List<String> =
         readCustomVocabulary()
@@ -917,6 +922,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun normalizePortalsRestoreToken(value: String): String = value.trim()
+
+    private fun readCustomContext(): String {
+        val raw = settingsStore.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT)
+        val normalized = normalizeCustomContext(raw)
+        return if (raw != normalized) {
+            settingsStore.setString(KEY_CUSTOM_CONTEXT, normalized)
+            normalized
+        } else {
+            raw
+        }
+    }
+
+    private fun normalizeCustomContext(value: String): String =
+        if (value.length <= MAX_CUSTOM_CONTEXT_CHARS) value else value.take(MAX_CUSTOM_CONTEXT_CHARS)
 
     private fun List<CredentialSetting>.normalizedCredentials(): List<CredentialSetting> =
         map { credential ->

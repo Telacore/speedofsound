@@ -12,6 +12,7 @@ class SettingsClientWriteOptimizationTest {
                 KEY_BACKGROUND_RECORDING to "true",
                 KEY_POST_HIDE_DELAY_MS to "250",
                 KEY_PORTALS_RESTORE_TOKEN to "smoke-token",
+                KEY_CUSTOM_CONTEXT to "x".repeat(MAX_CUSTOM_CONTEXT_CHARS),
                 KEY_CUSTOM_VOCABULARY to "alpha|||beta",
             )
         )
@@ -21,9 +22,23 @@ class SettingsClientWriteOptimizationTest {
         client.setBackgroundRecording(true)
         client.setPostHideDelayMs(250)
         client.setPortalsRestoreToken("  smoke-token  ")
+        client.setCustomContext("x".repeat(MAX_CUSTOM_CONTEXT_CHARS))
         client.setCustomVocabulary(listOf(" alpha ", "beta", "", "alpha"))
 
         assertEquals(0, store.writeCount)
+    }
+
+    @Test
+    fun `custom context is truncated on save`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        val overlong = "y".repeat(MAX_CUSTOM_CONTEXT_CHARS + 9)
+        client.setCustomContext(overlong)
+
+        val expected = "y".repeat(MAX_CUSTOM_CONTEXT_CHARS)
+        assertEquals(expected, store.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT))
+        assertEquals(1, store.writeCount)
     }
 
     @Test

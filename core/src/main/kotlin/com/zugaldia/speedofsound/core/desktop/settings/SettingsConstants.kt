@@ -103,6 +103,7 @@ const val DEFAULT_TYPING_DELAY_MS = 10
 
 const val KEY_CUSTOM_CONTEXT = "custom-context"
 const val DEFAULT_CUSTOM_CONTEXT = ""
+const val MAX_CUSTOM_CONTEXT_CHARS = 2000 // Approximately 3 paragraphs
 
 const val KEY_CUSTOM_VOCABULARY = "custom-vocabulary"
 val DEFAULT_CUSTOM_VOCABULARY = emptyList<String>()

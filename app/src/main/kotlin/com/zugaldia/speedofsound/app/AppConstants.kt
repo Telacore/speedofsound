@@ -56,7 +56,6 @@ const val STYLE_CLASS_LINKED = "linked"
 
 // Personalization limits
 const val MAX_VOCABULARY_WORDS = 50
-const val MAX_CUSTOM_CONTEXT_CHARS = 2000 // Approximately 3 paragraphs
 
 // Credential limits
 const val MAX_CREDENTIALS = 25

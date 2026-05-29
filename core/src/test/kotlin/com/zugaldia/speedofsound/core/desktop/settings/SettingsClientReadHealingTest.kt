@@ -255,6 +255,22 @@ class SettingsClientReadHealingTest {
         assertEquals(1, store.writeCount)
     }
 
+    @Test
+    fun `custom context over the limit is healed on read`() {
+        val overlong = "x".repeat(MAX_CUSTOM_CONTEXT_CHARS + 17)
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_CUSTOM_CONTEXT to overlong
+            )
+        )
+        val client = SettingsClient(store)
+
+        val expected = "x".repeat(MAX_CUSTOM_CONTEXT_CHARS)
+        assertEquals(expected, client.getCustomContext())
+        assertEquals(expected, store.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT))
+        assertEquals(1, store.writeCount)
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
