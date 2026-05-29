@@ -102,7 +102,19 @@ class ModelManager(
     private fun createTempDirectory(): Path {
         val tempDir = pathProvider.getCacheDir().resolve(idGenerator.generateUniqueId())
         fileSystem.mkdirs(tempDir)
+        ensureWritableDirectory(tempDir)
         return tempDir
+    }
+
+    private fun ensureWritableDirectory(path: Path) {
+        when {
+            !fileSystem.exists(path) -> {
+                throw IllegalStateException("Could not create temporary directory: ${path.toAbsolutePath()}")
+            }
+            !fileSystem.isDirectory(path) -> {
+                throw IllegalStateException("Temporary path is not a directory: ${path.toAbsolutePath()}")
+            }
+        }
     }
 
     private suspend fun downloadArchive(
