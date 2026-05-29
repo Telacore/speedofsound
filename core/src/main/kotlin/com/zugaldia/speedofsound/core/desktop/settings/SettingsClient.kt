@@ -666,7 +666,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_CREDENTIALS
         )
         val providersSaved = normalizeStoredProviderCredentialRefs()
-        return credentialsSaved || providersSaved
+        return credentialsSaved && providersSaved
     }
 
     /*
@@ -724,7 +724,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_VOICE_MODEL_PROVIDERS
         )
         val selectionSaved = normalizeSelectedVoiceModelProviderIdForCurrentProviders()
-        return providersSaved || selectionSaved
+        return providersSaved && selectionSaved
     }
 
     fun loadSelectedVoiceModelProviderId(): String =
@@ -866,7 +866,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_TEXT_MODEL_PROVIDERS
         )
         val selectionSaved = normalizeSelectedTextModelProviderIdForCurrentProviders()
-        return providersSaved || selectionSaved
+        return providersSaved && selectionSaved
     }
 
     /*
@@ -1168,7 +1168,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
     private fun normalizeStoredProviderCredentialRefs(): Boolean {
         val voiceSaved = setVoiceModelProviders(peekVoiceModelProviders())
         val textSaved = setTextModelProviders(peekTextModelProviders())
-        return voiceSaved || textSaved
+        return voiceSaved && textSaved
     }
 
     private fun normalizeSelectedVoiceModelProviderIdForCurrentProviders(): Boolean =

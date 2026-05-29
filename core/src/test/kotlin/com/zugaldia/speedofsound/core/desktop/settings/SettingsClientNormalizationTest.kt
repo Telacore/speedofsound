@@ -181,7 +181,35 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
-    fun `setting credentials clears dangling provider credential refs on save`() {
+    fun `setting providers reports failure when selected provider write fails`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-voice",
+            ),
+            failingSetStringKeys = setOf(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID),
+        )
+        val client = SettingsClient(store)
+
+        val provider = VoiceModelProviderSetting(
+            id = "voice-a",
+            name = "Alpha",
+            provider = AsrProvider.SHERPA_WHISPER,
+            modelId = "model-a",
+        )
+
+        val saved = client.setVoiceModelProviders(listOf(provider))
+
+        assertEquals(false, saved)
+        assertEquals(
+            Json.encodeToString(listOf(provider)),
+            store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)
+        )
+        assertEquals("stale-voice", store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID))
+        assertEquals(1, store.writeCount)
+    }
+
+    @Test
+    fun `setting credentials reports failure when provider healing write fails`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
                 KEY_CREDENTIALS to Json.encodeToString(
@@ -201,6 +229,7 @@ class SettingsClientNormalizationTest {
                         ),
                     )
                 ),
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-1",
                 KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
                     listOf(
                         TextModelProviderSetting(
@@ -212,16 +241,19 @@ class SettingsClientNormalizationTest {
                         ),
                     )
                 ),
-            )
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-1",
+            ),
+            failingSetStringKeys = setOf(KEY_VOICE_MODEL_PROVIDERS),
         )
         val client = SettingsClient(store)
 
-        client.setCredentials(
+        val saved = client.setCredentials(
             listOf(
                 CredentialSetting(id = "cred-keep", type = CredentialType.API_KEY, name = "Keep", value = "keep"),
             )
         )
 
+        assertEquals(false, saved)
         assertEquals(
             listOf(
                 VoiceModelProviderSetting(
@@ -229,7 +261,7 @@ class SettingsClientNormalizationTest {
                     name = "Whisper",
                     provider = AsrProvider.SHERPA_WHISPER,
                     modelId = "model-1",
-                    credentialId = null,
+                    credentialId = "cred-drop",
                 ),
             ),
             Json.decodeFromString<List<VoiceModelProviderSetting>>(
@@ -250,7 +282,7 @@ class SettingsClientNormalizationTest {
                 store.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)
             )
         )
-        assertEquals(3, store.writeCount)
+        assertEquals(2, store.writeCount)
     }
 
     @Test
@@ -498,15 +530,22 @@ class SettingsClientNormalizationTest {
 
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
+        private val failingSetStringKeys: Set<String> = emptySet(),
     ) : SettingsStore {
         private val values = initialValues
+        private val failingKeys = failingSetStringKeys
+        var writeCount: Int = 0
 
         override fun isAvailable(): Boolean = true
 
         override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
 
         override fun setString(key: String, value: String): Boolean {
+            if (key in failingKeys) {
+                return false
+            }
             values[key] = value
+            writeCount += 1
             return true
         }
 
@@ -517,6 +556,7 @@ class SettingsClientNormalizationTest {
 
         override fun setStringArray(key: String, value: List<String>): Boolean {
             values[key] = value.joinToString("|||")
+            writeCount += 1
             return true
         }
 
@@ -525,6 +565,7 @@ class SettingsClientNormalizationTest {
 
         override fun setBoolean(key: String, value: Boolean): Boolean {
             values[key] = value.toString()
+            writeCount += 1
             return true
         }
 
@@ -533,6 +574,7 @@ class SettingsClientNormalizationTest {
 
         override fun setInt(key: String, value: Int): Boolean {
             values[key] = value.toString()
+            writeCount += 1
             return true
         }
     }
