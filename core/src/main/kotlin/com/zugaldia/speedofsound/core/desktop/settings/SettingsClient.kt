@@ -143,7 +143,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             key = KEY_PORTALS_RESTORE_TOKEN,
             defaultValue = DEFAULT_PORTALS_RESTORE_TOKEN,
             heal = false,
-            parse = ::normalizePortalsRestoreToken,
+            parse = String::trim,
         )
 
     fun loadStartupState() {
@@ -190,7 +190,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(
             KEY_PORTALS_RESTORE_TOKEN,
             settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN),
-            normalizePortalsRestoreToken(value),
+            value.trim(),
             KEY_PORTALS_RESTORE_TOKEN
         )
 
@@ -932,7 +932,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(
             KEY_CUSTOM_CONTEXT,
             settingsStore.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT),
-            normalizeCustomContext(value),
+            normalizeCustomContextValue(value),
             KEY_CUSTOM_CONTEXT
         )
 
@@ -1218,24 +1218,22 @@ class SettingsClient(val settingsStore: SettingsStore) {
             key = KEY_PORTALS_RESTORE_TOKEN,
             defaultValue = DEFAULT_PORTALS_RESTORE_TOKEN,
             heal = true,
-            parse = ::normalizePortalsRestoreToken,
+            parse = String::trim,
             write = { value -> settingsStore.setString(KEY_PORTALS_RESTORE_TOKEN, value) },
         )
     }
-
-    private fun normalizePortalsRestoreToken(value: String): String = value.trim()
 
     private fun readCustomContext(): String {
         return validatedSetting(
             key = KEY_CUSTOM_CONTEXT,
             defaultValue = DEFAULT_CUSTOM_CONTEXT,
             heal = true,
-            parse = ::normalizeCustomContext,
+            parse = ::normalizeCustomContextValue,
             write = { value -> settingsStore.setString(KEY_CUSTOM_CONTEXT, value) },
         )
     }
 
-    private fun normalizeCustomContext(value: String): String =
+    private fun normalizeCustomContextValue(value: String): String =
         if (value.length <= MAX_CUSTOM_CONTEXT_CHARS) value else value.take(MAX_CUSTOM_CONTEXT_CHARS)
 
     private fun List<CredentialSetting>.normalizedCredentials(): List<CredentialSetting> =
