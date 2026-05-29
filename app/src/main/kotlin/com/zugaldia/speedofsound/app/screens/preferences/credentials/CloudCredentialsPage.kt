@@ -71,7 +71,14 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
                         } else {
                             currentCredentials = updatedCredentials
                             addCredentialToUI(credential)
-                            updatePlaceholderVisibility(currentCredentials)
+                            val hasCredentials = currentCredentials.isNotEmpty()
+                            val atLimit = currentCredentials.size >= MAX_CREDENTIALS
+                            credentialsListBox.visible = hasCredentials
+                            placeholderBox.visible = !hasCredentials
+                            addButton.sensitive = !atLimit
+                            if (atLimit) {
+                                logger.info("Credential limit of $MAX_CREDENTIALS reached")
+                            }
                             true
                         }
                     }
@@ -160,12 +167,28 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
                     refresh()
                 } else {
                     currentCredentials = updatedCredentials
-                    updatePlaceholderVisibility(currentCredentials)
+                    val hasCredentials = currentCredentials.isNotEmpty()
+                    val atLimit = currentCredentials.size >= MAX_CREDENTIALS
+                    credentialsListBox.visible = hasCredentials
+                    placeholderBox.visible = !hasCredentials
+                    addButton.sensitive = !atLimit
+                    if (atLimit) {
+                        logger.info("Credential limit of $MAX_CREDENTIALS reached")
+                    }
                     credentialsListBox.remove(row)
                 }
             }
         }
-        updatePlaceholderVisibility(currentCredentials)
+        run {
+            val hasCredentials = currentCredentials.isNotEmpty()
+            val atLimit = currentCredentials.size >= MAX_CREDENTIALS
+            credentialsListBox.visible = hasCredentials
+            placeholderBox.visible = !hasCredentials
+            addButton.sensitive = !atLimit
+            if (atLimit) {
+                logger.info("Credential limit of $MAX_CREDENTIALS reached")
+            }
+        }
         scope.launch {
             viewModel.settingsChanged
                 .filter {
@@ -233,22 +256,17 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
                     refresh()
                 } else {
                     currentCredentials = updatedCredentials
-                    updatePlaceholderVisibility(currentCredentials)
+                    val hasCredentials = currentCredentials.isNotEmpty()
+                    val atLimit = currentCredentials.size >= MAX_CREDENTIALS
+                    credentialsListBox.visible = hasCredentials
+                    placeholderBox.visible = !hasCredentials
+                    addButton.sensitive = !atLimit
+                    if (atLimit) {
+                        logger.info("Credential limit of $MAX_CREDENTIALS reached")
+                    }
                     credentialsListBox.remove(row)
                 }
             }
-        }
-        updatePlaceholderVisibility(currentCredentials)
-    }
-
-    private fun updatePlaceholderVisibility(credentials: List<CredentialSetting> = currentCredentials) {
-        val hasCredentials = credentials.isNotEmpty()
-        val atLimit = credentials.size >= MAX_CREDENTIALS
-        credentialsListBox.visible = hasCredentials
-        placeholderBox.visible = !hasCredentials
-        addButton.sensitive = !atLimit
-        if (atLimit) {
-            logger.info("Credential limit of $MAX_CREDENTIALS reached")
         }
     }
 }
