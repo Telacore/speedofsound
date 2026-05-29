@@ -113,7 +113,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             value
         )
 
-    fun getPortalsRestoreToken(): String =
+    fun loadPortalsRestoreToken(): String =
         readPortalsRestoreToken()
 
     fun peekPortalsRestoreToken(): String =

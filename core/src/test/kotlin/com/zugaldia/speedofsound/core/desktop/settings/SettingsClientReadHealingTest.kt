@@ -398,7 +398,7 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals("smoke-token", client.getPortalsRestoreToken())
+        assertEquals("smoke-token", client.loadPortalsRestoreToken())
         assertEquals("smoke-token", store.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN))
         assertEquals(1, store.writeCount)
     }

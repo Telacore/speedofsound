@@ -81,7 +81,7 @@ class PortalsSessionManagerTest {
         awaitPortalsCalls(portalsClient, 1)
 
         assertEquals(RemoteDesktopStatus.NeedToken, manager.remoteDesktopStatus.value)
-        assertEquals("smoke-restore-token", settingsClient.getPortalsRestoreToken())
+        assertEquals("smoke-restore-token", settingsClient.loadPortalsRestoreToken())
         assertEquals(listOf<String?>("smoke-restore-token"), portalsClient.requestedRestoreTokens)
 
         manager.attemptReconnect(this)
@@ -113,7 +113,7 @@ class PortalsSessionManagerTest {
         awaitPortalsCalls(portalsClient, 1)
 
         assertEquals(RemoteDesktopStatus.NotSupported, manager.remoteDesktopStatus.value)
-        assertEquals("", settingsClient.getPortalsRestoreToken())
+        assertEquals("", settingsClient.loadPortalsRestoreToken())
         assertEquals(listOf<String?>("smoke-restore-token"), portalsClient.requestedRestoreTokens)
 
         val callsAfterFailure = portalsClient.startRemoteDesktopSessionCalls
