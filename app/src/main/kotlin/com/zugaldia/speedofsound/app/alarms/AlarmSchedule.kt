@@ -3,8 +3,11 @@ package com.zugaldia.speedofsound.app.alarms
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmRepeatDay
+import com.zugaldia.speedofsound.core.desktop.settings.allAlarmRepeatDays
 import com.zugaldia.speedofsound.core.desktop.settings.isScheduledOn
 import com.zugaldia.speedofsound.core.desktop.settings.normalizedRepeatDays
+import com.zugaldia.speedofsound.core.desktop.settings.weekdayAlarmRepeatDays
+import com.zugaldia.speedofsound.core.desktop.settings.weekendAlarmRepeatDays
 import com.zugaldia.speedofsound.core.desktop.settings.shortLabel
 import com.zugaldia.stargate.sdk.notification.NotificationPriority
 import java.time.Duration
@@ -52,9 +55,9 @@ fun formatAlarmSummary(alarm: AlarmSetting): String = buildString {
 fun formatRepeatDays(repeatDays: List<AlarmRepeatDay>): String {
     val normalized = repeatDays.normalizedRepeatDays()
     return when {
-        normalized == ALL_REPEAT_DAYS -> "Daily"
-        normalized == WEEKDAY_REPEAT_DAYS -> "Weekdays"
-        normalized == WEEKEND_REPEAT_DAYS -> "Weekends"
+        normalized == allAlarmRepeatDays() -> "Daily"
+        normalized == weekdayAlarmRepeatDays() -> "Weekdays"
+        normalized == weekendAlarmRepeatDays() -> "Weekends"
         else -> normalized.joinToString(", ") { it.shortLabel() }
     }
 }
@@ -212,16 +215,3 @@ private fun formatOccurrenceTiming(now: LocalDateTime, occurrence: AlarmOccurren
 
 private fun isWithinAlarmGraceWindow(now: LocalDateTime, candidate: LocalDateTime): Boolean =
     !now.isBefore(candidate) && !now.isAfter(candidate.plusMinutes(ALARM_TRIGGER_GRACE_MINUTES))
-
-private val ALL_REPEAT_DAYS = AlarmRepeatDay.values().toList()
-private val WEEKDAY_REPEAT_DAYS = listOf(
-    AlarmRepeatDay.MONDAY,
-    AlarmRepeatDay.TUESDAY,
-    AlarmRepeatDay.WEDNESDAY,
-    AlarmRepeatDay.THURSDAY,
-    AlarmRepeatDay.FRIDAY,
-)
-private val WEEKEND_REPEAT_DAYS = listOf(
-    AlarmRepeatDay.SATURDAY,
-    AlarmRepeatDay.SUNDAY,
-)

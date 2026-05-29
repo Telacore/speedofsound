@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.app.alarms
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmRepeatDay
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
+import com.zugaldia.speedofsound.core.desktop.settings.allAlarmRepeatDays
 import com.zugaldia.stargate.sdk.notification.NotificationPriority
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -102,6 +103,7 @@ class AlarmScheduleTest {
 
     @Test
     fun `alarm repeat day formatter collapses common groups`() {
+        assertEquals("Daily", formatRepeatDays(allAlarmRepeatDays()))
         assertEquals(
             "Weekdays",
             formatRepeatDays(

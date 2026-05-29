@@ -87,8 +87,6 @@ enum class AlarmRepeatDay {
     SUNDAY
 }
 
-private val DEFAULT_REPEAT_DAYS: List<AlarmRepeatDay> = AlarmRepeatDay.values().toList()
-
 /**
  * A repeating alarm.
  */
@@ -100,7 +98,7 @@ data class AlarmSetting(
     val minute: Int,
     val action: AlarmAction = AlarmAction.NORMAL,
     val enabled: Boolean = true,
-    val repeatDays: List<AlarmRepeatDay> = DEFAULT_REPEAT_DAYS
+    val repeatDays: List<AlarmRepeatDay> = allAlarmRepeatDays()
 )
 
 fun AlarmSetting.isValid(): Boolean =
@@ -157,9 +155,24 @@ fun AlarmRepeatDay.longLabel(): String = when (this) {
     AlarmRepeatDay.SUNDAY -> "Sunday"
 }
 
+fun allAlarmRepeatDays(): List<AlarmRepeatDay> = AlarmRepeatDay.values().toList()
+
+fun weekdayAlarmRepeatDays(): List<AlarmRepeatDay> = listOf(
+    AlarmRepeatDay.MONDAY,
+    AlarmRepeatDay.TUESDAY,
+    AlarmRepeatDay.WEDNESDAY,
+    AlarmRepeatDay.THURSDAY,
+    AlarmRepeatDay.FRIDAY,
+)
+
+fun weekendAlarmRepeatDays(): List<AlarmRepeatDay> = listOf(
+    AlarmRepeatDay.SATURDAY,
+    AlarmRepeatDay.SUNDAY,
+)
+
 fun List<AlarmRepeatDay>.normalizedRepeatDays(): List<AlarmRepeatDay> =
     if (isEmpty()) {
-        DEFAULT_REPEAT_DAYS
+        allAlarmRepeatDays()
     } else {
         distinct().sortedBy { it.ordinal }
     }

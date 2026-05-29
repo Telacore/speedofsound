@@ -13,6 +13,9 @@ import com.zugaldia.speedofsound.core.desktop.settings.AlarmRepeatDay
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_ALARM_NAME_LENGTH
 import com.zugaldia.speedofsound.core.desktop.settings.longLabel
+import com.zugaldia.speedofsound.core.desktop.settings.allAlarmRepeatDays
+import com.zugaldia.speedofsound.core.desktop.settings.weekdayAlarmRepeatDays
+import com.zugaldia.speedofsound.core.desktop.settings.weekendAlarmRepeatDays
 import com.zugaldia.speedofsound.core.generateUniqueId
 import org.gnome.adw.ComboRow
 import org.gnome.adw.Dialog
@@ -83,12 +86,28 @@ class AlarmEditorDialog(
             active = existingAlarm?.enabled ?: true
         }
 
-        repeatDayRows = AlarmRepeatDay.values().map { repeatDay ->
+        repeatDayRows = allAlarmRepeatDays().map { repeatDay ->
             repeatDay to SwitchRow().apply {
                 title = repeatDay.longLabel()
                 subtitle = "Repeat on ${repeatDay.longLabel()}"
                 active = existingAlarm?.repeatDays?.contains(repeatDay) ?: true
             }
+        }
+
+        val repeatPresetGroup = PreferencesGroup().apply {
+            title = "Quick Picks"
+            description = "Apply a common repeat pattern in one click."
+            add(Box(Orientation.HORIZONTAL, DEFAULT_BOX_SPACING).apply {
+                append(Button.withLabel("Daily").apply {
+                    onClicked { selectRepeatDays(allAlarmRepeatDays()) }
+                })
+                append(Button.withLabel("Weekdays").apply {
+                    onClicked { selectRepeatDays(weekdayAlarmRepeatDays()) }
+                })
+                append(Button.withLabel("Weekends").apply {
+                    onClicked { selectRepeatDays(weekendAlarmRepeatDays()) }
+                })
+            })
         }
 
         val group = PreferencesGroup().apply {
@@ -146,6 +165,7 @@ class AlarmEditorDialog(
             marginEnd = DEFAULT_MARGIN
             vexpand = true
             append(group)
+            append(repeatPresetGroup)
             append(repeatDaysGroup)
             append(buttonBox)
         }
@@ -160,7 +180,14 @@ class AlarmEditorDialog(
         repeatDayRows
             .filter { (_, row) -> row.active }
             .map { (day, _) -> day }
-            .ifEmpty { AlarmRepeatDay.values().toList() }
+            .ifEmpty { allAlarmRepeatDays() }
+
+    private fun selectRepeatDays(repeatDays: List<AlarmRepeatDay>) {
+        val selectedDays = repeatDays.toSet()
+        repeatDayRows.forEach { (day, row) ->
+            row.active = day in selectedDays
+        }
+    }
 
     companion object {
         private val ACTIONS = AlarmAction.values().toList()
