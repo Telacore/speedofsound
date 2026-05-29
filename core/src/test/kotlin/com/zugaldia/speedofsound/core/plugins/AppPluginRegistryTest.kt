@@ -61,17 +61,43 @@ class AppPluginRegistryTest {
         assertNull(registry.getActive(AppPluginCategory.TEXT_OUTPUT))
     }
 
+    @Test
+    fun `shutdownAll continues after disable and shutdown failures`() {
+        val registry = AppPluginRegistry()
+        val broken = RecordingPlugin(
+            id = "broken",
+            failOnDisable = true,
+            failOnShutdown = true,
+        )
+        val healthy = RecordingPlugin(id = "healthy")
+
+        registry.register(AppPluginCategory.TEXT_OUTPUT, broken)
+        registry.register(AppPluginCategory.TEXT_OUTPUT, healthy)
+        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, broken.id)
+
+        registry.shutdownAll()
+
+        assertEquals(1, broken.disableCount)
+        assertEquals(1, broken.shutdownCount)
+        assertEquals(0, healthy.disableCount)
+        assertEquals(1, healthy.shutdownCount)
+        assertNull(registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+    }
+
     private class RecordingPlugin(
         override val id: String,
         private val failOnInitialize: Boolean = false,
         private val failOnEnable: Boolean = false,
         private val failOnDisable: Boolean = false,
+        private val failOnShutdown: Boolean = false,
     ) : AppPlugin<EmptyOptions>(EmptyOptions) {
         var initializeCount: Int = 0
             private set
         var enableCount: Int = 0
             private set
         var disableCount: Int = 0
+            private set
+        var shutdownCount: Int = 0
             private set
 
         override fun initialize() {
@@ -92,6 +118,13 @@ class AppPluginRegistryTest {
             disableCount += 1
             if (failOnDisable) {
                 error("disable failed")
+            }
+        }
+
+        override fun shutdown() {
+            shutdownCount += 1
+            if (failOnShutdown) {
+                error("shutdown failed")
             }
         }
     }

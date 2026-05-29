@@ -81,11 +81,31 @@ class AppPluginRegistry {
      * Shuts down all registered plugins. Called when the application is shutting down.
      * Only disables plugins that are currently active.
      */
+    @Synchronized
     fun shutdownAll() {
         log.info("Shutting down all plugins")
         plugins.values.flatten().forEach { plugin ->
-            if (activePlugins.values.contains(plugin.id)) { plugin.disable() }
-            plugin.shutdown()
+            if (activePlugins.values.contains(plugin.id)) {
+                runCatching {
+                    plugin.disable()
+                }.onFailure { error ->
+                    log.error(
+                        "Failed to disable plugin ${plugin.id} during shutdown: {}",
+                        error.message,
+                        error,
+                    )
+                }
+            }
+            runCatching {
+                plugin.shutdown()
+            }.onFailure { error ->
+                log.error(
+                    "Failed to shutdown plugin ${plugin.id}: {}",
+                    error.message,
+                    error,
+                )
+            }
         }
+        activePlugins.clear()
     }
 }
