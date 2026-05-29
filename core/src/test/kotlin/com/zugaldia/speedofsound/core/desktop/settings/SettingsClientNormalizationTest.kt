@@ -60,7 +60,7 @@ class SettingsClientNormalizationTest {
             listOf(
                 CredentialSetting(id = "cred-1", type = CredentialType.API_KEY, name = "Primary", value = "secret"),
             ),
-            client.getCredentials()
+            client.loadCredentials()
         )
         assertEquals(
             listOf(
@@ -73,7 +73,7 @@ class SettingsClientNormalizationTest {
                     baseUrl = "https://example.com",
                 ),
             ),
-            client.getVoiceModelProviders().filter { it.id == "voice-1" }
+            client.loadVoiceModelProviders().filter { it.id == "voice-1" }
         )
         assertEquals(
             listOf(
@@ -87,7 +87,7 @@ class SettingsClientNormalizationTest {
                     disableThinking = true,
                 ),
             ),
-            client.getTextModelProviders()
+            client.loadTextModelProviders()
         )
         client.setSelectedVoiceModelProviderId(" missing-voice-provider ")
         client.setSelectedTextModelProviderId(" missing-text-provider ")
@@ -100,8 +100,8 @@ class SettingsClientNormalizationTest {
             DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
             store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
         )
-        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.getSelectedVoiceModelProviderId())
-        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.getSelectedTextModelProviderId())
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.loadSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.loadSelectedTextModelProviderId())
 
         assertEquals(
             Json.encodeToString(

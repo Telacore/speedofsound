@@ -457,13 +457,13 @@ class ImportExportManagerTest {
         assertEquals(MAX_VOICE_MODEL_PROVIDERS - 1, result.voiceProvidersAdded)
         assertEquals(MAX_TEXT_MODEL_PROVIDERS - 1, result.textProvidersAdded)
         assertEquals(MAX_VOCABULARY_WORDS - 1, result.vocabularyWordsAdded)
-        assertEquals(MAX_CREDENTIALS, settingsClient.getCredentials().size)
+        assertEquals(MAX_CREDENTIALS, settingsClient.loadCredentials().size)
         assertEquals(
             MAX_VOICE_MODEL_PROVIDERS,
-            settingsClient.getVoiceModelProviders().filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys }.size
+            settingsClient.loadVoiceModelProviders().filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys }.size
         )
-        assertEquals(MAX_TEXT_MODEL_PROVIDERS, settingsClient.getTextModelProviders().size)
-        assertEquals(MAX_VOCABULARY_WORDS, settingsClient.getCustomVocabulary().size)
+        assertEquals(MAX_TEXT_MODEL_PROVIDERS, settingsClient.loadTextModelProviders().size)
+        assertEquals(MAX_VOCABULARY_WORDS, settingsClient.loadCustomVocabulary().size)
     }
 
     @Test

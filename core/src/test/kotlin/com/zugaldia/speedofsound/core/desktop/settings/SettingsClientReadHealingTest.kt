@@ -22,13 +22,13 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(TEXT_OUTPUT_METHOD_CLIPBOARD, client.getTextOutputMethod())
-        assertEquals(DEFAULT_WELCOME_SCREEN_SHOWN, client.getWelcomeScreenShown())
-        assertEquals(true, client.getShortcutConfigured())
-        assertEquals(DEFAULT_BACKGROUND_RECORDING, client.getBackgroundRecording())
-        assertEquals(DEFAULT_POST_HIDE_DELAY_MS, client.getPostHideDelayMs())
-        assertEquals(3, client.getTypingDelayMs())
-        assertEquals(MAX_MAX_ALARMS, client.getMaxAlarms())
+        assertEquals(TEXT_OUTPUT_METHOD_CLIPBOARD, client.loadTextOutputMethod())
+        assertEquals(DEFAULT_WELCOME_SCREEN_SHOWN, client.loadWelcomeScreenShown())
+        assertEquals(true, client.loadShortcutConfigured())
+        assertEquals(DEFAULT_BACKGROUND_RECORDING, client.loadBackgroundRecording())
+        assertEquals(DEFAULT_POST_HIDE_DELAY_MS, client.loadPostHideDelayMs())
+        assertEquals(3, client.loadTypingDelayMs())
+        assertEquals(MAX_MAX_ALARMS, client.loadMaxAlarms())
 
         assertEquals(TEXT_OUTPUT_METHOD_CLIPBOARD, store.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD))
         assertEquals("false", store.getString(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN.toString()))
@@ -49,7 +49,7 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(TEXT_OUTPUT_METHOD_PORTAL, client.getTextOutputMethod())
+        assertEquals(TEXT_OUTPUT_METHOD_PORTAL, client.loadTextOutputMethod())
         assertEquals(TEXT_OUTPUT_METHOD_PORTAL, store.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD))
         assertEquals(1, store.writeCount)
     }
@@ -64,8 +64,8 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(DEFAULT_LANGUAGE.iso2, client.getDefaultLanguage())
-        assertEquals(DEFAULT_SECONDARY_LANGUAGE.iso2, client.getSecondaryLanguage())
+        assertEquals(DEFAULT_LANGUAGE.iso2, client.loadDefaultLanguage())
+        assertEquals(DEFAULT_SECONDARY_LANGUAGE.iso2, client.loadSecondaryLanguage())
         assertEquals(DEFAULT_LANGUAGE.iso2, store.getString(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2))
         assertEquals(DEFAULT_SECONDARY_LANGUAGE.iso2, store.getString(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2))
         assertEquals(2, store.writeCount)
@@ -81,8 +81,8 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.getSelectedVoiceModelProviderId())
-        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.getSelectedTextModelProviderId())
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.loadSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.loadSelectedTextModelProviderId())
         assertEquals(
             DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
             store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
@@ -237,7 +237,7 @@ class SettingsClientReadHealingTest {
             listOf(
                 CredentialSetting(id = "cred-1", type = CredentialType.API_KEY, name = "Primary", value = "secret"),
             ),
-            client.getCredentials()
+            client.loadCredentials()
         )
         assertEquals(
             listOf(
@@ -250,7 +250,7 @@ class SettingsClientReadHealingTest {
                     baseUrl = "https://example.com",
                 ),
             ),
-            client.getVoiceModelProviders().filter { it.id == "voice-1" }
+            client.loadVoiceModelProviders().filter { it.id == "voice-1" }
         )
         assertEquals(
             listOf(
@@ -264,7 +264,7 @@ class SettingsClientReadHealingTest {
                     disableThinking = true,
                 ),
             ),
-            client.getTextModelProviders()
+            client.loadTextModelProviders()
         )
 
         assertEquals(
@@ -369,10 +369,10 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        val credentials = client.getCredentials()
-        val voiceProviders = client.getVoiceModelProviders().filter { it.id.startsWith("voice-") }
-        val textProviders = client.getTextModelProviders()
-        val vocabulary = client.getCustomVocabulary()
+        val credentials = client.loadCredentials()
+        val voiceProviders = client.loadVoiceModelProviders().filter { it.id.startsWith("voice-") }
+        val textProviders = client.loadTextModelProviders()
+        val vocabulary = client.loadCustomVocabulary()
 
         assertEquals(MAX_CREDENTIALS, credentials.size)
         assertEquals(MAX_CREDENTIAL_NAME_LENGTH, credentials.first().name.length)
@@ -412,7 +412,7 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(listOf("alpha", "beta", "gamma"), client.getCustomVocabulary())
+        assertEquals(listOf("alpha", "beta", "gamma"), client.loadCustomVocabulary())
         assertEquals("alpha|||beta|||gamma", store.getString(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY.joinToString("|||")))
         assertEquals(1, store.writeCount)
     }
@@ -428,7 +428,7 @@ class SettingsClientReadHealingTest {
         val client = SettingsClient(store)
 
         val expected = "x".repeat(MAX_CUSTOM_CONTEXT_CHARS)
-        assertEquals(expected, client.getCustomContext())
+        assertEquals(expected, client.loadCustomContext())
         assertEquals(expected, store.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT))
         assertEquals(1, store.writeCount)
     }

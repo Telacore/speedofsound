@@ -35,7 +35,7 @@ class AsrProviderManagerTest {
 
         AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
 
-        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.getSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)

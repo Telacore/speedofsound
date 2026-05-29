@@ -15,7 +15,7 @@ class SettingsClientAlarmTest {
 
         client.setMaxAlarms(999)
 
-        assertEquals(MAX_MAX_ALARMS, client.getMaxAlarms())
+        assertEquals(MAX_MAX_ALARMS, client.loadMaxAlarms())
     }
 
     @Test

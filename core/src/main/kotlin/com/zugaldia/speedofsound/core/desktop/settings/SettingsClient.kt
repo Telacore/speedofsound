@@ -100,7 +100,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Not exposed to the UI
      */
 
-    fun getWelcomeScreenShown(): Boolean =
+    fun loadWelcomeScreenShown(): Boolean =
         readBooleanSetting(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN)
 
     fun peekWelcomeScreenShown(): Boolean =
@@ -127,7 +127,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_PORTALS_RESTORE_TOKEN
         )
 
-    fun getShortcutConfigured(): Boolean =
+    fun loadShortcutConfigured(): Boolean =
         readBooleanSetting(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED)
 
     fun peekShortcutConfigured(): Boolean =
@@ -144,25 +144,25 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * General page
      */
 
-    fun getDefaultLanguage(): String =
+    fun loadDefaultLanguage(): String =
         readLanguageSetting(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2)
 
     fun peekDefaultLanguage(): String =
         peekLanguageSetting(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2)
 
     fun setDefaultLanguage(value: String): Boolean =
-        setStringSettingIfChanged(KEY_DEFAULT_LANGUAGE, getDefaultLanguage(), value, KEY_DEFAULT_LANGUAGE)
+        setStringSettingIfChanged(KEY_DEFAULT_LANGUAGE, loadDefaultLanguage(), value, KEY_DEFAULT_LANGUAGE)
 
-    fun getSecondaryLanguage(): String =
+    fun loadSecondaryLanguage(): String =
         readLanguageSetting(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
 
     fun peekSecondaryLanguage(): String =
         peekLanguageSetting(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
 
     fun setSecondaryLanguage(value: String): Boolean =
-        setStringSettingIfChanged(KEY_SECONDARY_LANGUAGE, getSecondaryLanguage(), value, KEY_SECONDARY_LANGUAGE)
+        setStringSettingIfChanged(KEY_SECONDARY_LANGUAGE, loadSecondaryLanguage(), value, KEY_SECONDARY_LANGUAGE)
 
-    fun getBackgroundRecording(): Boolean =
+    fun loadBackgroundRecording(): Boolean =
         readBooleanSetting(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING)
 
     fun peekBackgroundRecording(): Boolean =
@@ -176,7 +176,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_BACKGROUND_RECORDING
         )
 
-    fun getAppendSpace(): Boolean =
+    fun loadAppendSpace(): Boolean =
         readBooleanSetting(KEY_APPEND_SPACE, DEFAULT_APPEND_SPACE)
 
     fun peekAppendSpace(): Boolean =
@@ -190,7 +190,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_APPEND_SPACE
         )
 
-    fun getHideInsteadOfMinimize(): Boolean =
+    fun loadHideInsteadOfMinimize(): Boolean =
         readBooleanSetting(KEY_HIDE_INSTEAD_OF_MINIMIZE, DEFAULT_HIDE_INSTEAD_OF_MINIMIZE)
 
     fun peekHideInsteadOfMinimize(): Boolean =
@@ -204,7 +204,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_HIDE_INSTEAD_OF_MINIMIZE
         )
 
-    fun getStayHiddenOnActivation(): Boolean =
+    fun loadStayHiddenOnActivation(): Boolean =
         readBooleanSetting(KEY_STAY_HIDDEN_ON_ACTIVATION, DEFAULT_STAY_HIDDEN_ON_ACTIVATION)
 
     fun peekStayHiddenOnActivation(): Boolean =
@@ -218,14 +218,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_STAY_HIDDEN_ON_ACTIVATION
         )
 
-    fun getTextOutputMethod(): String =
+    fun loadTextOutputMethod(): String =
         readTextOutputMethod()
 
     fun peekTextOutputMethod(): String =
         peekTextOutputMethodValue()
 
     fun setTextOutputMethod(value: String): Boolean =
-        setStringSettingIfChanged(KEY_TEXT_OUTPUT_METHOD, getTextOutputMethod(), value, KEY_TEXT_OUTPUT_METHOD)
+        setStringSettingIfChanged(KEY_TEXT_OUTPUT_METHOD, loadTextOutputMethod(), value, KEY_TEXT_OUTPUT_METHOD)
 
     /*
      * Alarms page
@@ -375,7 +375,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             loadAlarmSchedulerState().copy(lastCheckAt = value.toString())
         )
 
-    fun getMaxAlarms(): Int =
+    fun loadMaxAlarms(): Int =
         readIntSetting(
             key = KEY_MAX_ALARMS,
             defaultValue = DEFAULT_MAX_ALARMS,
@@ -416,7 +416,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             .distinctBy { it.id }
             .toList()
 
-        return sortedUniqueAlarms.take(getMaxAlarms())
+        return sortedUniqueAlarms.take(loadMaxAlarms())
     }
 
     private fun readAlarms(heal: Boolean): List<AlarmSetting> {
@@ -575,7 +575,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Cloud Credentials page
      */
 
-    fun getCredentials(): List<CredentialSetting> {
+    fun loadCredentials(): List<CredentialSetting> {
         return readNormalizedJsonListSetting<CredentialSetting>(
             key = KEY_CREDENTIALS,
             defaultValue = DEFAULT_CREDENTIALS,
@@ -622,7 +622,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             }
     }
 
-    fun getVoiceModelProviders(): List<VoiceModelProviderSetting> {
+    fun loadVoiceModelProviders(): List<VoiceModelProviderSetting> {
         val customProviders = readNormalizedJsonListSetting<VoiceModelProviderSetting>(
             key = KEY_VOICE_MODEL_PROVIDERS,
             defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
@@ -656,11 +656,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
     }
 
-    fun getSelectedVoiceModelProviderId(): String =
+    fun loadSelectedVoiceModelProviderId(): String =
         readSelectedProviderId(
             key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            availableProviderIds = getVoiceModelProviders().map { it.id }.toSet(),
+            availableProviderIds = loadVoiceModelProviders().map { it.id }.toSet(),
         )
 
     fun peekSelectedVoiceModelProviderId(): String =
@@ -677,7 +677,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             normalizeSelectedProviderId(
                 value = value,
                 defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-                availableProviderIds = getVoiceModelProviders().map { it.id }.toSet(),
+                availableProviderIds = loadVoiceModelProviders().map { it.id }.toSet(),
             ),
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
         )
@@ -719,11 +719,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
-    fun getSelectedTextModelProviderId(): String =
+    fun loadSelectedTextModelProviderId(): String =
         readSelectedProviderId(
             key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            availableProviderIds = getTextModelProviders().map { it.id }.toSet(),
+            availableProviderIds = loadTextModelProviders().map { it.id }.toSet(),
         )
 
     fun peekSelectedTextModelProviderId(): String =
@@ -740,7 +740,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             normalizeSelectedProviderId(
                 value = value,
                 defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-                availableProviderIds = getTextModelProviders().map { it.id }.toSet(),
+                availableProviderIds = loadTextModelProviders().map { it.id }.toSet(),
             ),
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
         )
@@ -749,7 +749,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Text Models page
      */
 
-    fun getTextProcessingEnabled(): Boolean =
+    fun loadTextProcessingEnabled(): Boolean =
         readBooleanSetting(KEY_TEXT_PROCESSING_ENABLED, DEFAULT_TEXT_PROCESSING_ENABLED)
 
     fun peekTextProcessingEnabled(): Boolean =
@@ -763,7 +763,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_TEXT_PROCESSING_ENABLED
         )
 
-    fun getTextModelProviders(): List<TextModelProviderSetting> {
+    fun loadTextModelProviders(): List<TextModelProviderSetting> {
         return readNormalizedJsonListSetting<TextModelProviderSetting>(
             key = KEY_TEXT_MODEL_PROVIDERS,
             defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,
@@ -797,7 +797,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             normalizeSelectedProviderId(
                 value = value,
                 defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-                availableProviderIds = getTextModelProviders().map { it.id }.toSet(),
+                availableProviderIds = loadTextModelProviders().map { it.id }.toSet(),
             ),
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
         )
@@ -806,7 +806,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Personalization page
      */
 
-    fun getCustomContext(): String =
+    fun loadCustomContext(): String =
         readCustomContext()
 
     fun peekCustomContext(): String =
@@ -820,7 +820,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_CUSTOM_CONTEXT
         )
 
-    fun getCustomVocabulary(): List<String> =
+    fun loadCustomVocabulary(): List<String> =
         readCustomVocabulary()
 
     fun peekCustomVocabulary(): List<String> =
@@ -838,7 +838,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Advanced page
      */
 
-    fun getSanitizeSpecialChars(): Boolean =
+    fun loadSanitizeSpecialChars(): Boolean =
         readBooleanSetting(KEY_SANITIZE_SPECIAL_CHARS, DEFAULT_SANITIZE_SPECIAL_CHARS)
 
     fun peekSanitizeSpecialChars(): Boolean =
@@ -852,7 +852,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_SANITIZE_SPECIAL_CHARS
         )
 
-    fun getPostHideDelayMs(): Int =
+    fun loadPostHideDelayMs(): Int =
         readIntSetting(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS)
 
     fun peekPostHideDelayMs(): Int =
@@ -866,7 +866,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_POST_HIDE_DELAY_MS
         )
 
-    fun getTypingDelayMs(): Int =
+    fun loadTypingDelayMs(): Int =
         readIntSetting(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS)
 
     fun peekTypingDelayMs(): Int =
