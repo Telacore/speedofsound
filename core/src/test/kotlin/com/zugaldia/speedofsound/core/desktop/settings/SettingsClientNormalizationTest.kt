@@ -635,7 +635,10 @@ class SettingsClientNormalizationTest {
         val expectedTextProviderId = client.peekTextModelProviders(emptySet()).sortedBy { it.name.lowercase() }.first().id
 
         assertEquals(expectedVoiceProviderId, client.peekSelectedVoiceModelProviderId())
-        assertEquals(expectedTextProviderId, client.peekSelectedTextModelProviderId())
+        assertEquals(
+            expectedTextProviderId,
+            client.peekSelectedTextModelProviderId(client.peekTextModelProviders(emptySet()))
+        )
         assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId())
         assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId())
         assertEquals(

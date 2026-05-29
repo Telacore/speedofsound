@@ -140,7 +140,9 @@ class PreferencesViewModel(
         settingsClient.setTextModelProviders(value, validCredentialIds, availableProviders)
 
     fun peekSelectedTextModelProviderId(): String =
-        settingsClient.peekSelectedTextModelProviderId()
+        settingsClient.peekSelectedTextModelProviderId(
+            settingsClient.peekTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())
+        )
     fun setSelectedTextModelProviderId(
         value: String,
         availableProviders: List<TextModelProviderSetting>,

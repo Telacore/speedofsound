@@ -128,7 +128,9 @@ class SettingsClientReadHealingTest {
         )
         assertEquals(
             expectedTextProvider,
-            client.peekTextModelProviders(emptySet()).find { it.id == client.peekSelectedTextModelProviderId() }
+            client.peekTextModelProviders(emptySet()).find {
+                it.id == client.peekSelectedTextModelProviderId(client.peekTextModelProviders(emptySet()))
+            }
         )
         assertEquals(0, store.writeCount)
     }
@@ -321,7 +323,10 @@ class SettingsClientReadHealingTest {
 
         assertEquals(TEXT_OUTPUT_METHOD_PORTAL, client.peekTextOutputMethod())
         assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.peekSelectedVoiceModelProviderId())
-        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.peekSelectedTextModelProviderId())
+        assertEquals(
+            DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            client.peekSelectedTextModelProviderId(client.peekTextModelProviders(emptySet()))
+        )
         assertEquals(DEFAULT_TEXT_PROCESSING_ENABLED, client.peekTextProcessingEnabled())
         assertEquals(MAX_CUSTOM_CONTEXT_CHARS, client.peekCustomContext().length)
         assertEquals(listOf("alpha", "beta"), client.peekCustomVocabulary())

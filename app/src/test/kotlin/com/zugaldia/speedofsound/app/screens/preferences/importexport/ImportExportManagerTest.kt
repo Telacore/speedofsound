@@ -931,7 +931,12 @@ class ImportExportManagerTest {
 
         assertEquals(1, result.textProvidersAdded)
         assertEquals("text-1", settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet()).first().id)
-        assertEquals("text-1", settingsClient.peekSelectedTextModelProviderId())
+        assertEquals(
+            "text-1",
+            settingsClient.peekSelectedTextModelProviderId(
+                settingsClient.peekTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())
+            )
+        )
         assertEquals("true", store.getString(KEY_TEXT_PROCESSING_ENABLED, "false"))
     }
 
