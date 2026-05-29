@@ -84,7 +84,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             throw IllegalStateException("Unsupported export version: ${exportData.version}")
         }
 
-        val snapshot = captureImportSnapshot()
+        val snapshot = captureImportSnapshot(viewModel.peekCredentials())
 
         try {
             requireWrite(viewModel.setDefaultLanguage(exportData.defaultLanguage), "default language")
@@ -265,9 +265,6 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             throw IllegalStateException("Failed to save $operation during import")
         }
     }
-
-    private fun captureImportSnapshot(): ImportSnapshot =
-        captureImportSnapshot(viewModel.peekCredentials())
 
     private fun captureImportSnapshot(credentials: List<CredentialSetting>): ImportSnapshot {
         val credentialIds = credentials.map { it.id }.toSet()
