@@ -58,12 +58,12 @@ class AsrProviderManager(
      */
     private fun applySelectedProviderConfig(setActive: Boolean) {
         val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderIdExact()
-        val availableProviders = settingsClient.peekVoiceModelProviders()
+        val credentials = settingsClient.peekCredentials()
+        val availableProviders = settingsClient.peekVoiceModelProviders(credentials.map { it.id }.toSet())
         val selectedProvider = selectedVoiceProvider(selectedProviderId, availableProviders)
         val currentActiveId = registry.getActive(AppPluginCategory.ASR)?.id
         val selectedProviderMissing = selectedProvider == null
         val pluginId = if (selectedProvider != null) {
-            val credentials = settingsClient.peekCredentials()
             val defaultLanguage = settingsClient.peekDefaultLanguage()
             val options = settingsClient.resolveVoiceProviderOptions(selectedProvider, credentials, defaultLanguage)
             val id = pluginIdForProvider(selectedProvider.provider)
