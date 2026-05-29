@@ -227,7 +227,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return loadLegacyAlarmSchedulerState()
     }
 
-    fun setAlarmSchedulerState(value: AlarmSchedulerState): Boolean {
+    fun setAlarmSchedulerState(value: AlarmSchedulerState, emitChange: Boolean = true): Boolean {
         val normalized = value.copy(
             lastCheckAt = value.lastCheckAt?.takeIf { it.isNotBlank() },
             lastTriggeredDates = value.lastTriggeredDates
@@ -235,11 +235,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 .mapValues { (_, dateValue) -> dateValue.trim() }
                 .filterKeys { it.isNotBlank() }
                 .filterValues { it.isNotBlank() }
+                .toSortedMap()
         )
         val json = Json.encodeToString(normalized)
         return settingsStore.setString(KEY_ALARM_SCHEDULER_STATE, json).also { success ->
             if (success) {
-                _settingsChanged.tryEmit(KEY_ALARM_SCHEDULER_STATE)
+                if (emitChange) {
+                    _settingsChanged.tryEmit(KEY_ALARM_SCHEDULER_STATE)
+                }
                 persistLegacyAlarmSchedulerState(normalized)
             }
         }

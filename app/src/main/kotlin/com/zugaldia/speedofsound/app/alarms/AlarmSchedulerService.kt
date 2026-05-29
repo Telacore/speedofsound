@@ -130,7 +130,7 @@ class AlarmSchedulerService(
                 lastTriggeredDates = lastTriggeredDates.mapValues { (_, date) -> date.toString() },
             )
         }
-        if (!settingsClient.setAlarmSchedulerState(snapshot)) {
+        if (!settingsClient.setAlarmSchedulerState(snapshot, emitChange = false)) {
             logger.warn("Failed to persist alarm scheduler state.")
         }
     }
