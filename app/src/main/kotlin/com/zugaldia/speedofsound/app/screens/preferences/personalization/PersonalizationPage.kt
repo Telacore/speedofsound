@@ -133,7 +133,22 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
         instructionsTextView.buffer.setText(instructions, -1)
 
         val vocabulary = viewModel.peekCustomVocabulary()
-        vocabulary.sortedWith(String.CASE_INSENSITIVE_ORDER).forEach { word -> addVocabularyWordToUI(word) }
+        vocabulary.sortedWith(String.CASE_INSENSITIVE_ORDER).forEach { word ->
+            val row = ActionRow().apply { title = word }
+            val deleteButton = Button.fromIconName(ICON_TRASH).apply {
+                addCssClass(STYLE_CLASS_FLAT)
+                valign = Align.CENTER
+                onClicked {
+                    val updatedVocabulary = currentVocabulary().filterNot { it == row.title }
+                    if (saveVocabulary(updatedVocabulary)) {
+                        vocabularyListBox.remove(row)
+                    }
+                }
+            }
+
+            row.addSuffix(deleteButton)
+            vocabularyListBox.append(row)
+        }
     }
 
     fun refresh() {
@@ -197,26 +212,22 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
 
         val updatedVocabulary = currentVocabulary() + word
         if (saveVocabulary(updatedVocabulary)) {
-            addVocabularyWordToUI(word)
-            entry.text = ""
-        }
-    }
-
-    private fun addVocabularyWordToUI(word: String) {
-        val row = ActionRow().apply { title = word }
-        val deleteButton = Button.fromIconName(ICON_TRASH).apply {
-            addCssClass(STYLE_CLASS_FLAT)
-            valign = Align.CENTER
-            onClicked {
-                val updatedVocabulary = currentVocabulary().filterNot { it == row.title }
-                if (saveVocabulary(updatedVocabulary)) {
-                    vocabularyListBox.remove(row)
+            val row = ActionRow().apply { title = word }
+            val deleteButton = Button.fromIconName(ICON_TRASH).apply {
+                addCssClass(STYLE_CLASS_FLAT)
+                valign = Align.CENTER
+                onClicked {
+                    val updatedVocabulary = currentVocabulary().filterNot { it == row.title }
+                    if (saveVocabulary(updatedVocabulary)) {
+                        vocabularyListBox.remove(row)
+                    }
                 }
             }
-        }
 
-        row.addSuffix(deleteButton)
-        vocabularyListBox.append(row)
+            row.addSuffix(deleteButton)
+            vocabularyListBox.append(row)
+            entry.text = ""
+        }
     }
 
     private fun currentVocabulary(): List<String> {
