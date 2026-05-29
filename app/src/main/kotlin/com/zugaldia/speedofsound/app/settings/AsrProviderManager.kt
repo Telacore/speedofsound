@@ -91,7 +91,7 @@ class AsrProviderManager(
     /**
      * Gets the name of the currently selected ASR provider.
      */
-    fun getCurrentProviderName(): String {
+    fun peekCurrentProviderName(): String {
         val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderId()
         val providers = settingsClient.peekVoiceModelProviders()
         val selectedProvider = providers.find { it.id == selectedProviderId }

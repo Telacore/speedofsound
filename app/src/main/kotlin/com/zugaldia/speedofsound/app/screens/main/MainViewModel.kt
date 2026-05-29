@@ -480,11 +480,11 @@ class MainViewModel(
     private fun updateModelLabels() {
         if (hasFatalStartupError) {
             state.updateAsrModel("ASR unavailable")
-            state.updateLlmModel(llmProviderManager.getCurrentProviderName())
+            state.updateLlmModel(llmProviderManager.peekCurrentProviderName())
             return
         }
-        val asrModelName = asrProviderManager.getCurrentProviderName()
-        val llmModelName = llmProviderManager.getCurrentProviderName()
+        val asrModelName = asrProviderManager.peekCurrentProviderName()
+        val llmModelName = llmProviderManager.peekCurrentProviderName()
         state.updateAsrModel(asrModelName)
         state.updateLlmModel(llmModelName)
     }
@@ -743,7 +743,7 @@ class MainViewModel(
             }
         GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
             state.updateAsrModel("ASR unavailable")
-            state.updateLlmModel(llmProviderManager.getCurrentProviderName())
+            state.updateLlmModel(llmProviderManager.peekCurrentProviderName())
             state.updateStage(AppStage.IDLE)
             false
         }

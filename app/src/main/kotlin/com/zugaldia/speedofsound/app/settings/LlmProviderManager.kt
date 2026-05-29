@@ -89,7 +89,7 @@ class LlmProviderManager(
      * Gets the name of the currently selected LLM provider.
      * Returns an empty string if text processing is disabled.
      */
-    fun getCurrentProviderName(): String {
+    fun peekCurrentProviderName(): String {
         if (!settingsClient.peekTextProcessingEnabled()) { return "" }
         val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
         val providers = settingsClient.peekTextModelProviders()
