@@ -117,6 +117,14 @@ class SettingsClientReadHealingTest {
                 KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
                     listOf(
                         VoiceModelProviderSetting(
+                            id = "  $DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID  ",
+                            name = " Whisper Tiny ",
+                            provider = AsrProvider.SHERPA_WHISPER,
+                            modelId = " $DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID ",
+                            credentialId = " cred-1 ",
+                            baseUrl = " https://example.com ",
+                        ),
+                        VoiceModelProviderSetting(
                             id = " voice-1 ",
                             name = " Whisper ",
                             provider = AsrProvider.SHERPA_WHISPER,

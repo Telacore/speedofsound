@@ -591,7 +591,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             key = KEY_VOICE_MODEL_PROVIDERS,
             defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
             label = "voice model providers",
-            normalize = { it.normalizedVoiceModelProviders() },
+            normalize = { it.normalizedCustomVoiceModelProviders() },
         )
 
         // Include the local provider first
@@ -599,10 +599,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean {
-        // Filter out the local providers before saving
-        val customProviders = value
-            .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
-            .normalizedVoiceModelProviders()
+        val customProviders = value.normalizedCustomVoiceModelProviders()
         val json = Json.encodeToString(customProviders)
         return setStringSettingIfChanged(
             KEY_VOICE_MODEL_PROVIDERS,
@@ -942,6 +939,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
             )
         }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.modelId.isNotBlank() }
             .distinctBy { it.id }
+
+    private fun List<VoiceModelProviderSetting>.normalizedCustomVoiceModelProviders(): List<VoiceModelProviderSetting> =
+        normalizedVoiceModelProviders()
+            .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
 
     private fun List<TextModelProviderSetting>.normalizedTextModelProviders(): List<TextModelProviderSetting> =
         map { provider ->

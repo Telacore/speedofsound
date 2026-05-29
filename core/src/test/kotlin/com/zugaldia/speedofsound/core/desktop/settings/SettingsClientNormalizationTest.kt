@@ -113,6 +113,43 @@ class SettingsClientNormalizationTest {
         )
     }
 
+    @Test
+    fun `local voice providers are filtered from save`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        client.setVoiceModelProviders(
+            listOf(
+                VoiceModelProviderSetting(
+                    id = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+                    name = "Whisper Tiny",
+                    provider = AsrProvider.SHERPA_WHISPER,
+                    modelId = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+                ),
+                VoiceModelProviderSetting(
+                    id = "voice-1",
+                    name = "Whisper",
+                    provider = AsrProvider.SHERPA_WHISPER,
+                    modelId = "model-1",
+                ),
+            )
+        )
+
+        assertEquals(
+            Json.encodeToString(
+                listOf(
+                    VoiceModelProviderSetting(
+                        id = "voice-1",
+                        name = "Whisper",
+                        provider = AsrProvider.SHERPA_WHISPER,
+                        modelId = "model-1",
+                    ),
+                )
+            ),
+            store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)
+        )
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
