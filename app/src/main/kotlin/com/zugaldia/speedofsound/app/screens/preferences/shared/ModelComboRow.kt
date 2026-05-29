@@ -6,7 +6,6 @@ import org.gnome.adw.EntryRow
 import org.gnome.gtk.PropertyExpression
 import org.gnome.gtk.StringList
 import org.gnome.gtk.StringObject
-import org.slf4j.LoggerFactory
 
 /**
  * Generic manager for model selection from a list of predefined models.
@@ -19,8 +18,6 @@ class ModelComboRow<T : SelectableModel>(
     private val getCurrentModelId: () -> String,
     private val onModelIdSelected: (String) -> Unit
 ) {
-    private val logger = LoggerFactory.getLogger(ModelComboRow::class.java)
-
     private var currentModels: Map<String, T> = emptyMap()
 
     companion object {
@@ -47,10 +44,7 @@ class ModelComboRow<T : SelectableModel>(
     /**
      * Refresh the list of available models on initialization and when the provider changes.
      */
-    fun refreshComboRows() {
-        currentModels = getModels()
-        refreshComboRowsInternal()
-    }
+    fun refreshComboRows() = updateCurrentModels(getModels())
 
     /**
      * Refresh the list of available models with a custom list (e.g., fetched from API).
@@ -58,7 +52,11 @@ class ModelComboRow<T : SelectableModel>(
      */
     fun refreshComboRows(models: List<T>) {
         if (models.isEmpty()) { return }
-        currentModels = models.associateBy { it.id }
+        updateCurrentModels(models.associateBy { it.id })
+    }
+
+    private fun updateCurrentModels(models: Map<String, T>) {
+        currentModels = models
         refreshComboRowsInternal()
     }
 
