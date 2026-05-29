@@ -10,6 +10,8 @@ import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_ALARM_SCHEDULER_S
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_SCHEDULER_STATE
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
@@ -574,7 +576,8 @@ class ImportExportManagerTest {
 
     @Test
     fun `import clears provider credential refs that lose their credential during merge`() {
-        val settingsClient = SettingsClient(MapSettingsStore())
+        val store = MapSettingsStore()
+        val settingsClient = SettingsClient(store)
         val viewModel = PreferencesViewModel(
             settingsClient = settingsClient,
             portalsClient = PortalsClient(portalConnector = {
@@ -639,6 +642,16 @@ class ImportExportManagerTest {
         assertEquals(null, settingsClient.loadVoiceModelProviders().first().credentialId)
         assertEquals("text-1", settingsClient.loadTextModelProviders().first().id)
         assertEquals(null, settingsClient.loadTextModelProviders().first().credentialId)
+        assertTrue(
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, "").isNotBlank()
+        )
+        assertTrue(
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, "") in settingsClient.loadVoiceModelProviders().map { it.id }.toSet()
+        )
+        assertEquals(
+            "text-1",
+            store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, "")
+        )
     }
 
     @Test

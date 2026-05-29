@@ -128,6 +128,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             .map { it.id }
             .toSet()
         val voiceProvidersAdded = importedVoiceIds.count { it !in existingCustomVoiceIds }
+        viewModel.setSelectedVoiceModelProviderId(viewModel.peekSelectedVoiceModelProviderId())
 
         val existingTextProviders = viewModel.peekTextModelProviders()
         val existingTextIds = existingTextProviders.map { it.id }.toSet()
@@ -138,6 +139,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         }
         val importedTextIds = viewModel.peekTextModelProviders().map { it.id }.toSet()
         val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
+        viewModel.setSelectedTextModelProviderId(viewModel.peekSelectedTextModelProviderId())
 
         val existingVocabulary = viewModel.peekCustomVocabulary()
         val existingVocabSet = existingVocabulary.toSet()
