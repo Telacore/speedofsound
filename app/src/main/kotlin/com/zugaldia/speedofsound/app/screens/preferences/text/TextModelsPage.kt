@@ -150,7 +150,11 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         providersListBox.removeAll()
         providers.sortedBy { it.name.lowercase() }.forEach { provider -> addProviderToUI(provider) }
         activeProviderComboRow.updateProviders(providers)
-        updatePlaceholderVisibility(providers)
+        val hasProviders = providers.isNotEmpty()
+        val atLimit = providers.size >= MAX_TEXT_MODEL_PROVIDERS
+        providersListBox.visible = hasProviders
+        placeholderBox.visible = !hasProviders
+        addProviderButton.sensitive = !atLimit
         updateActiveProviderSensitivity(providers, textProcessingEnabled)
     }
 
@@ -254,14 +258,6 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         }
         renderProviders(updatedProviders, currentTextProcessingEnabled)
         return true
-    }
-
-    private fun updatePlaceholderVisibility(providers: List<TextModelProviderSetting>) {
-        val hasProviders = providers.isNotEmpty()
-        val atLimit = providers.size >= MAX_TEXT_MODEL_PROVIDERS
-        providersListBox.visible = hasProviders
-        placeholderBox.visible = !hasProviders
-        addProviderButton.sensitive = !atLimit
     }
 
     private fun updateActiveProviderSensitivity(
