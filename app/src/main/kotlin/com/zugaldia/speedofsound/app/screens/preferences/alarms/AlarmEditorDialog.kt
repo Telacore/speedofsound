@@ -142,7 +142,7 @@ class AlarmEditorDialog(
                         name = nameRow.text.trim(),
                         hour = hourRow.value.toInt(),
                         minute = minuteRow.value.toInt(),
-                        action = selectedAction(),
+                        action = ACTIONS.getOrNull(actionRow.selected) ?: AlarmAction.NORMAL,
                         enabled = enabledRow.active,
                         repeatDays = selectedRepeatDays(),
                     )
@@ -170,11 +170,6 @@ class AlarmEditorDialog(
             append(repeatDaysGroup)
             append(buttonBox)
         }
-    }
-
-    private fun selectedAction(): AlarmAction {
-        val selectedIndex = actionRow.selected
-        return ACTIONS.getOrNull(selectedIndex) ?: AlarmAction.NORMAL
     }
 
     private fun selectedRepeatDays(): List<AlarmRepeatDay> =
