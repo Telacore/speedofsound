@@ -221,7 +221,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(
             KEY_DEFAULT_LANGUAGE,
             settingsStore.getString(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2),
-            normalizeLanguageForSave(value, DEFAULT_LANGUAGE.iso2),
+            languageFromIso2(value.trim().lowercase())?.iso2 ?: DEFAULT_LANGUAGE.iso2,
             KEY_DEFAULT_LANGUAGE
         )
 
@@ -235,7 +235,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(
             KEY_SECONDARY_LANGUAGE,
             settingsStore.getString(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2),
-            normalizeLanguageForSave(value, DEFAULT_SECONDARY_LANGUAGE.iso2),
+            languageFromIso2(value.trim().lowercase())?.iso2 ?: DEFAULT_SECONDARY_LANGUAGE.iso2,
             KEY_SECONDARY_LANGUAGE
         )
 
@@ -1456,9 +1456,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
             parse = { raw -> languageFromIso2(raw.trim().lowercase())?.iso2 },
         )
     }
-
-    private fun normalizeLanguageForSave(value: String, defaultValue: String): String =
-        languageFromIso2(value.trim().lowercase())?.iso2 ?: defaultValue
 
     private fun readIntSetting(
         key: String,
