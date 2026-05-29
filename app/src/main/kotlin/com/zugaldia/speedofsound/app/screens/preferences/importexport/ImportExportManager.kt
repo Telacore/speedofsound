@@ -8,6 +8,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
 import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
 import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
+import com.zugaldia.speedofsound.core.desktop.settings.shouldPreserveExactWhisperSelection
 import com.zugaldia.speedofsound.core.getDataDir
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -53,6 +54,8 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
                 .normalizedCredentialRefs(viewModel.peekCredentials().map { it.id }.toSet()),
             textModelProviders = viewModel.peekTextModelProviders()
                 .normalizedCredentialRefs(viewModel.peekCredentials().map { it.id }.toSet()),
+            selectedVoiceProviderId = viewModel.peekSelectedVoiceModelProviderIdExact(),
+            selectedTextProviderId = viewModel.peekSelectedTextModelProviderId(),
             sanitizeSpecialChars = viewModel.peekSanitizeSpecialChars(),
             postHideDelayMs = viewModel.peekPostHideDelayMs(),
             typingDelayMs = viewModel.peekTypingDelayMs(),
@@ -136,7 +139,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
                 .toSet()
             val voiceProvidersAdded = importedVoiceIds.count { it !in existingCustomVoiceIds }
             requireWrite(
-                viewModel.setSelectedVoiceModelProviderId(snapshot.selectedVoiceProviderId),
+                persistVoiceProviderSelection(snapshot.selectedVoiceProviderId),
                 "selected voice model provider",
             )
 
@@ -218,6 +221,16 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             }
         }
 
+    private fun persistVoiceProviderSelection(selectedProviderId: String): Boolean {
+        val exactSelectedProviderId = selectedProviderId.trim()
+        val availableVoiceProviders = viewModel.peekVoiceModelProviders()
+        return if (shouldPreserveExactWhisperSelection(exactSelectedProviderId, availableVoiceProviders)) {
+            viewModel.setSelectedVoiceModelProviderIdExact(exactSelectedProviderId)
+        } else {
+            viewModel.setSelectedVoiceModelProviderId(selectedProviderId)
+        }
+    }
+
     private fun requireWrite(wrote: Boolean, operation: String) {
         if (!wrote) {
             throw IllegalStateException("Failed to save $operation during import")
@@ -240,7 +253,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             customContext = viewModel.peekCustomContext(),
             credentials = viewModel.peekCredentials(),
             voiceProviders = viewModel.peekVoiceModelProviders(),
-            selectedVoiceProviderId = viewModel.peekSelectedVoiceModelProviderId(),
+            selectedVoiceProviderId = viewModel.peekSelectedVoiceModelProviderIdExact(),
             textProviders = viewModel.peekTextModelProviders(),
             selectedTextProviderId = viewModel.peekSelectedTextModelProviderId(),
             textProcessingEnabled = viewModel.peekTextProcessingEnabled(),
@@ -265,7 +278,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         restoreWrite("credentials") { viewModel.setCredentials(snapshot.credentials) }
         restoreWrite("voice model providers") { viewModel.setVoiceModelProviders(snapshot.voiceProviders) }
         restoreWrite("selected voice model provider") {
-            viewModel.setSelectedVoiceModelProviderId(snapshot.selectedVoiceProviderId)
+            persistVoiceProviderSelection(snapshot.selectedVoiceProviderId)
         }
         restoreWrite("text model providers") { viewModel.setTextModelProviders(snapshot.textProviders) }
         restoreWrite("selected text model provider") {

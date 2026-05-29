@@ -211,6 +211,28 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
+    fun `exact whisper fallback is only preserved when hidden`() {
+        val hiddenProviders = listOf(
+            VoiceModelProviderSetting(
+                id = "voice-a",
+                name = "Alpha",
+                provider = AsrProvider.OPENAI,
+                modelId = "model-a",
+            ),
+        )
+        val visibleProviders = hiddenProviders + VoiceModelProviderSetting(
+            id = DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
+            name = "Whisper",
+            provider = AsrProvider.SHERPA_WHISPER,
+            modelId = "model-whisper",
+        )
+
+        assertEquals(true, shouldPreserveExactWhisperSelection(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, hiddenProviders))
+        assertEquals(false, shouldPreserveExactWhisperSelection(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, visibleProviders))
+        assertEquals(false, shouldPreserveExactWhisperSelection("voice-a", hiddenProviders))
+    }
+
+    @Test
     fun `setting providers reports failure when selected provider write fails`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

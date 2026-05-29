@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.core.desktop.settings
 
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
+import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
 import kotlinx.serialization.Serializable
 import java.time.DayOfWeek
@@ -115,6 +116,13 @@ fun AlarmSetting.isScheduledOn(date: LocalDate): Boolean =
 
 fun hasActiveAlarms(alarms: List<AlarmSetting>): Boolean =
     alarms.any { it.enabled }
+
+fun shouldPreserveExactWhisperSelection(
+    selectedProviderId: String,
+    availableProviders: List<SelectableProviderSetting>,
+): Boolean =
+    selectedProviderId.trim() == DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID &&
+        availableProviders.none { it.id == DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID }
 
 fun AlarmRepeatDay.matches(dayOfWeek: DayOfWeek): Boolean = when (dayOfWeek) {
     DayOfWeek.MONDAY -> this == AlarmRepeatDay.MONDAY

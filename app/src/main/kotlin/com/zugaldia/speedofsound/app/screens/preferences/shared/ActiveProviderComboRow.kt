@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 class ActiveProviderComboRow<T>(
     private val getSelectedProviderId: () -> String,
     private val setSelectedProviderId: (String) -> Boolean,
+    private val shouldPersistFallbackSelection: (String, List<T>) -> Boolean = { _, _ -> true },
     private val rowSubtitle: String
 ) : ComboRow() where T : SelectableProviderSetting {
     private val logger = LoggerFactory.getLogger(ActiveProviderComboRow::class.java)
@@ -53,7 +54,7 @@ class ActiveProviderComboRow<T>(
                 selected = selectedIndex
             } else if (providers.isNotEmpty()) {
                 selected = 0 // Select the first provider
-                if (!setSelectedProviderId(providers[0].id)) {
+                if (shouldPersistFallbackSelection(savedProviderId, providers) && !setSelectedProviderId(providers[0].id)) {
                     logger.warn("Failed to persist fallback provider selection to ${providers[0].id}")
                 }
             }

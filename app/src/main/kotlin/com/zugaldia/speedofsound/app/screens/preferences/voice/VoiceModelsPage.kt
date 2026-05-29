@@ -15,6 +15,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_VOICE_MODEL_PROVIDERS
+import com.zugaldia.speedofsound.core.desktop.settings.shouldPreserveExactWhisperSelection
 import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
@@ -42,8 +43,11 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         iconName = ICON_MICROPHONE
 
         activeProviderComboRow = ActiveProviderComboRow(
-            getSelectedProviderId = { viewModel.peekSelectedVoiceModelProviderId() },
+            getSelectedProviderId = { viewModel.peekSelectedVoiceModelProviderIdExact() },
             setSelectedProviderId = { viewModel.setSelectedVoiceModelProviderId(it) },
+            shouldPersistFallbackSelection = { savedProviderId, providers ->
+                !shouldPreserveExactWhisperSelection(savedProviderId, providers)
+            },
             rowSubtitle = "Select which provider to use for speech recognition"
         )
 

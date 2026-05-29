@@ -925,13 +925,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return selectionSaved
     }
 
-    private fun shouldPreserveExactWhisperSelection(
-        selectedProviderId: String,
-        availableProviders: List<SelectableProviderSetting>,
-    ): Boolean =
-        selectedProviderId.trim() == DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID &&
-            availableProviders.none { it.id == DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID }
-
     /*
      * Personalization page
      */
