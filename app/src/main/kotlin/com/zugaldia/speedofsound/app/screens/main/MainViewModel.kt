@@ -353,19 +353,27 @@ class MainViewModel(
             return
         }
 
+        val snapshot = when (key) {
+            KEY_TEXT_PROCESSING_ENABLED,
+            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, KEY_VOICE_MODEL_PROVIDERS,
+            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, KEY_TEXT_MODEL_PROVIDERS,
+            KEY_CREDENTIALS -> loadRuntimeSettingsSnapshot()
+            else -> null
+        }
+
         when (key) {
             KEY_DEFAULT_LANGUAGE -> onPrimaryLanguageSelected()
             KEY_SECONDARY_LANGUAGE -> onSecondaryLanguageUpdated()
             KEY_TEXT_OUTPUT_METHOD -> refreshTextOutputMethodSetting()
             KEY_TYPING_DELAY_MS -> refreshTypingDelaySetting()
             KEY_SANITIZE_SPECIAL_CHARS -> refreshSanitizeSpecialCharsSetting()
-            KEY_TEXT_PROCESSING_ENABLED -> refreshTextProcessingSetting()
+            KEY_TEXT_PROCESSING_ENABLED -> refreshTextProcessingSetting(snapshot = snapshot!!)
             KEY_CUSTOM_CONTEXT -> refreshCustomContextSetting()
             KEY_CUSTOM_VOCABULARY -> refreshCustomVocabularySetting()
             KEY_ALARMS, KEY_MAX_ALARMS -> refreshAlarmSummary()
-            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, KEY_VOICE_MODEL_PROVIDERS -> refreshAsrSetting(key)
-            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, KEY_TEXT_MODEL_PROVIDERS -> refreshLlmSetting(key)
-            KEY_CREDENTIALS -> refreshCredentials()
+            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, KEY_VOICE_MODEL_PROVIDERS -> refreshAsrSetting(key, snapshot!!)
+            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, KEY_TEXT_MODEL_PROVIDERS -> refreshLlmSetting(key, snapshot!!)
+            KEY_CREDENTIALS -> refreshCredentials(snapshot!!)
         }
     }
 
@@ -612,8 +620,7 @@ class MainViewModel(
             }
     }
 
-    private fun refreshCredentials() {
-        val snapshot = loadRuntimeSettingsSnapshot()
+    private fun refreshCredentials(snapshot: RuntimeSettingsSnapshot) {
         runCatching {
             asrProviderManager.refreshProviderConfiguration(
                 snapshot.credentials,
@@ -951,6 +958,10 @@ class MainViewModel(
     }
 
     private fun handleFatalStartupError(error: FatalStartupException) {
+        handleFatalStartupError(error, loadRuntimeSettingsSnapshot())
+    }
+
+    private fun handleFatalStartupError(error: FatalStartupException, snapshot: RuntimeSettingsSnapshot) {
         if (hasFatalStartupError) return
         hasFatalStartupError = true
         startupErrorMessage = error.message ?: "Unknown fatal startup error"
@@ -978,7 +989,12 @@ class MainViewModel(
             }
         GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
             state.updateAsrModel("ASR unavailable")
-            state.updateLlmModel(llmProviderManager.peekCurrentProviderName(director.getOptions().enableTextProcessing))
+            state.updateLlmModel(
+                llmProviderManager.peekCurrentProviderName(
+                    availableProviders = snapshot.textProviders,
+                    runtimeTextProcessingEnabled = director.getOptions().enableTextProcessing,
+                )
+            )
             state.updateStage(AppStage.IDLE)
             false
         }
