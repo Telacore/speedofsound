@@ -3,6 +3,9 @@ package com.zugaldia.speedofsound.app.alarms
 import com.zugaldia.speedofsound.core.APPLICATION_NAME
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_LAST_CHECK_AT
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_LAST_TRIGGERED_DATES
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_SCHEDULER_STATE
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
@@ -44,6 +47,41 @@ class AlarmSchedulerService(
 
         schedulerStateReady = false
         reloadAlarms()
+        reloadSchedulerState()
+        schedulerStateReady = true
+        persistSchedulerState()
+        settingsJob = scope.launch {
+            settingsClient.settingsChanged.collect { key ->
+                onSettingsChanged(key)
+            }
+        }
+        schedulerJob = scope.launch {
+            while (true) {
+                checkAlarms()
+                delay(checkIntervalSeconds.seconds)
+            }
+        }
+    }
+
+    internal fun reloadAlarms() {
+        val alarms = settingsClient.loadAlarms().sortedWith(
+            compareBy<AlarmSetting> { it.hour }
+                .thenBy { it.minute }
+                .thenBy { it.action.ordinal }
+                .thenBy { it.id }
+        )
+        val activeIds = alarms.map { it.id }.toSet()
+        synchronized(stateLock) {
+            activeAlarms = alarms
+            lastTriggeredDates.keys.retainAll(activeIds)
+        }
+        if (schedulerStateReady) {
+            persistSchedulerState()
+        }
+        logger.info("Loaded {} alarm(s).", alarms.size)
+    }
+
+    internal fun reloadSchedulerState() {
         val schedulerState = settingsClient.loadAlarmSchedulerState()
         val now = LocalDateTime.now(clock)
         synchronized(stateLock) {
@@ -60,39 +98,21 @@ class AlarmSchedulerService(
                 runCatching { LocalDateTime.parse(rawValue) }.getOrNull()
             }?.takeIf { !it.isAfter(now) }
         }
-        schedulerStateReady = true
-        persistSchedulerState()
-        settingsJob = scope.launch {
-            settingsClient.settingsChanged.collect { key ->
-                if (key == KEY_ALARMS) {
-                    reloadAlarms()
-                }
-            }
-        }
-        schedulerJob = scope.launch {
-            while (true) {
-                checkAlarms()
-                delay(checkIntervalSeconds.seconds)
-            }
+        logger.info("Loaded alarm scheduler state.")
+    }
+
+    internal fun onSettingsChanged(key: String) {
+        when (key) {
+            KEY_ALARMS -> reloadAlarms()
+            KEY_ALARM_SCHEDULER_STATE, KEY_ALARM_LAST_TRIGGERED_DATES, KEY_ALARM_LAST_CHECK_AT -> reloadSchedulerState()
         }
     }
 
-    private fun reloadAlarms() {
-        val alarms = settingsClient.loadAlarms().sortedWith(
-            compareBy<AlarmSetting> { it.hour }
-                .thenBy { it.minute }
-                .thenBy { it.action.ordinal }
-                .thenBy { it.id }
+    internal fun snapshotSchedulerState(): AlarmSchedulerState = synchronized(stateLock) {
+        AlarmSchedulerState(
+            lastCheckAt = lastCheckAt?.toString(),
+            lastTriggeredDates = lastTriggeredDates.mapValues { (_, date) -> date.toString() },
         )
-        val activeIds = alarms.map { it.id }.toSet()
-        synchronized(stateLock) {
-            activeAlarms = alarms
-            lastTriggeredDates.keys.retainAll(activeIds)
-        }
-        if (schedulerStateReady) {
-            persistSchedulerState()
-        }
-        logger.info("Loaded {} alarm(s).", alarms.size)
     }
 
     private fun checkAlarms() {
