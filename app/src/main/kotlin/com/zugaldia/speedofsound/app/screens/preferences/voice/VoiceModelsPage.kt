@@ -130,57 +130,52 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     private fun renderProviders(providers: List<VoiceModelProviderSetting>) {
         currentProviders = providers
         providersListBox.removeAll()
-        providers.sortedBy { it.name.lowercase() }.forEach { provider -> addProviderToUI(provider) }
+        providers.sortedBy { it.name.lowercase() }.forEach { providerSetting ->
+            val providerLabel = providerSetting.provider.displayName
+            val modelLabel = providerSetting.modelId
+            val subtitle = "$providerLabel • $modelLabel"
+
+            val row = ActionRow().apply {
+                title = providerSetting.name
+                this.subtitle = subtitle
+            }
+
+            if (providerSetting.credentialId != null) {
+                row.addSuffix(Button.fromIconName(ICON_PASSWORD).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                    sensitive = false
+                    tooltipText = "Custom Credentials Set"
+                })
+            }
+
+            if (providerSetting.baseUrl != null) {
+                row.addSuffix(Button.fromIconName(ICON_SERVER).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                    sensitive = false
+                    tooltipText = "Custom URL: ${providerSetting.baseUrl}"
+                })
+            }
+
+            if (providerSetting.id !in SUPPORTED_LOCAL_ASR_MODELS.keys) {
+                val deleteButton = Button.fromIconName(ICON_TRASH).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                    onClicked {
+                        if (onProviderDeleted(providerSetting.id)) {
+                            providersListBox.remove(row)
+                        }
+                    }
+                }
+                row.addSuffix(deleteButton)
+            }
+
+            providersListBox.append(row)
+        }
         activeProviderComboRow.updateProviders(providers)
         val customProviderCount = providers.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
         addProviderButton.sensitive = customProviderCount < MAX_VOICE_MODEL_PROVIDERS
-    }
-
-    private fun addProviderToUI(providerSetting: VoiceModelProviderSetting) {
-        val providerLabel = providerSetting.provider.displayName
-        val modelLabel = providerSetting.modelId
-        val subtitle = "$providerLabel • $modelLabel"
-
-        val row = ActionRow().apply {
-            title = providerSetting.name
-            this.subtitle = subtitle
-        }
-
-        // Credential indicator
-        if (providerSetting.credentialId != null) {
-            row.addSuffix(Button.fromIconName(ICON_PASSWORD).apply {
-                addCssClass(STYLE_CLASS_FLAT)
-                valign = Align.CENTER
-                sensitive = false
-                tooltipText = "Custom Credentials Set"
-            })
-        }
-
-        // Base URL indicator
-        if (providerSetting.baseUrl != null) {
-            row.addSuffix(Button.fromIconName(ICON_SERVER).apply {
-                addCssClass(STYLE_CLASS_FLAT)
-                valign = Align.CENTER
-                sensitive = false
-                tooltipText = "Custom URL: ${providerSetting.baseUrl}"
-            })
-        }
-
-        // Delete button (only for non-default providers)
-        if (providerSetting.id !in SUPPORTED_LOCAL_ASR_MODELS.keys) {
-            val deleteButton = Button.fromIconName(ICON_TRASH).apply {
-                addCssClass(STYLE_CLASS_FLAT)
-                valign = Align.CENTER
-                onClicked {
-                    if (onProviderDeleted(providerSetting.id)) {
-                        providersListBox.remove(row)
-                    }
-                }
-            }
-            row.addSuffix(deleteButton)
-        }
-
-        providersListBox.append(row)
     }
 
     private fun onProviderDeleted(providerId: String): Boolean {
