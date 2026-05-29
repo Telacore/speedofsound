@@ -139,17 +139,6 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         renderProviders(currentProviders, currentTextProcessingEnabled)
     }
 
-    private fun syncEnableSwitch() {
-        val enabled = currentTextProcessingEnabled
-        if (enableSwitch.active == enabled) return
-        suppressEnableSwitchNotify = true
-        try {
-            enableSwitch.active = enabled
-        } finally {
-            suppressEnableSwitchNotify = false
-        }
-    }
-
     private fun renderProviders(
         providers: List<TextModelProviderSetting>,
         textProcessingEnabled: Boolean,
@@ -223,7 +212,14 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
             logger.info("Text processing enabled: $enabled")
             if (!viewModel.setTextProcessingEnabled(enabled)) {
                 logger.warn("Failed to persist text processing state change to $enabled")
-                syncEnableSwitch()
+                if (enableSwitch.active != currentTextProcessingEnabled) {
+                    suppressEnableSwitchNotify = true
+                    try {
+                        enableSwitch.active = currentTextProcessingEnabled
+                    } finally {
+                        suppressEnableSwitchNotify = false
+                    }
+                }
             } else {
                 currentTextProcessingEnabled = enabled
             }
@@ -245,13 +241,27 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
                             }
                             KEY_TEXT_PROCESSING_ENABLED -> {
                                 currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
-                                syncEnableSwitch()
+                                if (enableSwitch.active != currentTextProcessingEnabled) {
+                                    suppressEnableSwitchNotify = true
+                                    try {
+                                        enableSwitch.active = currentTextProcessingEnabled
+                                    } finally {
+                                        suppressEnableSwitchNotify = false
+                                    }
+                                }
                                 updateActiveProviderSensitivity(currentProviders, currentTextProcessingEnabled)
                             }
                             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
                             KEY_TEXT_MODEL_PROVIDERS -> {
                                 refreshProviders()
-                                syncEnableSwitch()
+                                if (enableSwitch.active != currentTextProcessingEnabled) {
+                                    suppressEnableSwitchNotify = true
+                                    try {
+                                        enableSwitch.active = currentTextProcessingEnabled
+                                    } finally {
+                                        suppressEnableSwitchNotify = false
+                                    }
+                                }
                             }
                         }
                         false
