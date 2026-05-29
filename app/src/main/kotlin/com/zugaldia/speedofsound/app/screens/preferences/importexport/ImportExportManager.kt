@@ -78,18 +78,18 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             throw IllegalStateException("Unsupported export version: ${exportData.version}")
         }
 
-        viewModel.setDefaultLanguage(exportData.defaultLanguage)
-        viewModel.setSecondaryLanguage(exportData.secondaryLanguage)
-        viewModel.setBackgroundRecording(exportData.backgroundRecording)
-        viewModel.setHideInsteadOfMinimize(exportData.hideInsteadOfMinimize)
-        viewModel.setStayHiddenOnActivation(exportData.stayHiddenOnActivation)
-        viewModel.setAppendSpace(exportData.appendSpace)
-        viewModel.setMaxAlarms(exportData.maxAlarms)
+        requireWrite(viewModel.setDefaultLanguage(exportData.defaultLanguage), "default language")
+        requireWrite(viewModel.setSecondaryLanguage(exportData.secondaryLanguage), "secondary language")
+        requireWrite(viewModel.setBackgroundRecording(exportData.backgroundRecording), "background recording")
+        requireWrite(viewModel.setHideInsteadOfMinimize(exportData.hideInsteadOfMinimize), "hide instead of minimize")
+        requireWrite(viewModel.setStayHiddenOnActivation(exportData.stayHiddenOnActivation), "stay hidden on activation")
+        requireWrite(viewModel.setAppendSpace(exportData.appendSpace), "append space")
+        requireWrite(viewModel.setMaxAlarms(exportData.maxAlarms), "max alarms")
 
         val existingAlarms = viewModel.peekAlarms()
         val existingAlarmIds = existingAlarms.map { it.id }.toSet()
         val newAlarms = exportData.alarms.filter { it.id !in existingAlarmIds }
-        viewModel.setAlarms(existingAlarms + newAlarms)
+        requireWrite(viewModel.setAlarms(existingAlarms + newAlarms), "alarms")
         val importedAlarmIds = viewModel.peekAlarms().map { it.id }.toSet()
         val alarmsAdded = importedAlarmIds.count { it !in existingAlarmIds }
 
@@ -97,20 +97,23 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             val filteredSchedulerState = schedulerState.copy(
                 lastTriggeredDates = schedulerState.lastTriggeredDates.filterKeys { it in importedAlarmIds }
             )
-            viewModel.setAlarmSchedulerState(filteredSchedulerState)
+            requireWrite(
+                viewModel.setAlarmSchedulerState(filteredSchedulerState),
+                "alarm scheduler state",
+            )
         }
 
-        viewModel.setSanitizeSpecialChars(exportData.sanitizeSpecialChars)
-        viewModel.setPostHideDelayMs(exportData.postHideDelayMs)
-        viewModel.setTypingDelayMs(exportData.typingDelayMs)
-        viewModel.setCustomContext(exportData.customContext)
+        requireWrite(viewModel.setSanitizeSpecialChars(exportData.sanitizeSpecialChars), "sanitize special chars")
+        requireWrite(viewModel.setPostHideDelayMs(exportData.postHideDelayMs), "post hide delay")
+        requireWrite(viewModel.setTypingDelayMs(exportData.typingDelayMs), "typing delay")
+        requireWrite(viewModel.setCustomContext(exportData.customContext), "custom context")
         val wasTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
 
         val existingCredentials = viewModel.peekCredentials()
         val existingCredentialIds = existingCredentials.map { it.id }.toSet()
         val newCredentials = exportData.credentials.filter { it.id !in existingCredentialIds }
         if (newCredentials.isNotEmpty()) {
-            viewModel.setCredentials(existingCredentials + newCredentials)
+            requireWrite(viewModel.setCredentials(existingCredentials + newCredentials), "credentials")
         }
         val importedCredentialIds = viewModel.peekCredentials().map { it.id }.toSet()
         val credentialsAdded = importedCredentialIds.count { it !in existingCredentialIds }
@@ -124,34 +127,40 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         val newVoiceProviders = exportData.voiceModelProviders.filter { it.id !in existingVoiceIds }
         val normalizedVoiceProviders = (existingVoiceProviders + newVoiceProviders).normalizedCredentialRefs(importedCredentialIds)
         if (normalizedVoiceProviders != existingVoiceProviders) {
-            viewModel.setVoiceModelProviders(normalizedVoiceProviders)
+            requireWrite(viewModel.setVoiceModelProviders(normalizedVoiceProviders), "voice model providers")
         }
         val importedVoiceIds = viewModel.peekVoiceModelProviders()
             .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
             .map { it.id }
             .toSet()
         val voiceProvidersAdded = importedVoiceIds.count { it !in existingCustomVoiceIds }
-        viewModel.setSelectedVoiceModelProviderId(viewModel.peekSelectedVoiceModelProviderId())
+        requireWrite(
+            viewModel.setSelectedVoiceModelProviderId(viewModel.peekSelectedVoiceModelProviderId()),
+            "selected voice model provider",
+        )
 
         val existingTextProviders = viewModel.peekTextModelProviders()
         val existingTextIds = existingTextProviders.map { it.id }.toSet()
         val newTextProviders = exportData.textModelProviders.filter { it.id !in existingTextIds }
         val normalizedTextProviders = (existingTextProviders + newTextProviders).normalizedCredentialRefs(importedCredentialIds)
         if (normalizedTextProviders != existingTextProviders) {
-            viewModel.setTextModelProviders(normalizedTextProviders)
+            requireWrite(viewModel.setTextModelProviders(normalizedTextProviders), "text model providers")
         }
         val importedTextIds = viewModel.peekTextModelProviders().map { it.id }.toSet()
         val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
-        viewModel.setSelectedTextModelProviderId(viewModel.peekSelectedTextModelProviderId())
+        requireWrite(
+            viewModel.setSelectedTextModelProviderId(viewModel.peekSelectedTextModelProviderId()),
+            "selected text model provider",
+        )
         if (wasTextProcessingEnabled && viewModel.peekTextModelProviders().isNotEmpty()) {
-            viewModel.setTextProcessingEnabled(true)
+            requireWrite(viewModel.setTextProcessingEnabled(true), "text processing enabled")
         }
 
         val existingVocabulary = viewModel.peekCustomVocabulary()
         val existingVocabSet = existingVocabulary.toSet()
         val newVocabWords = exportData.customVocabulary.filter { it !in existingVocabSet }
         if (newVocabWords.isNotEmpty()) {
-            viewModel.setCustomVocabulary(existingVocabulary + newVocabWords)
+            requireWrite(viewModel.setCustomVocabulary(existingVocabulary + newVocabWords), "custom vocabulary")
         }
         val importedVocabulary = viewModel.peekCustomVocabulary()
         val vocabularyWordsAdded = importedVocabulary.count { it !in existingVocabSet }
@@ -203,6 +212,12 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
                 provider
             }
         }
+
+    private fun requireWrite(wrote: Boolean, operation: String) {
+        if (!wrote) {
+            throw IllegalStateException("Failed to save $operation during import")
+        }
+    }
 
     companion object {
         const val EXPORT_FILENAME = "$APPLICATION_SHORT-preferences.json"

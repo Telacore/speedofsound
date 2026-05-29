@@ -114,6 +114,55 @@ class ImportExportManagerTest {
     }
 
     @Test
+    fun `import aborts when credential write fails`() {
+        val store = MapSettingsStore(
+            failingStringKeys = setOf(com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS)
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(
+            Json.encodeToString(
+                SettingsExport(
+                    version = 6,
+                    credentials = listOf(
+                        CredentialSetting(
+                            id = "cred-1",
+                            type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY,
+                            name = "Primary",
+                            value = "secret",
+                        )
+                    ),
+                    voiceModelProviders = listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-1",
+                            name = "Voice",
+                            provider = com.zugaldia.speedofsound.core.plugins.asr.AsrProvider.SHERPA_WHISPER,
+                            modelId = "model-1",
+                            credentialId = "cred-1",
+                        )
+                    ),
+                )
+            )
+        )
+
+        val exception = assertFailsWith<IllegalStateException> {
+            manager.importSettings().getOrThrow()
+        }
+
+        assertTrue(exception.message?.contains("Failed to save credentials during import") == true)
+        assertEquals(0, store.writeCount)
+        assertEquals(null, store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS))
+        assertEquals(null, store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS))
+    }
+
+    @Test
     fun `import filters alarm scheduler history to imported alarms`() {
         val settingsClient = SettingsClient(MapSettingsStore())
         val viewModel = PreferencesViewModel(
@@ -796,6 +845,7 @@ class ImportExportManagerTest {
 
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
+        private val failingStringKeys: Set<String> = emptySet(),
     ) : SettingsStore {
         private val values = initialValues
         var writeCount: Int = 0
@@ -805,6 +855,9 @@ class ImportExportManagerTest {
         override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
 
         override fun setString(key: String, value: String): Boolean {
+            if (key in failingStringKeys) {
+                return false
+            }
             values[key] = value
             writeCount += 1
             return true
@@ -838,5 +891,7 @@ class ImportExportManagerTest {
             writeCount += 1
             return true
         }
+
+        fun rawValue(key: String): String? = values[key]
     }
 }
