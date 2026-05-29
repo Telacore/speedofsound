@@ -27,7 +27,7 @@ class AlarmSchedulerService(
     private val settingsClient: SettingsClient,
     private val portalsClient: PortalsClient,
     private val clock: Clock = Clock.systemDefaultZone(),
-    private val checkIntervalSeconds: Long = 15,
+    private val initialLookbackSeconds: Long = ALARM_TRIGGER_GRACE_MINUTES * 60,
 ) : AutoCloseable {
     private val logger = LoggerFactory.getLogger(AlarmSchedulerService::class.java)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -131,7 +131,7 @@ class AlarmSchedulerService(
     internal fun checkAlarms() {
         val now = LocalDateTime.now(clock)
         val previousCheck = synchronized(stateLock) {
-            resolveAlarmCheckWindowStart(lastCheckAt, now, checkIntervalSeconds)
+            resolveAlarmCheckWindowStart(lastCheckAt, now, initialLookbackSeconds)
         }
         val dueAlarmEvents = synchronized(stateLock) {
             activeAlarms.flatMap { alarm ->

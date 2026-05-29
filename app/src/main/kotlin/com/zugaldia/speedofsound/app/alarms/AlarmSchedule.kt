@@ -14,7 +14,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Locale
 
-private const val ALARM_TRIGGER_GRACE_MINUTES = 5L
+internal const val ALARM_TRIGGER_GRACE_MINUTES = 5L
 
 fun formatAlarmTime(alarm: AlarmSetting): String =
     String.format(Locale.ROOT, "%02d:%02d", alarm.hour, alarm.minute)

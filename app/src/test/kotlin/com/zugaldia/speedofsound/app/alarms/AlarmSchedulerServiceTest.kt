@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.app.alarms
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_SCHEDULER_STATE
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
@@ -38,7 +39,6 @@ class AlarmSchedulerServiceTest {
                 Result.failure<DesktopPortal>(IllegalStateException("no portal"))
             }),
             clock = clock,
-            checkIntervalSeconds = 60,
         )
 
         service.reloadAlarms()
@@ -96,7 +96,6 @@ class AlarmSchedulerServiceTest {
                 Result.failure<DesktopPortal>(IllegalStateException("no portal"))
             }),
             clock = clock,
-            checkIntervalSeconds = 60,
         )
 
         service.reloadAlarms()
@@ -141,7 +140,6 @@ class AlarmSchedulerServiceTest {
                 Result.failure<DesktopPortal>(IllegalStateException("no portal"))
             }),
             clock = clock,
-            checkIntervalSeconds = 60,
         )
 
         service.reloadAlarms()
@@ -176,7 +174,6 @@ class AlarmSchedulerServiceTest {
                 Result.failure<DesktopPortal>(IllegalStateException("no portal"))
             }),
             clock = clock,
-            checkIntervalSeconds = 60,
         )
 
         service.reloadAlarms()
@@ -194,7 +191,7 @@ class AlarmSchedulerServiceTest {
         val clock = Clock.fixed(Instant.parse("2026-05-29T09:00:00Z"), ZoneOffset.UTC)
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
-                com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS to "{bad",
+                KEY_ALARMS to "{bad",
                 com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_SCHEDULER_STATE to "{bad",
             )
         )
@@ -205,7 +202,6 @@ class AlarmSchedulerServiceTest {
                 Result.failure<DesktopPortal>(IllegalStateException("no portal"))
             }),
             clock = clock,
-            checkIntervalSeconds = 60,
         )
 
         service.reloadAlarms()
@@ -233,7 +229,6 @@ class AlarmSchedulerServiceTest {
                 Result.failure<DesktopPortal>(IllegalStateException("no portal"))
             }),
             clock = clock,
-            checkIntervalSeconds = 60,
         )
 
         service.reloadAlarms()
@@ -277,7 +272,6 @@ class AlarmSchedulerServiceTest {
                 Result.failure<DesktopPortal>(IllegalStateException("no portal"))
             }),
             clock = clock,
-            checkIntervalSeconds = 60,
         )
 
         service.reloadAlarms()
@@ -310,6 +304,37 @@ class AlarmSchedulerServiceTest {
             Json.decodeFromString<AlarmSchedulerState>(
                 store.getString(KEY_ALARM_SCHEDULER_STATE, "")
             )
+        )
+    }
+
+    @Test
+    fun `startup catch up uses the grace window when no last check exists`() {
+        val clock = Clock.fixed(Instant.parse("2026-05-29T09:05:00Z"), ZoneOffset.UTC)
+        val store = MapSettingsStore()
+        val settingsClient = SettingsClient(store)
+        settingsClient.setAlarms(
+            listOf(
+                AlarmSetting(id = "alarm-1", hour = 8, minute = 59),
+            )
+        )
+        val service = AlarmSchedulerService(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+            clock = clock,
+        )
+
+        service.reloadAlarms()
+        service.reloadSchedulerState()
+        service.checkAlarms()
+
+        assertEquals(
+            AlarmSchedulerState(
+                lastCheckAt = "2026-05-29T09:05:00",
+                lastTriggeredDates = mapOf("alarm-1" to "2026-05-29"),
+            ),
+            service.snapshotSchedulerState()
         )
     }
 
