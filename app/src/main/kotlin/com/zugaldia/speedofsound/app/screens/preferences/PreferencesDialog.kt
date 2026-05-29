@@ -58,7 +58,15 @@ class PreferencesDialog(settingsClient: SettingsClient, portalsClient: PortalsCl
         textModelsPage = TextModelsPage(viewModel)
         personalizationPage = PersonalizationPage(viewModel)
         advancedPage = AdvancedPage(viewModel)
-        importExportPage = ImportExportPage(viewModel) { refreshAllPages() }
+        importExportPage = ImportExportPage(viewModel) {
+            logger.info("Refreshing all preferences pages after import")
+            generalPage.refresh()
+            alarmsPage.refresh()
+            cloudCredentialsPage.refresh()
+            voiceModelsPage.refreshProviders()
+            textModelsPage.refreshProviders()
+            personalizationPage.refresh()
+        }
 
         stack = Stack().apply {
             hexpand = true
@@ -119,13 +127,4 @@ class PreferencesDialog(settingsClient: SettingsClient, portalsClient: PortalsCl
         }
     }
 
-    private fun refreshAllPages() {
-        logger.info("Refreshing all preferences pages after import")
-        generalPage.refresh()
-        alarmsPage.refresh()
-        cloudCredentialsPage.refresh()
-        voiceModelsPage.refreshProviders()
-        textModelsPage.refreshProviders()
-        personalizationPage.refresh()
-    }
 }
