@@ -170,12 +170,12 @@ class LlmProviderManager(
      * Gets the name of the currently selected LLM provider.
      */
     fun peekCurrentProviderName(): String {
+        if (!settingsClient.peekTextProcessingEnabled()) {
+            return ""
+        }
         val activeProviderId = registry.getActive(AppPluginCategory.LLM)?.id
         if (activeProviderId != null) {
             return LlmProvider.entries.firstOrNull { pluginIdForProvider(it) == activeProviderId }?.displayName ?: ""
-        }
-        if (!settingsClient.peekTextProcessingEnabled()) {
-            return ""
         }
         val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
         val providers = settingsClient.peekTextModelProviders()
