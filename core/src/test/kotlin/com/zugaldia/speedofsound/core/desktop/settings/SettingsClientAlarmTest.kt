@@ -369,6 +369,10 @@ class SettingsClientAlarmTest {
         val client = SettingsClient(store)
 
         assertEquals(emptyMap(), client.loadAlarmLastTriggeredDates())
+        assertEquals(
+            DEFAULT_ALARM_SCHEDULER_STATE,
+            store.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
+        )
     }
 
     @Test
@@ -411,6 +415,10 @@ class SettingsClientAlarmTest {
         val client = SettingsClient(store)
 
         assertEquals(null, client.loadAlarmLastCheckAt())
+        assertEquals(
+            DEFAULT_ALARM_SCHEDULER_STATE,
+            store.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
+        )
     }
 
     @Test
