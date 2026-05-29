@@ -149,6 +149,7 @@ class SettingsClientReadHealingTest {
 
         assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, client.peekSelectedVoiceModelProviderIdExact())
         assertEquals("voice-a", client.peekSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, client.loadSelectedVoiceModelProviderId())
         assertEquals(0, store.writeCount)
     }
 

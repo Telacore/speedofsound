@@ -146,12 +146,17 @@ class SettingsClient(val settingsStore: SettingsStore) {
         loadTypingDelayMs()
     }
 
-    private fun loadSelectedVoiceModelProviderId(availableProviders: List<SelectableProviderSetting>): String =
-        readSelectedProviderId(
+    private fun loadSelectedVoiceModelProviderId(availableProviders: List<SelectableProviderSetting>): String {
+        val exactSelectedProviderId = peekSelectedVoiceModelProviderIdExact()
+        if (shouldPreserveExactWhisperSelection(exactSelectedProviderId, availableProviders)) {
+            return exactSelectedProviderId
+        }
+        return readSelectedProviderId(
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
             DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
             availableProviders
         )
+    }
 
     private fun loadSelectedTextModelProviderId(availableProviders: List<SelectableProviderSetting>): String =
         readSelectedProviderId(
@@ -734,11 +739,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun loadSelectedVoiceModelProviderId(): String =
-        readSelectedProviderId(
-            key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            availableProviders = loadVoiceModelProviders(),
-        )
+        loadSelectedVoiceModelProviderId(loadVoiceModelProviders())
 
     fun peekSelectedVoiceModelProviderId(): String =
         peekSelectedProviderId(
@@ -923,6 +924,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
         val selectionSaved = normalizeSelectedTextModelProviderIdForCurrentProviders()
         return selectionSaved
     }
+
+    private fun shouldPreserveExactWhisperSelection(
+        selectedProviderId: String,
+        availableProviders: List<SelectableProviderSetting>,
+    ): Boolean =
+        selectedProviderId.trim() == DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID &&
+            availableProviders.none { it.id == DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID }
 
     /*
      * Personalization page
@@ -1226,8 +1234,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return voiceSaved && textSaved
     }
 
-    private fun normalizeSelectedVoiceModelProviderIdForCurrentProviders(): Boolean =
-        setSelectedVoiceModelProviderId(peekSelectedVoiceModelProviderId())
+    private fun normalizeSelectedVoiceModelProviderIdForCurrentProviders(): Boolean {
+        val exactSelectedProviderId = peekSelectedVoiceModelProviderIdExact()
+        val availableProviders = peekVoiceModelProviders()
+        return if (shouldPreserveExactWhisperSelection(exactSelectedProviderId, availableProviders)) {
+            setSelectedVoiceModelProviderIdExact(exactSelectedProviderId)
+        } else {
+            setSelectedVoiceModelProviderId(peekSelectedVoiceModelProviderId())
+        }
+    }
 
     private fun normalizeSelectedTextModelProviderIdForCurrentProviders(): Boolean =
         setSelectedTextModelProviderId(peekSelectedTextModelProviderId())

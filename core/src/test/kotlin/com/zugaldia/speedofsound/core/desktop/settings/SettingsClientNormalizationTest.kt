@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.core.desktop.settings
 
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
+import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -178,6 +179,35 @@ class SettingsClientNormalizationTest {
         assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId())
         assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId())
         assertEquals(4, store.writeCount)
+    }
+
+    @Test
+    fun `setting voice providers preserves exact whisper fallback selection when hidden`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.setVoiceModelProviders(
+            listOf(
+                VoiceModelProviderSetting(
+                    id = "voice-a",
+                    name = "Alpha",
+                    provider = AsrProvider.OPENAI,
+                    modelId = "model-a",
+                ),
+            )
+        )
+
+        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, client.peekSelectedVoiceModelProviderIdExact())
+        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, client.loadSelectedVoiceModelProviderId())
+        assertEquals(
+            DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
+        )
+        assertEquals(1, store.writeCount)
     }
 
     @Test

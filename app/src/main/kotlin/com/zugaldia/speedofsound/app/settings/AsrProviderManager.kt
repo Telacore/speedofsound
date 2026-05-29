@@ -58,7 +58,7 @@ class AsrProviderManager(
      */
     private fun applySelectedProviderConfig(setActive: Boolean) {
         val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderIdExact()
-        val selectedProvider = selectedVoiceProvider()
+        val selectedProvider = selectedVoiceProvider(selectedProviderId)
         val currentActiveId = registry.getActive(AppPluginCategory.ASR)?.id
         val selectedProviderMissing = selectedProvider == null
         val pluginId = if (selectedProvider != null) {
@@ -136,7 +136,7 @@ class AsrProviderManager(
      * Gets the name of the currently selected ASR provider.
      */
     fun peekCurrentProviderName(): String {
-        val selectedProvider = selectedVoiceProvider()
+        val selectedProvider = selectedVoiceProvider(settingsClient.peekSelectedVoiceModelProviderIdExact())
         if (selectedProvider != null) {
             return selectedProvider.name
         }
@@ -144,8 +144,8 @@ class AsrProviderManager(
         return AsrProvider.entries.firstOrNull { pluginIdForProvider(it) == activeProviderId }?.displayName ?: ""
     }
 
-    private fun selectedVoiceProvider(): VoiceModelProviderSetting? =
-        settingsClient.peekVoiceModelProviders().find { it.id == settingsClient.peekSelectedVoiceModelProviderIdExact() }
+    private fun selectedVoiceProvider(selectedProviderId: String): VoiceModelProviderSetting? =
+        settingsClient.peekVoiceModelProviders().find { it.id == selectedProviderId }
 
     private fun applyAsrOptions(pluginId: String, options: AsrPluginOptions) {
         val plugin = registry.getPluginById(AppPluginCategory.ASR, pluginId) ?: return
