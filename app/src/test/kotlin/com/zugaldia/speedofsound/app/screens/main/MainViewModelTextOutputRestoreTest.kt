@@ -63,6 +63,45 @@ class MainViewModelTextOutputRestoreTest {
     }
 
     @Test
+    fun `onTriggerAction stops when restore fallback cannot activate clipboard`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_TEXT_OUTPUT_METHOD to TEXT_OUTPUT_METHOD_PORTAL,
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val portalsClient = PortalsClient(
+            portalConnector = { Result.success(unsafeAllocateDesktopPortal()) },
+            portalCloser = { },
+        )
+        val viewModel = MainViewModel(settingsClient, portalsClient)
+        viewModel.state.updateStage(AppStage.IDLE)
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val activeDummy = RecordingTextOutputPlugin("TEXT_OUTPUT_DUMMY")
+        val failingClipboard = ThrowingEnableTextOutputPlugin(ClipboardTextOutput.ID)
+        val failingPortal = ThrowingEnableTextOutputPlugin(PortalTextOutput.ID)
+
+        registry.register(AppPluginCategory.TEXT_OUTPUT, activeDummy)
+        registry.register(AppPluginCategory.TEXT_OUTPUT, failingClipboard)
+        registry.register(AppPluginCategory.TEXT_OUTPUT, failingPortal)
+        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, activeDummy.id)
+
+        viewModel.onTriggerAction()
+
+        assertEquals(3, activeDummy.enableCount)
+        assertEquals(2, activeDummy.disableCount)
+        assertEquals(1, failingPortal.enableCount)
+        assertEquals(1, failingPortal.disableCount)
+        assertEquals(1, failingClipboard.enableCount)
+        assertEquals(1, failingClipboard.disableCount)
+        assertSame(activeDummy, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+        assertEquals(TEXT_OUTPUT_METHOD_PORTAL, settingsClient.loadTextOutputMethod())
+        assertEquals(null, getPrivateField<Any?>(viewModel, "currentPipelineJob"))
+        assertEquals(AppStage.IDLE, viewModel.state.currentStage())
+    }
+
+    @Test
     fun `activateSelectedTextOutput tolerates failing text output switch`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(

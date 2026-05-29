@@ -214,19 +214,18 @@ class MainViewModel(
                 portalsClient.isPortalAvailable,
             )
         ) {
-            var restoreFallbackUsed = false
             if (!restoreSelectedTextOutput()) {
                 switchToClipboardFallback(
                     reason = "Failed to restore selected text output.",
                     policy = ClipboardFallbackPolicy.RUNTIME_ONLY,
                 )
-                restoreFallbackUsed = true
             }
             updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
-            if (restoreFallbackUsed) {
-                toggleListening()
+            if ((registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? TextOutputPlugin<*>)?.id != ClipboardTextOutput.ID) {
                 return
             }
+            toggleListening()
+            return
         }
         if (shouldAttemptPortalReconnect(settingsClient.peekTextOutputMethod())) {
             portalsSessionManager.attemptReconnect(viewModelScope)
