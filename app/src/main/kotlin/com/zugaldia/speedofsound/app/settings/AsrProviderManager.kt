@@ -72,7 +72,7 @@ class AsrProviderManager(
             SherpaWhisperAsr.ID
         }
 
-        val shouldActivate = setActive || selectedProviderMissing || currentActiveId != pluginId
+        val shouldActivate = setActive || currentActiveId != pluginId
         if (shouldActivate) {
             runCatching { registry.setActiveById(AppPluginCategory.ASR, pluginId) }
                 .onFailure { error ->

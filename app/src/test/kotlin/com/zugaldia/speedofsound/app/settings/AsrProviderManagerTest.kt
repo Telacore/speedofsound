@@ -88,6 +88,41 @@ class AsrProviderManagerTest {
     }
 
     @Test
+    fun `refreshProviderConfiguration keeps whisper active without reactivating it when selection is missing`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "custom-provider",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val activePlugin = RecordingPlugin(id = SherpaWhisperAsr.ID)
+
+        registry.register(AppPluginCategory.ASR, activePlugin)
+        registry.setActiveById(AppPluginCategory.ASR, activePlugin.id)
+
+        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
+
+        assertEquals(
+            DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
+            settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID),
+        )
+        assertSame(activePlugin, registry.getActive(AppPluginCategory.ASR))
+        assertEquals(0, activePlugin.enableCount)
+        assertEquals(0, activePlugin.disableCount)
+    }
+
+    @Test
     fun `activateSelectedProvider uses the first visible provider when selection is stale`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
