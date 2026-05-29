@@ -222,53 +222,67 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
-    fun getAlarmLastTriggeredDates(): Map<String, LocalDate> {
-        val json = settingsStore.getString(KEY_ALARM_LAST_TRIGGERED_DATES, DEFAULT_ALARM_LAST_TRIGGERED_DATES)
-        return if (json.isBlank() || json == DEFAULT_ALARM_LAST_TRIGGERED_DATES) {
-            emptyMap()
-        } else {
-            runCatching {
-                Json.decodeFromString<Map<String, String>>(json).mapNotNull { (alarmId, dateValue) ->
-                    runCatching { LocalDate.parse(dateValue) }
-                        .getOrNull()
-                        ?.let { parsedDate -> alarmId to parsedDate }
-                }.toMap()
-            }.getOrElse { error ->
-                logger.error("Failed to decode alarm trigger dates from JSON", error)
-                emptyMap()
+    fun getAlarmSchedulerState(): AlarmSchedulerState {
+        readAlarmSchedulerState()?.let { return it }
+        return loadLegacyAlarmSchedulerState()
+    }
+
+    fun setAlarmSchedulerState(value: AlarmSchedulerState): Boolean {
+        val normalized = value.copy(
+            lastCheckAt = value.lastCheckAt?.takeIf { it.isNotBlank() },
+            lastTriggeredDates = value.lastTriggeredDates
+                .mapKeys { (alarmId, _) -> alarmId.trim() }
+                .mapValues { (_, dateValue) -> dateValue.trim() }
+                .filterKeys { it.isNotBlank() }
+                .filterValues { it.isNotBlank() }
+        )
+        val json = Json.encodeToString(normalized)
+        return settingsStore.setString(KEY_ALARM_SCHEDULER_STATE, json).also { success ->
+            if (success) {
+                _settingsChanged.tryEmit(KEY_ALARM_SCHEDULER_STATE)
+                persistLegacyAlarmSchedulerState(normalized)
             }
         }
     }
 
-    fun setAlarmLastTriggeredDates(value: Map<String, LocalDate>): Boolean {
-        val json = Json.encodeToString(
-            value.mapValues { (_, date) -> date.toString() }
-        )
-        return settingsStore.setString(KEY_ALARM_LAST_TRIGGERED_DATES, json)
-    }
-
-    fun setAlarmLastTriggeredDate(alarmId: String, date: LocalDate): Boolean {
-        val updated = getAlarmLastTriggeredDates().toMutableMap().apply {
-            this[alarmId] = date
-        }
-        return setAlarmLastTriggeredDates(updated)
-    }
+    fun getAlarmLastTriggeredDates(): Map<String, LocalDate> =
+        getAlarmSchedulerState().lastTriggeredDates.mapNotNull { (alarmId, dateValue) ->
+            runCatching { LocalDate.parse(dateValue) }
+                .getOrNull()
+                ?.let { parsedDate -> alarmId to parsedDate }
+        }.toMap()
 
     fun getAlarmLastCheckAt(): LocalDateTime? {
-        val value = settingsStore.getString(KEY_ALARM_LAST_CHECK_AT, DEFAULT_ALARM_LAST_CHECK_AT)
-        return if (value.isBlank()) {
-            null
-        } else {
-            runCatching { LocalDateTime.parse(value) }
-                .getOrElse { error ->
-                    logger.error("Failed to decode alarm last check timestamp", error)
-                    null
-                }
-        }
+        val value = getAlarmSchedulerState().lastCheckAt ?: return null
+        return runCatching { LocalDateTime.parse(value) }
+            .getOrElse { error ->
+                logger.error("Failed to decode alarm last check timestamp", error)
+                null
+            }
     }
 
+    fun setAlarmLastTriggeredDates(value: Map<String, LocalDate>): Boolean =
+        setAlarmSchedulerState(
+            getAlarmSchedulerState().copy(
+                lastTriggeredDates = value.mapValues { (_, date) -> date.toString() }
+            )
+        )
+
+    fun setAlarmLastTriggeredDate(alarmId: String, date: LocalDate): Boolean =
+        getAlarmSchedulerState().let { currentState ->
+            setAlarmSchedulerState(
+                currentState.copy(
+                    lastTriggeredDates = currentState.lastTriggeredDates.toMutableMap().apply {
+                        this[alarmId] = date.toString()
+                    }
+                )
+            )
+        }
+
     fun setAlarmLastCheckAt(value: LocalDateTime): Boolean =
-        settingsStore.setString(KEY_ALARM_LAST_CHECK_AT, value.toString())
+        setAlarmSchedulerState(
+            getAlarmSchedulerState().copy(lastCheckAt = value.toString())
+        )
 
     fun getMaxAlarms(): Int =
         settingsStore.getInt(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS)
@@ -325,6 +339,73 @@ class SettingsClient(val settingsStore: SettingsStore) {
         val json = Json.encodeToString(normalized)
         settingsStore.setString(KEY_ALARMS, json).also { success ->
             if (success) _settingsChanged.tryEmit(KEY_ALARMS)
+        }
+    }
+
+    private fun readAlarmSchedulerState(): AlarmSchedulerState? {
+        val json = settingsStore.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
+        if (json.isBlank() || json == DEFAULT_ALARM_SCHEDULER_STATE) {
+            return null
+        }
+
+        return runCatching {
+            Json.decodeFromString<AlarmSchedulerState>(json)
+        }.getOrElse { error ->
+            logger.error("Failed to decode alarm scheduler state from JSON", error)
+            null
+        }
+    }
+
+    private fun loadLegacyAlarmSchedulerState(): AlarmSchedulerState {
+        val legacyTriggeredDates = readLegacyAlarmLastTriggeredDates().mapValues { (_, date) -> date.toString() }
+        val legacyCheckAt = readLegacyAlarmLastCheckAt()?.toString()
+        return AlarmSchedulerState(
+            lastCheckAt = legacyCheckAt,
+            lastTriggeredDates = legacyTriggeredDates,
+        )
+    }
+
+    private fun readLegacyAlarmLastTriggeredDates(): Map<String, LocalDate> {
+        val json = settingsStore.getString(KEY_ALARM_LAST_TRIGGERED_DATES, DEFAULT_ALARM_LAST_TRIGGERED_DATES)
+        return if (json.isBlank() || json == DEFAULT_ALARM_LAST_TRIGGERED_DATES) {
+            emptyMap()
+        } else {
+            runCatching {
+                Json.decodeFromString<Map<String, String>>(json).mapNotNull { (alarmId, dateValue) ->
+                    runCatching { LocalDate.parse(dateValue) }
+                        .getOrNull()
+                        ?.let { parsedDate -> alarmId to parsedDate }
+                }.toMap()
+            }.getOrElse { error ->
+                logger.error("Failed to decode alarm trigger dates from JSON", error)
+                emptyMap()
+            }
+        }
+    }
+
+    private fun readLegacyAlarmLastCheckAt(): LocalDateTime? {
+        val value = settingsStore.getString(KEY_ALARM_LAST_CHECK_AT, DEFAULT_ALARM_LAST_CHECK_AT)
+        return if (value.isBlank()) {
+            null
+        } else {
+            runCatching { LocalDateTime.parse(value) }
+                .getOrElse { error ->
+                    logger.error("Failed to decode alarm last check timestamp", error)
+                    null
+                }
+        }
+    }
+
+    private fun persistLegacyAlarmSchedulerState(state: AlarmSchedulerState) {
+        val triggerDatesJson = Json.encodeToString(state.lastTriggeredDates)
+        val triggeredDatesSaved = settingsStore.setString(KEY_ALARM_LAST_TRIGGERED_DATES, triggerDatesJson)
+        if (!triggeredDatesSaved) {
+            logger.warn("Failed to persist legacy alarm trigger dates.")
+        }
+
+        val checkAtSaved = settingsStore.setString(KEY_ALARM_LAST_CHECK_AT, state.lastCheckAt ?: DEFAULT_ALARM_LAST_CHECK_AT)
+        if (!checkAtSaved) {
+            logger.warn("Failed to persist legacy alarm last check timestamp.")
         }
     }
 

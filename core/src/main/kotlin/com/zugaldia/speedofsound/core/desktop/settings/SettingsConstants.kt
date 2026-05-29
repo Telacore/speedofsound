@@ -42,6 +42,8 @@ const val DEFAULT_APPEND_SPACE = false
 
 const val KEY_ALARMS = "alarms"
 const val DEFAULT_ALARMS = "[]"
+const val KEY_ALARM_SCHEDULER_STATE = "alarm-scheduler-state"
+const val DEFAULT_ALARM_SCHEDULER_STATE = "{}"
 const val KEY_ALARM_LAST_TRIGGERED_DATES = "alarm-last-triggered-dates"
 const val DEFAULT_ALARM_LAST_TRIGGERED_DATES = "{}"
 const val KEY_ALARM_LAST_CHECK_AT = "alarm-last-check-at"

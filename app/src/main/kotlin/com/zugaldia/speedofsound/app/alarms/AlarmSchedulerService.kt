@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.app.alarms
 
 import com.zugaldia.speedofsound.core.APPLICATION_NAME
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
+import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
@@ -34,18 +35,20 @@ class AlarmSchedulerService(
     private var activeAlarms: List<AlarmSetting> = emptyList()
     private val lastTriggeredDates = mutableMapOf<String, LocalDate>()
     private var lastCheckAt: LocalDateTime? = null
-    private var triggerHistoryLoaded = false
+    private var schedulerStateReady = false
 
     fun connect() {
         if (schedulerJob != null) {
             return
         }
 
+        schedulerStateReady = false
         reloadAlarms()
         reloadTriggerHistory()
-        triggerHistoryLoaded = true
         val now = LocalDateTime.now(clock)
         lastCheckAt = settingsClient.getAlarmLastCheckAt()?.takeIf { !it.isAfter(now) }
+        schedulerStateReady = true
+        persistSchedulerState()
         settingsJob = scope.launch {
             settingsClient.settingsChanged.collect { key ->
                 if (key == KEY_ALARMS) {
@@ -73,8 +76,8 @@ class AlarmSchedulerService(
             activeAlarms = alarms
             lastTriggeredDates.keys.retainAll(activeIds)
         }
-        if (triggerHistoryLoaded && !settingsClient.setAlarmLastTriggeredDates(lastTriggeredDates.toMap())) {
-            logger.warn("Failed to persist trimmed alarm trigger history.")
+        if (schedulerStateReady) {
+            persistSchedulerState()
         }
         logger.info("Loaded {} alarm(s).", alarms.size)
     }
@@ -84,9 +87,6 @@ class AlarmSchedulerService(
             lastTriggeredDates.clear()
             lastTriggeredDates.putAll(settingsClient.getAlarmLastTriggeredDates())
             lastTriggeredDates.keys.retainAll(activeAlarms.map { it.id }.toSet())
-        }
-        if (!settingsClient.setAlarmLastTriggeredDates(lastTriggeredDates.toMap())) {
-            logger.warn("Failed to persist loaded alarm trigger history.")
         }
     }
 
@@ -117,15 +117,21 @@ class AlarmSchedulerService(
             fireAlarm(alarm)
         }
 
-        if (dueAlarmEvents.isNotEmpty() && !settingsClient.setAlarmLastTriggeredDates(lastTriggeredDates.toMap())) {
-            logger.warn("Failed to persist alarm trigger history after firing {} alarm(s).", dueAlarmEvents.size)
-        }
-
         synchronized(stateLock) {
             lastCheckAt = now
         }
-        if (!settingsClient.setAlarmLastCheckAt(now)) {
-            logger.warn("Failed to persist last-check timestamp for alarm scheduler.")
+        persistSchedulerState()
+    }
+
+    private fun persistSchedulerState() {
+        val snapshot = synchronized(stateLock) {
+            AlarmSchedulerState(
+                lastCheckAt = lastCheckAt?.toString(),
+                lastTriggeredDates = lastTriggeredDates.mapValues { (_, date) -> date.toString() },
+            )
+        }
+        if (!settingsClient.setAlarmSchedulerState(snapshot)) {
+            logger.warn("Failed to persist alarm scheduler state.")
         }
     }
 

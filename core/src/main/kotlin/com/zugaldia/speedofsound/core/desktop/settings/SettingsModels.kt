@@ -165,6 +165,15 @@ fun List<AlarmRepeatDay>.normalizedRepeatDays(): List<AlarmRepeatDay> =
     }
 
 /**
+ * Persisted runtime state for the alarm scheduler.
+ */
+@Serializable
+data class AlarmSchedulerState(
+    val lastCheckAt: String? = null,
+    val lastTriggeredDates: Map<String, String> = emptyMap(),
+)
+
+/**
  * A serializable snapshot of all exportable user preferences.
  * Instance-specific settings (portal token, selected provider IDs, text processing toggle) are excluded.
  *
