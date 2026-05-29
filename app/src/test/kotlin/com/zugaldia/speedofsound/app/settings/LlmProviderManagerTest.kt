@@ -46,6 +46,32 @@ class LlmProviderManagerTest {
     }
 
     @Test
+    fun `refreshProviderConfiguration keeps stale llm selection when disabling text processing fails`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "custom-provider",
+                KEY_TEXT_MODEL_PROVIDERS to "",
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+            ),
+            failOnSetStringKeys = setOf(KEY_TEXT_PROCESSING_ENABLED),
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val activePlugin = RecordingPlugin(id = "LLM_OPENAI")
+
+        registry.register(AppPluginCategory.LLM, activePlugin)
+        registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
+
+        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
+
+        assertEquals("custom-provider", settingsClient.loadSelectedTextModelProviderId())
+        assertEquals(true, settingsClient.loadTextProcessingEnabled())
+        assertEquals(null, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(1, activePlugin.enableCount)
+        assertEquals(1, activePlugin.disableCount)
+    }
+
+    @Test
     fun `activateSelectedProvider uses the first visible provider when selection is stale`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -322,6 +348,7 @@ class LlmProviderManagerTest {
 
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
+        private val failOnSetStringKeys: Set<String> = emptySet(),
     ) : SettingsStore {
         private val values = initialValues
 
@@ -330,6 +357,9 @@ class LlmProviderManagerTest {
         override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
 
         override fun setString(key: String, value: String): Boolean {
+            if (key in failOnSetStringKeys) {
+                return false
+            }
             values[key] = value
             return true
         }

@@ -88,7 +88,7 @@ class AsrProviderManager(
         val activeAsrId = registry.getActive(AppPluginCategory.ASR)?.id
         if (activeAsrId != null) {
             if (selectedProviderMissing && activeAsrId == SherpaWhisperAsr.ID) {
-                settingsClient.setSelectedVoiceModelProviderIdExact(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID)
+                persistWhisperSelection("using whisper fallback after missing ASR provider")
             }
             return
         }
@@ -114,7 +114,7 @@ class AsrProviderManager(
                 )
             }
         if (registry.getActive(AppPluginCategory.ASR)?.id == SherpaWhisperAsr.ID) {
-            settingsClient.setSelectedVoiceModelProviderIdExact(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID)
+            persistWhisperSelection("persisting whisper fallback after ASR activation failure")
         }
     }
 
@@ -148,6 +148,12 @@ class AsrProviderManager(
             is SherpaCanaryAsr -> plugin.updateOptions(options as SherpaCanaryAsrOptions)
             is SherpaParakeetAsr -> plugin.updateOptions(options as SherpaParakeetAsrOptions)
             is SherpaWhisperAsr -> plugin.updateOptions(options as SherpaWhisperAsrOptions)
+        }
+    }
+
+    private fun persistWhisperSelection(reason: String) {
+        if (!settingsClient.setSelectedVoiceModelProviderIdExact(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID)) {
+            logger.warn("Could not persist whisper selection while {}.", reason)
         }
     }
 }

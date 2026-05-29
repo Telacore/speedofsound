@@ -57,8 +57,18 @@ class LlmProviderManager(
                 "Selected LLM provider {} is missing; disabling text processing",
                 selectedProviderId.ifBlank { "<empty>" }
             )
-            if (settingsClient.peekTextProcessingEnabled()) {
-                settingsClient.setTextProcessingEnabled(false)
+            val disableSucceeded = if (settingsClient.peekTextProcessingEnabled()) {
+                if (!settingsClient.setTextProcessingEnabled(false)) {
+                    logger.warn(
+                        "Could not persist text processing disable while removing missing LLM provider {}",
+                        selectedProviderId.ifBlank { "<empty>" },
+                    )
+                    false
+                } else {
+                    true
+                }
+            } else {
+                true
             }
             runCatching { registry.clearActive(AppPluginCategory.LLM) }
                 .onFailure { error ->
@@ -69,8 +79,16 @@ class LlmProviderManager(
                         error,
                     )
                 }
+            if (!disableSucceeded) {
+                return
+            }
             if (selectedProviderId.isNotEmpty()) {
-                settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
+                if (!settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)) {
+                    logger.warn(
+                        "Could not persist default LLM selection while removing missing provider {}",
+                        selectedProviderId,
+                    )
+                }
             }
             return
         }
@@ -120,9 +138,14 @@ class LlmProviderManager(
         )
         if (!settingsClient.setTextProcessingEnabled(false)) {
             logger.warn("Could not persist text processing disable after LLM activation left no active provider")
+            return
         }
         if (selectedProviderId.isNotBlank()) {
-            settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
+            if (!settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)) {
+                logger.warn(
+                    "Could not persist default LLM selection after activation left no active provider",
+                )
+            }
         }
     }
 
