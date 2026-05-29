@@ -8,6 +8,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import java.io.File
 import java.io.FileOutputStream
@@ -77,6 +78,29 @@ class ArchiveExtractorTest {
 
             assertTrue(result.isFailure)
             assertFalse(destinationDir.toPath().resolve("model-link").toFile().exists())
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `extractTarBz2 rejects file-backed destination directories`() {
+        val tempDir = createTempDirectory("sos-archive-dest-file")
+        try {
+            val destinationDir = tempDir.resolve("dest").toFile()
+            destinationDir.writeText("not-a-directory")
+            val archiveFile = tempDir.resolve("archive.tar.bz2").toFile()
+            createTarBz2Archive(
+                archiveFile,
+                mapOf("model/model.onnx" to byteArrayOf(1, 2, 3))
+            )
+
+            val extractor = ArchiveExtractor()
+            val result = extractor.extractTarBz2(archiveFile, destinationDir)
+
+            assertFailsWith<IllegalArgumentException> {
+                result.getOrThrow()
+            }
         } finally {
             tempDir.toFile().deleteRecursively()
         }

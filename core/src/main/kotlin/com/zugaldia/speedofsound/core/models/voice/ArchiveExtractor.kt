@@ -20,7 +20,7 @@ class ArchiveExtractor {
      */
     @Suppress("NestedBlockDepth")
     fun extractTarBz2(sourceFile: File, destinationDir: File): Result<Unit> = runCatching {
-        destinationDir.mkdirs()
+        ensureDestinationDirectory(destinationDir)
         val basePath = destinationDir.toPath().toAbsolutePath().normalize()
         sourceFile.inputStream().use { fileInput ->
             BufferedInputStream(fileInput).use { bufferedInput ->
@@ -47,6 +47,17 @@ class ArchiveExtractor {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private fun ensureDestinationDirectory(destinationDir: File) {
+        when {
+            destinationDir.exists() && !destinationDir.isDirectory -> {
+                throw IllegalArgumentException("Destination path is not a directory: ${destinationDir.absolutePath}")
+            }
+            !destinationDir.exists() && !destinationDir.mkdirs() -> {
+                throw IllegalStateException("Could not create destination directory: ${destinationDir.absolutePath}")
             }
         }
     }
