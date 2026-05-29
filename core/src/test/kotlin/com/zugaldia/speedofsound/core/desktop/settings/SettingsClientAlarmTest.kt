@@ -33,8 +33,8 @@ class SettingsClientAlarmTest {
 
         client.setMaxAlarms(2)
 
-        assertEquals(2, client.getAlarms().size)
-        assertEquals(listOf("alarm-1", "alarm-2"), client.getAlarms().map { it.id })
+        assertEquals(2, client.loadAlarms().size)
+        assertEquals(listOf("alarm-1", "alarm-2"), client.loadAlarms().map { it.id })
     }
 
     @Test
@@ -48,7 +48,7 @@ class SettingsClientAlarmTest {
 
         client.setMaxAlarms(2)
 
-        assertEquals(emptyList(), client.getAlarms())
+        assertEquals(emptyList(), client.loadAlarms())
         assertEquals(DEFAULT_ALARMS, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
     }
 
@@ -66,9 +66,9 @@ class SettingsClientAlarmTest {
 
         client.setAlarms(alarms)
 
-        assertEquals(2, client.getAlarms().size)
-        assertEquals(listOf("alarm-1", "alarm-2"), client.getAlarms().map { it.id })
-        assertEquals(listOf("Early", "Mid"), client.getAlarms().map { it.name })
+        assertEquals(2, client.loadAlarms().size)
+        assertEquals(listOf("alarm-1", "alarm-2"), client.loadAlarms().map { it.id })
+        assertEquals(listOf("Early", "Mid"), client.loadAlarms().map { it.name })
     }
 
     @Test
@@ -83,9 +83,9 @@ class SettingsClientAlarmTest {
             )
         )
 
-        assertEquals(1, client.getAlarms().size)
-        assertEquals(MAX_ALARM_NAME_LENGTH, client.getAlarms().first().name.length)
-        assertEquals(longName.take(MAX_ALARM_NAME_LENGTH), client.getAlarms().first().name)
+        assertEquals(1, client.loadAlarms().size)
+        assertEquals(MAX_ALARM_NAME_LENGTH, client.loadAlarms().first().name.length)
+        assertEquals(longName.take(MAX_ALARM_NAME_LENGTH), client.loadAlarms().first().name)
     }
 
     @Test
@@ -98,8 +98,8 @@ class SettingsClientAlarmTest {
 
         client.setAlarms(listOf(validAlarm, invalidAlarm))
 
-        assertEquals(listOf(validAlarm), client.getAlarms())
-        assertEquals(listOf("Morning"), client.getAlarms().map { it.name })
+        assertEquals(listOf(validAlarm), client.loadAlarms())
+        assertEquals(listOf("Morning"), client.loadAlarms().map { it.name })
     }
 
     @Test
@@ -130,8 +130,8 @@ class SettingsClientAlarmTest {
             )
         )
 
-        val gymAlarm = client.getAlarms().first { it.id == "alarm-1" }
-        val fallbackAlarm = client.getAlarms().first { it.id == "alarm-2" }
+        val gymAlarm = client.loadAlarms().first { it.id == "alarm-1" }
+        val fallbackAlarm = client.loadAlarms().first { it.id == "alarm-2" }
 
         assertEquals(
             listOf(AlarmRepeatDay.MONDAY, AlarmRepeatDay.FRIDAY),
@@ -152,7 +152,7 @@ class SettingsClientAlarmTest {
 
         assertEquals(
             mapOf("alarm-1" to LocalDate.of(2026, 5, 29)),
-            client.getAlarmLastTriggeredDates()
+            client.loadAlarmLastTriggeredDates()
         )
     }
 
@@ -199,7 +199,7 @@ class SettingsClientAlarmTest {
                 "alarm-1" to LocalDate.of(2026, 5, 29),
                 "alarm-2" to LocalDate.of(2026, 5, 30),
             ),
-            client.getAlarmLastTriggeredDates()
+            client.loadAlarmLastTriggeredDates()
         )
     }
 
@@ -226,7 +226,7 @@ class SettingsClientAlarmTest {
                     "alarm-2" to "2026-05-30",
                 ),
             ),
-            client.getAlarmSchedulerState()
+            client.loadAlarmSchedulerState()
         )
         assertEquals(
             AlarmSchedulerState(
@@ -276,7 +276,7 @@ class SettingsClientAlarmTest {
                     "alarm-1" to "2026-05-29",
                 ),
             ),
-            client.getAlarmSchedulerState()
+            client.loadAlarmSchedulerState()
         )
         assertEquals(
             AlarmSchedulerState(
@@ -313,7 +313,7 @@ class SettingsClientAlarmTest {
                     "alarm-1" to "2026-05-29",
                 ),
             ),
-            client.getAlarmSchedulerState()
+            client.loadAlarmSchedulerState()
         )
     }
 
@@ -326,7 +326,7 @@ class SettingsClientAlarmTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(AlarmSchedulerState(), client.getAlarmSchedulerState())
+        assertEquals(AlarmSchedulerState(), client.loadAlarmSchedulerState())
         assertEquals(AlarmSchedulerState(), Json.decodeFromString<AlarmSchedulerState>(store.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)))
     }
 
@@ -368,7 +368,7 @@ class SettingsClientAlarmTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(emptyMap(), client.getAlarmLastTriggeredDates())
+        assertEquals(emptyMap(), client.loadAlarmLastTriggeredDates())
     }
 
     @Test
@@ -379,7 +379,7 @@ class SettingsClientAlarmTest {
 
         client.setAlarmLastCheckAt(timestamp)
 
-        assertEquals(timestamp, client.getAlarmLastCheckAt())
+        assertEquals(timestamp, client.loadAlarmLastCheckAt())
     }
 
     @Test
@@ -410,7 +410,7 @@ class SettingsClientAlarmTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(null, client.getAlarmLastCheckAt())
+        assertEquals(null, client.loadAlarmLastCheckAt())
     }
 
     @Test
@@ -425,7 +425,7 @@ class SettingsClientAlarmTest {
 
         val client = SettingsClient(store)
 
-        assertEquals(listOf(validAlarm), client.getAlarms())
+        assertEquals(listOf(validAlarm), client.loadAlarms())
         assertEquals(Json.encodeToString(listOf(validAlarm)), store.getString(KEY_ALARMS, DEFAULT_ALARMS))
     }
 
@@ -456,7 +456,7 @@ class SettingsClientAlarmTest {
 
         val client = SettingsClient(store)
 
-        assertEquals(emptyList(), client.getAlarms())
+        assertEquals(emptyList(), client.loadAlarms())
         assertEquals(DEFAULT_ALARMS, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
     }
 

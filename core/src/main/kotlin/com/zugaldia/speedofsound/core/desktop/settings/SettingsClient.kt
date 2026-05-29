@@ -192,9 +192,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun loadAlarms(): List<AlarmSetting> = readAlarms(heal = true)
 
-    @Deprecated("Use loadAlarms() for healing reads or peekAlarms() for side-effect free reads")
-    fun getAlarms(): List<AlarmSetting> = loadAlarms()
-
     fun peekAlarms(): List<AlarmSetting> = readAlarms(heal = false)
 
     fun setAlarms(value: List<AlarmSetting>): Boolean {
@@ -217,9 +214,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
         return legacyState
     }
-
-    @Deprecated("Use loadAlarmSchedulerState() for healing reads or peekAlarmSchedulerState() for side-effect free reads")
-    fun getAlarmSchedulerState(): AlarmSchedulerState = loadAlarmSchedulerState()
 
     fun peekAlarmSchedulerState(): AlarmSchedulerState =
         readAlarmSchedulerState() ?: loadLegacyAlarmSchedulerState()
@@ -252,9 +246,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 ?.let { parsedDate -> alarmId to parsedDate }
         }.toMap()
 
-    @Deprecated("Use loadAlarmLastTriggeredDates() for healing reads or peekAlarmLastTriggeredDates() for side-effect free reads")
-    fun getAlarmLastTriggeredDates(): Map<String, LocalDate> = loadAlarmLastTriggeredDates()
-
     fun peekAlarmLastTriggeredDates(): Map<String, LocalDate> =
         peekAlarmSchedulerState().lastTriggeredDates.mapNotNull { (alarmId, dateValue) ->
             runCatching { LocalDate.parse(dateValue) }
@@ -270,9 +261,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 null
             }
     }
-
-    @Deprecated("Use loadAlarmLastCheckAt() for healing reads or peekAlarmLastCheckAt() for side-effect free reads")
-    fun getAlarmLastCheckAt(): LocalDateTime? = loadAlarmLastCheckAt()
 
     fun peekAlarmLastCheckAt(): LocalDateTime? {
         val value = peekAlarmSchedulerState().lastCheckAt ?: return null
