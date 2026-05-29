@@ -141,6 +141,7 @@ class LlmProviderManagerTest {
         assertEquals("text-a", settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID))
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
         assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertEquals(1, inactivePlugin.enableCount)
         assertEquals(1, inactivePlugin.disableCount)

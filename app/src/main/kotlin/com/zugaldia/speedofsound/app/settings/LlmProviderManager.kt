@@ -50,8 +50,10 @@ class LlmProviderManager(
      * Optionally activates the provider if setActive is true.
      */
     private fun applySelectedProviderConfig(setActive: Boolean) {
-        val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
-        val selectedProvider = settingsClient.peekSelectedTextModelProvider()
+        val credentials = settingsClient.peekCredentials()
+        val availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet())
+        val selectedProviderId = settingsClient.peekSelectedTextModelProviderId(availableProviders)
+        val selectedProvider = availableProviders.find { it.id == selectedProviderId }
         if (selectedProvider == null) {
             logger.warn(
                 "Selected LLM provider {} is missing; disabling text processing",
@@ -100,7 +102,6 @@ class LlmProviderManager(
             return
         }
         val pluginId = pluginIdForProvider(selectedProvider.provider)
-        val credentials = settingsClient.peekCredentials()
         val options = settingsClient.resolveTextProviderOptions(selectedProvider, credentials)
         applyLlmOptions(pluginId, options)
 

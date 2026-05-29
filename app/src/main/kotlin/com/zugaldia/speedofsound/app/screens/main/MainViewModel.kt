@@ -363,9 +363,7 @@ class MainViewModel(
         )
         if (textProcessingEnabled) {
             val activeProviderId = registry.getActive(AppPluginCategory.LLM)?.id
-            val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
-            val selectedProvider = settingsClient.peekTextModelProviders().find { it.id == selectedProviderId }
-            val selectedPluginId = selectedProvider?.let { pluginIdForProvider(it.provider) }
+            val selectedPluginId = selectedLlmPluginId()
             if (activeProviderId == null || activeProviderId != selectedPluginId) {
                 runCatching { llmProviderManager.activateSelectedProvider() }
                     .onFailure { error ->
@@ -456,8 +454,9 @@ class MainViewModel(
     }
 
     private fun selectedLlmPluginId(): String? {
-        val selectedProvider = settingsClient.peekSelectedTextModelProvider()
-        return selectedProvider?.let { pluginIdForProvider(it.provider) }
+        val availableProviders = settingsClient.peekTextModelProviders()
+        val selectedProviderId = settingsClient.peekSelectedTextModelProviderId(availableProviders)
+        return availableProviders.find { it.id == selectedProviderId }?.let { pluginIdForProvider(it.provider) }
     }
 
     private fun refreshTextOutputMethodSetting() {

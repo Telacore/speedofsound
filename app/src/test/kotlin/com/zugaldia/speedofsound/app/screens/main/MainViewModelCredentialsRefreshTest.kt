@@ -466,6 +466,7 @@ class MainViewModelCredentialsRefreshTest {
         assertEquals("Bravo", viewModel.state.currentLlmModel())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertEquals(GoogleLlm.ID, registry.getActive(AppPluginCategory.LLM)?.id)
+        assertEquals(3, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
     }
 
     @Test
@@ -681,10 +682,14 @@ class MainViewModelCredentialsRefreshTest {
         private val failOnBooleanKeys: Set<String> = emptySet(),
     ) : SettingsStore {
         private val values = initialValues
+        private val stringReadCounts = mutableMapOf<String, Int>()
 
         override fun isAvailable(): Boolean = true
 
-        override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
+        override fun getString(key: String, defaultValue: String): String {
+            stringReadCounts[key] = (stringReadCounts[key] ?: 0) + 1
+            return values[key] ?: defaultValue
+        }
 
         override fun setString(key: String, value: String): Boolean {
             values[key] = value
@@ -719,5 +724,7 @@ class MainViewModelCredentialsRefreshTest {
             values[key] = value.toString()
             return true
         }
+
+        fun stringReadCount(key: String): Int = stringReadCounts[key] ?: 0
     }
 }

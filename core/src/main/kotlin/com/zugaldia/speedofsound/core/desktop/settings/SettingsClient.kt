@@ -874,6 +874,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
             availableProviders = peekTextModelProviders(),
         )
 
+    fun peekSelectedTextModelProviderId(availableProviders: List<TextModelProviderSetting>): String =
+        peekSelectedProviderId(
+            key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            availableProviders = availableProviders,
+        )
+
     fun peekSelectedTextModelProvider(): TextModelProviderSetting? =
         peekSelectedProvider(
             key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
