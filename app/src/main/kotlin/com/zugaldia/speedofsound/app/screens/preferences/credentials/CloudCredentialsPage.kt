@@ -92,10 +92,6 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         refreshSnapshots()
         currentCredentials.sortedBy { it.name.lowercase() }.forEach { credential -> addCredentialToUI(credential) }
         updatePlaceholderVisibility(currentCredentials)
-        setupNotifications()
-    }
-
-    private fun setupNotifications() {
         scope.launch {
             viewModel.settingsChanged
                 .filter {
