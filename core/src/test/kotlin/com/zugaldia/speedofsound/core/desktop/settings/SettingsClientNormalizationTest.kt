@@ -114,6 +114,73 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
+    fun `setting providers heals stale selected provider ids on save`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-voice",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-text",
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.setVoiceModelProviders(
+            listOf(
+                VoiceModelProviderSetting(
+                    id = "voice-z",
+                    name = "Zulu",
+                    provider = AsrProvider.SHERPA_WHISPER,
+                    modelId = "model-z",
+                ),
+                VoiceModelProviderSetting(
+                    id = "voice-a",
+                    name = "Alpha",
+                    provider = AsrProvider.SHERPA_WHISPER,
+                    modelId = "model-a",
+                ),
+            )
+        )
+        client.setTextModelProviders(
+            listOf(
+                TextModelProviderSetting(
+                    id = "text-z",
+                    name = "Zulu",
+                    provider = LlmProvider.OPENAI,
+                    modelId = "model-z",
+                ),
+                TextModelProviderSetting(
+                    id = "text-a",
+                    name = "Alpha",
+                    provider = LlmProvider.OPENAI,
+                    modelId = "model-a",
+                ),
+            )
+        )
+
+        val expectedVoiceProviderId = client.peekVoiceModelProviders()
+            .sortedBy { it.name.lowercase() }
+            .firstOrNull()
+            ?.id
+            ?: DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID
+        val expectedTextProviderId = client.peekTextModelProviders()
+            .sortedBy { it.name.lowercase() }
+            .firstOrNull()
+            ?.id
+            ?: DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID
+
+        assertEquals(
+            expectedVoiceProviderId,
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
+        )
+        assertEquals(
+            expectedTextProviderId,
+            store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
+        )
+        assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId())
+        assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId())
+        assertEquals(4, store.writeCount)
+    }
+
+    @Test
     fun `setting credentials clears dangling provider credential refs on save`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
