@@ -664,6 +664,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setCredentials(value: List<CredentialSetting>): Boolean {
         val normalized = value.normalizedCredentials()
+        val validCredentialIds = normalized.map { it.id }.toSet()
         val json = Json.encodeToString(normalized)
         val credentialsSaved = setStringSettingIfChanged(
             KEY_CREDENTIALS,
@@ -674,7 +675,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         if (!credentialsSaved) {
             return false
         }
-        val providersSaved = normalizeStoredProviderCredentialRefs()
+        val providersSaved = normalizeStoredProviderCredentialRefs(validCredentialIds)
         return providersSaved
     }
 
@@ -728,19 +729,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean {
         val validCredentialIds = peekCredentials().map { it.id }.toSet()
-        val customProviders = value.normalizedCustomVoiceModelProviders(validCredentialIds)
-        val json = Json.encodeToString(customProviders)
-        val providersSaved = setStringSettingIfChanged(
-            KEY_VOICE_MODEL_PROVIDERS,
-            settingsStore.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS),
-            json,
-            KEY_VOICE_MODEL_PROVIDERS
-        )
-        if (!providersSaved) {
-            return false
-        }
-        val selectionSaved = normalizeSelectedVoiceModelProviderIdForCurrentProviders()
-        return selectionSaved
+        return setVoiceModelProviders(value, validCredentialIds)
     }
 
     fun loadSelectedVoiceModelProviderId(): String =
@@ -770,13 +759,19 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
+        setSelectedVoiceModelProviderId(value, peekVoiceModelProviders())
+
+    private fun setSelectedVoiceModelProviderId(
+        value: String,
+        availableProviders: List<SelectableProviderSetting>,
+    ): Boolean =
         setStringSettingIfChanged(
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
             settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID),
             normalizeSelectedProviderId(
                 value = value,
                 defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-                availableProviders = peekVoiceModelProviders(),
+                availableProviders = availableProviders,
             ),
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
         )
@@ -865,13 +860,19 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun setSelectedTextModelProviderId(value: String): Boolean =
+        setSelectedTextModelProviderId(value, peekTextModelProviders())
+
+    private fun setSelectedTextModelProviderId(
+        value: String,
+        availableProviders: List<SelectableProviderSetting>,
+    ): Boolean =
         setStringSettingIfChanged(
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
             settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID),
             normalizeSelectedProviderId(
                 value = value,
                 defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-                availableProviders = peekTextModelProviders(),
+                availableProviders = availableProviders,
             ),
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
         )
@@ -920,18 +921,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean {
         val validCredentialIds = peekCredentials().map { it.id }.toSet()
-        val json = Json.encodeToString(value.normalizedTextModelProviders(validCredentialIds))
-        val providersSaved = setStringSettingIfChanged(
-            KEY_TEXT_MODEL_PROVIDERS,
-            settingsStore.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS),
-            json,
-            KEY_TEXT_MODEL_PROVIDERS
-        )
-        if (!providersSaved) {
-            return false
-        }
-        val selectionSaved = normalizeSelectedTextModelProviderIdForCurrentProviders()
-        return selectionSaved
+        return setTextModelProviders(value, validCredentialIds)
     }
 
     /*
@@ -1230,24 +1220,79 @@ class SettingsClient(val settingsStore: SettingsStore) {
             .distinctBy { it.id }
             .take(MAX_CREDENTIALS)
 
-    private fun normalizeStoredProviderCredentialRefs(): Boolean {
-        val voiceSaved = setVoiceModelProviders(peekVoiceModelProviders())
-        val textSaved = setTextModelProviders(peekTextModelProviders())
+    private fun setVoiceModelProviders(
+        value: List<VoiceModelProviderSetting>,
+        validCredentialIds: Set<String>,
+        availableProviders: List<VoiceModelProviderSetting> = peekVoiceModelProviders(validCredentialIds),
+    ): Boolean {
+        val customProviders = value.normalizedCustomVoiceModelProviders(validCredentialIds)
+        val json = Json.encodeToString(customProviders)
+        val providersSaved = setStringSettingIfChanged(
+            KEY_VOICE_MODEL_PROVIDERS,
+            settingsStore.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS),
+            json,
+            KEY_VOICE_MODEL_PROVIDERS
+        )
+        if (!providersSaved) {
+            return false
+        }
+        val selectionSaved = normalizeSelectedVoiceModelProviderIdForCurrentProviders(availableProviders)
+        return selectionSaved
+    }
+
+    private fun setTextModelProviders(
+        value: List<TextModelProviderSetting>,
+        validCredentialIds: Set<String>,
+        availableProviders: List<TextModelProviderSetting> = peekTextModelProviders(validCredentialIds),
+    ): Boolean {
+        val json = Json.encodeToString(value.normalizedTextModelProviders(validCredentialIds))
+        val providersSaved = setStringSettingIfChanged(
+            KEY_TEXT_MODEL_PROVIDERS,
+            settingsStore.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS),
+            json,
+            KEY_TEXT_MODEL_PROVIDERS
+        )
+        if (!providersSaved) {
+            return false
+        }
+        val selectionSaved = normalizeSelectedTextModelProviderIdForCurrentProviders(availableProviders)
+        return selectionSaved
+    }
+
+    private fun normalizeStoredProviderCredentialRefs(validCredentialIds: Set<String>): Boolean {
+        val voiceProviders = peekVoiceModelProviders(validCredentialIds)
+        val textProviders = peekTextModelProviders(validCredentialIds)
+        val voiceSaved = setVoiceModelProviders(voiceProviders, validCredentialIds, voiceProviders)
+        val textSaved = setTextModelProviders(textProviders, validCredentialIds, textProviders)
         return voiceSaved && textSaved
     }
 
-    private fun normalizeSelectedVoiceModelProviderIdForCurrentProviders(): Boolean {
+    private fun normalizeSelectedVoiceModelProviderIdForCurrentProviders(
+        availableProviders: List<SelectableProviderSetting>,
+    ): Boolean {
         val exactSelectedProviderId = peekSelectedVoiceModelProviderIdExact()
-        val availableProviders = peekVoiceModelProviders()
         return if (shouldPreserveExactWhisperSelection(exactSelectedProviderId, availableProviders)) {
             setSelectedVoiceModelProviderIdExact(exactSelectedProviderId)
         } else {
-            setSelectedVoiceModelProviderId(peekSelectedVoiceModelProviderId())
+            val normalizedSelectedProviderId = peekSelectedProviderId(
+                key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+                defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+                availableProviders = availableProviders,
+            )
+            setSelectedVoiceModelProviderId(normalizedSelectedProviderId, availableProviders)
         }
     }
 
-    private fun normalizeSelectedTextModelProviderIdForCurrentProviders(): Boolean =
-        setSelectedTextModelProviderId(peekSelectedTextModelProviderId())
+    private fun normalizeSelectedTextModelProviderIdForCurrentProviders(
+        availableProviders: List<SelectableProviderSetting>,
+    ): Boolean {
+        val normalizedSelectedProviderId = peekSelectedProviderId(
+            key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            availableProviders = availableProviders,
+        )
+        return setSelectedTextModelProviderId(normalizedSelectedProviderId, availableProviders)
+    }
 
     private fun List<VoiceModelProviderSetting>.normalizedCustomVoiceModelProviders(
         validCredentialIds: Set<String>,

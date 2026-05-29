@@ -115,6 +115,49 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
+    fun `setting credentials reuses the credential snapshot for provider healing`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-1",
+                            name = "Voice",
+                            provider = AsrProvider.SHERPA_WHISPER,
+                            modelId = "model-1",
+                            credentialId = "cred-1",
+                        ),
+                    )
+                ),
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-1",
+                            name = "Text",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-2",
+                            credentialId = "cred-1",
+                        ),
+                    )
+                ),
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(
+            true,
+            client.setCredentials(
+                listOf(
+                    CredentialSetting(id = "cred-1", type = CredentialType.API_KEY, name = "Primary", value = "secret"),
+                )
+            )
+        )
+        assertEquals(1, store.stringReadCount(KEY_CREDENTIALS))
+        assertEquals("cred-1", client.loadVoiceModelProviders().first { it.id == "voice-1" }.credentialId)
+        assertEquals("cred-1", client.loadTextModelProviders().first { it.id == "text-1" }.credentialId)
+    }
+
+    @Test
     fun `setting providers heals stale selected provider ids on save`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -585,10 +628,14 @@ class SettingsClientNormalizationTest {
         private val values = initialValues
         private val failingKeys = failingSetStringKeys
         var writeCount: Int = 0
+        private val stringReadCounts = mutableMapOf<String, Int>()
 
         override fun isAvailable(): Boolean = true
 
-        override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
+        override fun getString(key: String, defaultValue: String): String {
+            stringReadCounts[key] = (stringReadCounts[key] ?: 0) + 1
+            return values[key] ?: defaultValue
+        }
 
         override fun setString(key: String, value: String): Boolean {
             if (key in failingKeys) {
@@ -627,5 +674,7 @@ class SettingsClientNormalizationTest {
             writeCount += 1
             return true
         }
+
+        fun stringReadCount(key: String): Int = stringReadCounts[key] ?: 0
     }
 }
