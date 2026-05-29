@@ -136,7 +136,7 @@ class MainViewModel(
             try {
                 registry.setActiveById(AppPluginCategory.RECORDER, recorder.id)
                 asrProviderManager.activateSelectedProvider()
-                llmProviderManager.activateSelectedProvider()
+                llmProviderManager.refreshProviderConfiguration()
                 refreshTextProcessingSetting()
                 activateSelectedTextOutput()
                 updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
@@ -315,9 +315,23 @@ class MainViewModel(
     }
 
     private fun refreshTextProcessingSetting() {
+        val textProcessingEnabled = settingsClient.getTextProcessingEnabled()
         director.updateOptions(
-            director.getOptions().copy(enableTextProcessing = settingsClient.getTextProcessingEnabled())
+            director.getOptions().copy(enableTextProcessing = textProcessingEnabled)
         )
+        if (textProcessingEnabled) {
+            if (registry.getActive(AppPluginCategory.LLM) == null) {
+                runCatching { llmProviderManager.activateSelectedProvider() }
+                    .onFailure { error ->
+                        logger.error("Failed to activate LLM provider after enabling text processing: {}", error.message)
+                        portalsClient.showNotification(
+                            "Could not activate LLM provider: ${error.message ?: "Unknown error"}"
+                        )
+                    }
+            }
+        } else {
+            registry.clearActive(AppPluginCategory.LLM)
+        }
         updateModelLabels()
     }
 
@@ -389,7 +403,11 @@ class MainViewModel(
     private fun refreshLlmSetting(key: String) {
         val llmResult = when (key) {
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID -> runCatching {
-                llmProviderManager.activateSelectedProvider()
+                if (settingsClient.getTextProcessingEnabled()) {
+                    llmProviderManager.activateSelectedProvider()
+                } else {
+                    llmProviderManager.refreshProviderConfiguration()
+                }
             }
 
             else -> runCatching {
