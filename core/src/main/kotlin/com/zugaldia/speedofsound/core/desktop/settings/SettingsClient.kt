@@ -1126,7 +1126,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             .distinctBy { it.id }
             .take(MAX_CREDENTIALS)
 
-    private fun List<VoiceModelProviderSetting>.normalizedVoiceModelProviders(): List<VoiceModelProviderSetting> =
+    private fun List<VoiceModelProviderSetting>.normalizedCustomVoiceModelProviders(): List<VoiceModelProviderSetting> =
         map { provider ->
             provider.copy(
                 id = provider.id.trim(),
@@ -1135,12 +1135,8 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 credentialId = provider.credentialId?.trim()?.takeIf { it.isNotBlank() },
                 baseUrl = provider.baseUrl?.trim()?.takeIf { it.isNotBlank() },
             )
-        }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.modelId.isNotBlank() }
+        }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.modelId.isNotBlank() && it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
             .distinctBy { it.id }
-
-    private fun List<VoiceModelProviderSetting>.normalizedCustomVoiceModelProviders(): List<VoiceModelProviderSetting> =
-        normalizedVoiceModelProviders()
-            .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
             .take(MAX_VOICE_MODEL_PROVIDERS)
 
     private fun List<TextModelProviderSetting>.normalizedTextModelProviders(): List<TextModelProviderSetting> =

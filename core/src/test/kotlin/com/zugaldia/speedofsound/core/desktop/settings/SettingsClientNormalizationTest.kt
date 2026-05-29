@@ -179,6 +179,44 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
+    fun `local voice providers do not consume custom limit slots`() {
+        val localProviderId = SUPPORTED_LOCAL_ASR_MODELS.keys.first()
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        client.setVoiceModelProviders(
+            buildList {
+                add(
+                    VoiceModelProviderSetting(
+                        id = localProviderId,
+                        name = "Local",
+                        provider = AsrProvider.SHERPA_WHISPER,
+                        modelId = localProviderId,
+                    )
+                )
+                repeat(MAX_VOICE_MODEL_PROVIDERS + 3) { index ->
+                    add(
+                        VoiceModelProviderSetting(
+                            id = "voice-$index",
+                            name = "Voice $index",
+                            provider = AsrProvider.SHERPA_WHISPER,
+                            modelId = "model-$index",
+                        )
+                    )
+                }
+            }
+        )
+
+        val storedVoiceProviders = Json.decodeFromString<List<VoiceModelProviderSetting>>(
+            store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)
+        )
+
+        assertEquals(MAX_VOICE_MODEL_PROVIDERS, storedVoiceProviders.size)
+        assertEquals("voice-0", storedVoiceProviders.first().id)
+        assertEquals(false, storedVoiceProviders.any { it.id == localProviderId })
+    }
+
+    @Test
     fun `credential provider and vocabulary limits are enforced on save`() {
         val store = MapSettingsStore()
         val client = SettingsClient(store)
