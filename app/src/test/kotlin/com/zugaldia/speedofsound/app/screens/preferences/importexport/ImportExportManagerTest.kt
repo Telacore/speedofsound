@@ -808,9 +808,9 @@ class ImportExportManagerTest {
         assertEquals(MAX_CREDENTIALS, settingsClient.loadCredentials().size)
         assertEquals(
             MAX_VOICE_MODEL_PROVIDERS,
-            settingsClient.loadVoiceModelProviders().filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys }.size
+            settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet()).filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys }.size
         )
-        assertEquals(MAX_TEXT_MODEL_PROVIDERS, settingsClient.loadTextModelProviders().size)
+        assertEquals(MAX_TEXT_MODEL_PROVIDERS, settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet()).size)
         assertEquals(MAX_VOCABULARY_WORDS, settingsClient.loadCustomVocabulary().size)
     }
 
@@ -878,15 +878,15 @@ class ImportExportManagerTest {
         assertEquals(1, result.voiceProvidersAdded)
         assertEquals(1, result.textProvidersAdded)
         assertEquals(MAX_CREDENTIALS, settingsClient.loadCredentials().size)
-        assertEquals("voice-1", settingsClient.loadVoiceModelProviders().first().id)
-        assertEquals(null, settingsClient.loadVoiceModelProviders().first().credentialId)
-        assertEquals("text-1", settingsClient.loadTextModelProviders().first().id)
-        assertEquals(null, settingsClient.loadTextModelProviders().first().credentialId)
+        assertEquals("voice-1", settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet()).first().id)
+        assertEquals(null, settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet()).first().credentialId)
+        assertEquals("text-1", settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet()).first().id)
+        assertEquals(null, settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet()).first().credentialId)
         assertTrue(
             store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, "").isNotBlank()
         )
         assertTrue(
-            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, "") in settingsClient.loadVoiceModelProviders().map { it.id }.toSet()
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, "") in settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet()).map { it.id }.toSet()
         )
         assertEquals(
             "text-1",
@@ -930,7 +930,7 @@ class ImportExportManagerTest {
         val result = manager.importSettings().getOrThrow()
 
         assertEquals(1, result.textProvidersAdded)
-        assertEquals("text-1", settingsClient.loadTextModelProviders().first().id)
+        assertEquals("text-1", settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet()).first().id)
         assertEquals("text-1", settingsClient.peekSelectedTextModelProviderId())
         assertEquals("true", store.getString(KEY_TEXT_PROCESSING_ENABLED, "false"))
     }

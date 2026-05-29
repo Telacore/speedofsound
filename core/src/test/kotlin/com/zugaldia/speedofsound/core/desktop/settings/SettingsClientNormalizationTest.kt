@@ -74,7 +74,7 @@ class SettingsClientNormalizationTest {
                     baseUrl = "https://example.com",
                 ),
             ),
-            client.loadVoiceModelProviders().filter { it.id == "voice-1" }
+            client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet()).filter { it.id == "voice-1" }
         )
         assertEquals(
             listOf(
@@ -88,7 +88,7 @@ class SettingsClientNormalizationTest {
                     disableThinking = true,
                 ),
             ),
-            client.loadTextModelProviders()
+            client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet())
         )
         client.setSelectedVoiceModelProviderId(" missing-voice-provider ")
         client.setSelectedTextModelProviderId(" missing-text-provider ")
@@ -153,8 +153,8 @@ class SettingsClientNormalizationTest {
             )
         )
         assertEquals(1, store.stringReadCount(KEY_CREDENTIALS))
-        assertEquals("cred-1", client.loadVoiceModelProviders().first { it.id == "voice-1" }.credentialId)
-        assertEquals("cred-1", client.loadTextModelProviders().first { it.id == "text-1" }.credentialId)
+        assertEquals("cred-1", client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet()).first { it.id == "voice-1" }.credentialId)
+        assertEquals("cred-1", client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet()).first { it.id == "text-1" }.credentialId)
     }
 
     @Test

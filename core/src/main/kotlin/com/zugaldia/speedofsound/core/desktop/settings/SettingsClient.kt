@@ -729,10 +729,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             }
     }
 
-    fun loadVoiceModelProviders(): List<VoiceModelProviderSetting> =
-        loadVoiceModelProviders(loadCredentials().map { it.id }.toSet())
-
-    private fun loadVoiceModelProviders(validCredentialIds: Set<String>): List<VoiceModelProviderSetting> {
+    fun loadVoiceModelProviders(validCredentialIds: Set<String>): List<VoiceModelProviderSetting> {
         val customProviders = readNormalizedJsonListSetting<VoiceModelProviderSetting>(
             key = KEY_VOICE_MODEL_PROVIDERS,
             defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
@@ -756,7 +753,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun loadSelectedVoiceModelProviderId(): String =
-        loadSelectedVoiceModelProviderId(loadVoiceModelProviders())
+        loadSelectedVoiceModelProviderId(
+            loadVoiceModelProviders(loadCredentials().map { it.id }.toSet())
+        )
 
     fun peekSelectedVoiceModelProviderId(): String =
         peekSelectedProviderId(
@@ -852,7 +851,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         readSelectedProviderId(
             key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            availableProviders = loadTextModelProviders(),
+            availableProviders = loadTextModelProviders(loadCredentials().map { it.id }.toSet()),
         )
 
     fun peekSelectedTextModelProviderId(): String =
@@ -908,10 +907,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_TEXT_PROCESSING_ENABLED
         )
 
-    fun loadTextModelProviders(): List<TextModelProviderSetting> =
-        loadTextModelProviders(loadCredentials().map { it.id }.toSet())
-
-    private fun loadTextModelProviders(validCredentialIds: Set<String>): List<TextModelProviderSetting> {
+    fun loadTextModelProviders(validCredentialIds: Set<String>): List<TextModelProviderSetting> {
         return readNormalizedJsonListSetting<TextModelProviderSetting>(
             key = KEY_TEXT_MODEL_PROVIDERS,
             defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,

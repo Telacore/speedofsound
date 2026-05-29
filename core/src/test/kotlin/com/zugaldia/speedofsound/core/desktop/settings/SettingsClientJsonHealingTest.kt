@@ -16,8 +16,8 @@ class SettingsClientJsonHealingTest {
         val client = SettingsClient(store)
 
         assertEquals(emptyList<CredentialSetting>(), client.loadCredentials())
-        client.loadVoiceModelProviders()
-        assertEquals(emptyList<TextModelProviderSetting>(), client.loadTextModelProviders())
+        client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet())
+        assertEquals(emptyList<TextModelProviderSetting>(), client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet()))
 
         assertEquals(3, store.writeCount)
         assertEquals("[]", store.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS))

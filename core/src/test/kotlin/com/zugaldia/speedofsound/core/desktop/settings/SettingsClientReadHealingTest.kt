@@ -168,8 +168,8 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(null, client.loadVoiceModelProviders().first { it.id == "voice-1" }.credentialId)
-        assertEquals(null, client.loadTextModelProviders().first { it.id == "text-1" }.credentialId)
+        assertEquals(null, client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet()).first { it.id == "voice-1" }.credentialId)
+        assertEquals(null, client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet()).first { it.id == "text-1" }.credentialId)
         assertEquals(
             listOf(
                 VoiceModelProviderSetting(
@@ -403,7 +403,7 @@ class SettingsClientReadHealingTest {
                     baseUrl = "https://example.com",
                 ),
             ),
-            client.loadVoiceModelProviders().filter { it.id == "voice-1" }
+            client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet()).filter { it.id == "voice-1" }
         )
         assertEquals(
             listOf(
@@ -417,7 +417,7 @@ class SettingsClientReadHealingTest {
                     disableThinking = true,
                 ),
             ),
-            client.loadTextModelProviders()
+            client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet())
         )
 
         assertEquals(
@@ -523,8 +523,8 @@ class SettingsClientReadHealingTest {
         val client = SettingsClient(store)
 
         val credentials = client.loadCredentials()
-        val voiceProviders = client.loadVoiceModelProviders().filter { it.id.startsWith("voice-") }
-        val textProviders = client.loadTextModelProviders()
+        val voiceProviders = client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet()).filter { it.id.startsWith("voice-") }
+        val textProviders = client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet())
         val vocabulary = client.loadCustomVocabulary()
 
         assertEquals(MAX_CREDENTIALS, credentials.size)
