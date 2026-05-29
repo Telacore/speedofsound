@@ -88,6 +88,45 @@ class AsrProviderManagerTest {
     }
 
     @Test
+    fun `refreshProviderConfiguration shows whisper fallback name when persisting selection fails`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "custom-provider",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            ),
+            failOnSetStringKeys = setOf(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID),
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val activePlugin = RecordingPlugin(id = "ASR_OPENAI")
+        val fallbackPlugin = RecordingPlugin(id = SherpaWhisperAsr.ID)
+        val manager = AsrProviderManager(registry, settingsClient)
+
+        registry.register(AppPluginCategory.ASR, activePlugin)
+        registry.register(AppPluginCategory.ASR, fallbackPlugin)
+        registry.setActiveById(AppPluginCategory.ASR, activePlugin.id)
+
+        manager.refreshProviderConfiguration()
+
+        assertEquals("custom-provider", settingsClient.loadSelectedVoiceModelProviderId())
+        assertEquals("Whisper (Local)", manager.peekCurrentProviderName())
+        assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
+        assertEquals(1, activePlugin.enableCount)
+        assertEquals(1, activePlugin.disableCount)
+        assertEquals(1, fallbackPlugin.enableCount)
+        assertEquals(0, fallbackPlugin.disableCount)
+    }
+
+    @Test
     fun `refreshProviderConfiguration keeps whisper active without reactivating it when selection is missing`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(

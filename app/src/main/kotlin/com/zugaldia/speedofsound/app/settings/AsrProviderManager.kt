@@ -5,6 +5,7 @@ import com.zugaldia.speedofsound.core.FatalStartupException
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
+import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.asr.SherpaCanaryAsr
 import com.zugaldia.speedofsound.core.plugins.asr.SherpaCanaryAsrOptions
 import com.zugaldia.speedofsound.core.plugins.asr.SherpaParakeetAsr
@@ -138,7 +139,11 @@ class AsrProviderManager(
         val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderId()
         val providers = settingsClient.peekVoiceModelProviders()
         val selectedProvider = providers.find { it.id == selectedProviderId }
-        return selectedProvider?.name ?: ""
+        if (selectedProvider != null) {
+            return selectedProvider.name
+        }
+        val activeProviderId = registry.getActive(AppPluginCategory.ASR)?.id ?: return ""
+        return AsrProvider.entries.firstOrNull { pluginIdForProvider(it) == activeProviderId }?.displayName ?: ""
     }
 
     private fun applyAsrOptions(pluginId: String, options: AsrPluginOptions) {
