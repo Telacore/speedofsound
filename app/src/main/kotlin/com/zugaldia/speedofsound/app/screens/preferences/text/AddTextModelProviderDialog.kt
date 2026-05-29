@@ -168,8 +168,22 @@ class AddTextModelProviderDialog(
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
             sensitive = false
             onClicked {
-                if (validateAndCreateProvider()) {
-                    closeDialog()
+                val name = nameEntry.text.trim()
+                val baseUrl = baseUrlEntry.getBaseUrl()
+                val modelId = selectedModelId
+                if (validateInput(name, baseUrl, modelId)) {
+                    val config = TextModelProviderSetting(
+                        id = generateUniqueId(),
+                        name = name,
+                        provider = selectedProvider,
+                        credentialId = selectedCredentialId,
+                        baseUrl = baseUrl,
+                        modelId = modelId,
+                        disableThinking = disableThinkingRow.active
+                    )
+                    if (onProviderAdded(config)) {
+                        closeDialog()
+                    }
                 }
             }
         }
@@ -374,25 +388,6 @@ class AddTextModelProviderDialog(
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
         return true
-    }
-
-    private fun validateAndCreateProvider(): Boolean {
-        val name = nameEntry.text.trim()
-        val baseUrl = baseUrlEntry.getBaseUrl()
-        val modelId = selectedModelId
-        if (!validateInput(name, baseUrl, modelId)) { return false }
-
-        val config = TextModelProviderSetting(
-            id = generateUniqueId(),
-            name = name,
-            provider = selectedProvider,
-            credentialId = selectedCredentialId,
-            baseUrl = baseUrl,
-            modelId = modelId,
-            disableThinking = disableThinkingRow.active
-        )
-
-        return onProviderAdded(config)
     }
 
     private fun closeDialog() {
