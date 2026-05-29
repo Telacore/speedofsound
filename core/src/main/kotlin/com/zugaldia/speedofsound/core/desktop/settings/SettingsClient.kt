@@ -112,19 +112,19 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getBoolean(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN)
 
     fun setWelcomeScreenShown(value: Boolean): Boolean =
-        settingsStore.setBoolean(KEY_WELCOME_SCREEN_SHOWN, value)
+        setBooleanSettingIfChanged(KEY_WELCOME_SCREEN_SHOWN, getWelcomeScreenShown(), value)
 
     fun getPortalsRestoreToken(): String =
         settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN)
 
     fun setPortalsRestoreToken(value: String): Boolean =
-        settingsStore.setString(KEY_PORTALS_RESTORE_TOKEN, value)
+        setStringSettingIfChanged(KEY_PORTALS_RESTORE_TOKEN, getPortalsRestoreToken(), value)
 
     fun getShortcutConfigured(): Boolean =
         settingsStore.getBoolean(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED)
 
     fun setShortcutConfigured(value: Boolean): Boolean =
-        settingsStore.setBoolean(KEY_SHORTCUT_CONFIGURED, value)
+        setBooleanSettingIfChanged(KEY_SHORTCUT_CONFIGURED, getShortcutConfigured(), value)
 
     /*
      * General page
@@ -134,57 +134,43 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getString(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2)
 
     fun setDefaultLanguage(value: String): Boolean =
-        settingsStore.setString(KEY_DEFAULT_LANGUAGE, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_DEFAULT_LANGUAGE)
-        }
+        setStringSettingIfChanged(KEY_DEFAULT_LANGUAGE, getDefaultLanguage(), value, KEY_DEFAULT_LANGUAGE)
 
     fun getSecondaryLanguage(): String =
         settingsStore.getString(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
 
     fun setSecondaryLanguage(value: String): Boolean =
-        settingsStore.setString(KEY_SECONDARY_LANGUAGE, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_SECONDARY_LANGUAGE)
-        }
+        setStringSettingIfChanged(KEY_SECONDARY_LANGUAGE, getSecondaryLanguage(), value, KEY_SECONDARY_LANGUAGE)
 
     fun getBackgroundRecording(): Boolean =
         settingsStore.getBoolean(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING)
 
     fun setBackgroundRecording(value: Boolean): Boolean =
-        settingsStore.setBoolean(KEY_BACKGROUND_RECORDING, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_BACKGROUND_RECORDING)
-        }
+        setBooleanSettingIfChanged(KEY_BACKGROUND_RECORDING, getBackgroundRecording(), value, KEY_BACKGROUND_RECORDING)
 
     fun getAppendSpace(): Boolean =
         settingsStore.getBoolean(KEY_APPEND_SPACE, DEFAULT_APPEND_SPACE)
 
     fun setAppendSpace(value: Boolean): Boolean =
-        settingsStore.setBoolean(KEY_APPEND_SPACE, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_APPEND_SPACE)
-        }
+        setBooleanSettingIfChanged(KEY_APPEND_SPACE, getAppendSpace(), value, KEY_APPEND_SPACE)
 
     fun getHideInsteadOfMinimize(): Boolean =
         settingsStore.getBoolean(KEY_HIDE_INSTEAD_OF_MINIMIZE, DEFAULT_HIDE_INSTEAD_OF_MINIMIZE)
 
     fun setHideInsteadOfMinimize(value: Boolean): Boolean =
-        settingsStore.setBoolean(KEY_HIDE_INSTEAD_OF_MINIMIZE, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_HIDE_INSTEAD_OF_MINIMIZE)
-        }
+        setBooleanSettingIfChanged(KEY_HIDE_INSTEAD_OF_MINIMIZE, getHideInsteadOfMinimize(), value, KEY_HIDE_INSTEAD_OF_MINIMIZE)
 
     fun getStayHiddenOnActivation(): Boolean =
         settingsStore.getBoolean(KEY_STAY_HIDDEN_ON_ACTIVATION, DEFAULT_STAY_HIDDEN_ON_ACTIVATION)
 
     fun setStayHiddenOnActivation(value: Boolean): Boolean =
-        settingsStore.setBoolean(KEY_STAY_HIDDEN_ON_ACTIVATION, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_STAY_HIDDEN_ON_ACTIVATION)
-        }
+        setBooleanSettingIfChanged(KEY_STAY_HIDDEN_ON_ACTIVATION, getStayHiddenOnActivation(), value, KEY_STAY_HIDDEN_ON_ACTIVATION)
 
     fun getTextOutputMethod(): String =
         settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
 
     fun setTextOutputMethod(value: String): Boolean =
-        settingsStore.setString(KEY_TEXT_OUTPUT_METHOD, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_TEXT_OUTPUT_METHOD)
-        }
+        setStringSettingIfChanged(KEY_TEXT_OUTPUT_METHOD, getTextOutputMethod(), value, KEY_TEXT_OUTPUT_METHOD)
 
     /*
      * Alarms page
@@ -487,9 +473,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setCredentials(value: List<CredentialSetting>): Boolean {
         val json = Json.encodeToString(value)
-        return settingsStore.setString(KEY_CREDENTIALS, json).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_CREDENTIALS)
-        }
+        return setStringSettingIfChanged(KEY_CREDENTIALS, settingsStore.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS), json, KEY_CREDENTIALS)
     }
 
     /*
@@ -532,18 +516,24 @@ class SettingsClient(val settingsStore: SettingsStore) {
         // Filter out the local providers before saving
         val customProviders = value.filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
         val json = Json.encodeToString(customProviders)
-        return settingsStore.setString(KEY_VOICE_MODEL_PROVIDERS, json).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_VOICE_MODEL_PROVIDERS)
-        }
+        return setStringSettingIfChanged(
+            KEY_VOICE_MODEL_PROVIDERS,
+            settingsStore.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS),
+            json,
+            KEY_VOICE_MODEL_PROVIDERS
+        )
     }
 
     fun getSelectedVoiceModelProviderId(): String =
         settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
 
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
-        settingsStore.setString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID)
-        }
+        setStringSettingIfChanged(
+            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            getSelectedVoiceModelProviderId(),
+            value,
+            KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
+        )
 
     /*
      * Text Models page
@@ -553,9 +543,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getBoolean(KEY_TEXT_PROCESSING_ENABLED, DEFAULT_TEXT_PROCESSING_ENABLED)
 
     fun setTextProcessingEnabled(value: Boolean): Boolean =
-        settingsStore.setBoolean(KEY_TEXT_PROCESSING_ENABLED, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_TEXT_PROCESSING_ENABLED)
-        }
+        setBooleanSettingIfChanged(KEY_TEXT_PROCESSING_ENABLED, getTextProcessingEnabled(), value, KEY_TEXT_PROCESSING_ENABLED)
 
     fun getTextModelProviders(): List<TextModelProviderSetting> {
         val json = settingsStore.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)
@@ -573,18 +561,24 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean {
         val json = Json.encodeToString(value)
-        return settingsStore.setString(KEY_TEXT_MODEL_PROVIDERS, json).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_TEXT_MODEL_PROVIDERS)
-        }
+        return setStringSettingIfChanged(
+            KEY_TEXT_MODEL_PROVIDERS,
+            settingsStore.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS),
+            json,
+            KEY_TEXT_MODEL_PROVIDERS
+        )
     }
 
     fun getSelectedTextModelProviderId(): String =
         settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
 
     fun setSelectedTextModelProviderId(value: String): Boolean =
-        settingsStore.setString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID)
-        }
+        setStringSettingIfChanged(
+            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            getSelectedTextModelProviderId(),
+            value,
+            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
+        )
 
     /*
      * Personalization page
@@ -594,17 +588,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT)
 
     fun setCustomContext(value: String): Boolean =
-        settingsStore.setString(KEY_CUSTOM_CONTEXT, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_CUSTOM_CONTEXT)
-        }
+        setStringSettingIfChanged(KEY_CUSTOM_CONTEXT, getCustomContext(), value, KEY_CUSTOM_CONTEXT)
 
     fun getCustomVocabulary(): List<String> =
         settingsStore.getStringArray(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY)
 
     fun setCustomVocabulary(value: List<String>): Boolean =
-        settingsStore.setStringArray(KEY_CUSTOM_VOCABULARY, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_CUSTOM_VOCABULARY)
-        }
+        setStringArraySettingIfChanged(KEY_CUSTOM_VOCABULARY, getCustomVocabulary(), value, KEY_CUSTOM_VOCABULARY)
 
     /*
      * Advanced page
@@ -614,23 +604,81 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getBoolean(KEY_SANITIZE_SPECIAL_CHARS, DEFAULT_SANITIZE_SPECIAL_CHARS)
 
     fun setSanitizeSpecialChars(value: Boolean): Boolean =
-        settingsStore.setBoolean(KEY_SANITIZE_SPECIAL_CHARS, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_SANITIZE_SPECIAL_CHARS)
-        }
+        setBooleanSettingIfChanged(KEY_SANITIZE_SPECIAL_CHARS, getSanitizeSpecialChars(), value, KEY_SANITIZE_SPECIAL_CHARS)
 
     fun getPostHideDelayMs(): Int =
         settingsStore.getInt(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS)
 
     fun setPostHideDelayMs(value: Int): Boolean =
-        settingsStore.setInt(KEY_POST_HIDE_DELAY_MS, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_POST_HIDE_DELAY_MS)
-        }
+        setIntSettingIfChanged(KEY_POST_HIDE_DELAY_MS, getPostHideDelayMs(), value, KEY_POST_HIDE_DELAY_MS)
 
     fun getTypingDelayMs(): Int =
         settingsStore.getInt(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS)
 
     fun setTypingDelayMs(value: Int): Boolean =
-        settingsStore.setInt(KEY_TYPING_DELAY_MS, value).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_TYPING_DELAY_MS)
+        setIntSettingIfChanged(KEY_TYPING_DELAY_MS, getTypingDelayMs(), value, KEY_TYPING_DELAY_MS)
+
+    private fun setStringSettingIfChanged(
+        key: String,
+        currentValue: String,
+        value: String,
+        emitChangeKey: String? = null,
+    ): Boolean {
+        if (currentValue == value) {
+            return true
         }
+        return settingsStore.setString(key, value).also { success ->
+            if (success && emitChangeKey != null) {
+                _settingsChanged.tryEmit(emitChangeKey)
+            }
+        }
+    }
+
+    private fun setBooleanSettingIfChanged(
+        key: String,
+        currentValue: Boolean,
+        value: Boolean,
+        emitChangeKey: String? = null,
+    ): Boolean {
+        if (currentValue == value) {
+            return true
+        }
+        return settingsStore.setBoolean(key, value).also { success ->
+            if (success && emitChangeKey != null) {
+                _settingsChanged.tryEmit(emitChangeKey)
+            }
+        }
+    }
+
+    private fun setIntSettingIfChanged(
+        key: String,
+        currentValue: Int,
+        value: Int,
+        emitChangeKey: String? = null,
+    ): Boolean {
+        if (currentValue == value) {
+            return true
+        }
+        return settingsStore.setInt(key, value).also { success ->
+            if (success && emitChangeKey != null) {
+                _settingsChanged.tryEmit(emitChangeKey)
+            }
+        }
+    }
+
+    private fun setStringArraySettingIfChanged(
+        key: String,
+        currentValue: List<String>,
+        value: List<String>,
+        emitChangeKey: String? = null,
+    ): Boolean {
+        if (currentValue == value) {
+            return true
+        }
+        return settingsStore.setStringArray(key, value).also { success ->
+            if (success && emitChangeKey != null) {
+                _settingsChanged.tryEmit(emitChangeKey)
+            }
+        }
+    }
 }
