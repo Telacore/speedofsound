@@ -119,6 +119,33 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun peekPortalsRestoreToken(): String =
         normalizePortalsRestoreToken(settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN))
 
+    fun loadStartupState() {
+        loadWelcomeScreenShown()
+        loadPortalsRestoreToken()
+        loadShortcutConfigured()
+        loadDefaultLanguage()
+        loadSecondaryLanguage()
+        loadBackgroundRecording()
+        loadAppendSpace()
+        loadHideInsteadOfMinimize()
+        loadStayHiddenOnActivation()
+        loadTextOutputMethod()
+        loadMaxAlarms()
+        loadAlarms()
+        loadAlarmSchedulerState()
+        loadCredentials()
+        loadVoiceModelProviders()
+        loadSelectedVoiceModelProviderId()
+        loadTextProcessingEnabled()
+        loadTextModelProviders()
+        loadSelectedTextModelProviderId()
+        loadCustomContext()
+        loadCustomVocabulary()
+        loadSanitizeSpecialChars()
+        loadPostHideDelayMs()
+        loadTypingDelayMs()
+    }
+
     fun setPortalsRestoreToken(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_PORTALS_RESTORE_TOKEN,

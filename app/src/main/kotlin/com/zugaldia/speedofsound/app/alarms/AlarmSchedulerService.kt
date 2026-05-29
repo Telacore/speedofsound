@@ -66,7 +66,7 @@ class AlarmSchedulerService(
     }
 
     internal fun reloadAlarms() {
-        val alarms = settingsClient.loadAlarms().sortedWith(
+        val alarms = settingsClient.peekAlarms().sortedWith(
             compareBy<AlarmSetting> { it.hour }
                 .thenBy { it.minute }
                 .thenBy { it.action.ordinal }
@@ -86,7 +86,7 @@ class AlarmSchedulerService(
     }
 
     internal fun reloadSchedulerState(): Boolean {
-        val schedulerState = settingsClient.loadAlarmSchedulerState()
+        val schedulerState = settingsClient.peekAlarmSchedulerState()
         val now = LocalDateTime.now(clock)
         val changed = synchronized(stateLock) {
             val activeIds = activeAlarms.map { it.id }.toSet()

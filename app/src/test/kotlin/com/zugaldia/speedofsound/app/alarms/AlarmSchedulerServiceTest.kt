@@ -190,6 +190,36 @@ class AlarmSchedulerServiceTest {
     }
 
     @Test
+    fun `reloading malformed alarm data does not heal the store from scheduler`() {
+        val clock = Clock.fixed(Instant.parse("2026-05-29T09:00:00Z"), ZoneOffset.UTC)
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS to "{bad",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_SCHEDULER_STATE to "{bad",
+            )
+        )
+        val settingsClient = SettingsClient(store)
+        val service = AlarmSchedulerService(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+            clock = clock,
+            checkIntervalSeconds = 60,
+        )
+
+        service.reloadAlarms()
+        service.reloadSchedulerState()
+
+        assertEquals(0, store.stringWriteCount)
+        assertEquals(emptyList<AlarmSetting>(), settingsClient.peekAlarms())
+        assertEquals(
+            AlarmSchedulerState(),
+            settingsClient.peekAlarmSchedulerState()
+        )
+    }
+
+    @Test
     fun `scheduler persistence writes once per minute when state is otherwise unchanged`() {
         val clock = MutableClock(
             Instant.parse("2026-05-29T09:00:05Z"),

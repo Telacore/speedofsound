@@ -59,6 +59,7 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
             }
 
             settingsClient = SettingsClient(buildSettingsStore())
+            settingsClient.loadStartupState()
             portalsClient = PortalsClient()
             alarmSchedulerService = AlarmSchedulerService(settingsClient, portalsClient).also { it.connect() }
             mainViewModel = MainViewModel(settingsClient, portalsClient, onShortcutTriggered = { handleTrigger() })

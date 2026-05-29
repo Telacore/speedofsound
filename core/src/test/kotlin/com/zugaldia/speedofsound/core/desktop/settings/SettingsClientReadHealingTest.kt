@@ -118,6 +118,28 @@ class SettingsClientReadHealingTest {
     }
 
     @Test
+    fun `load startup state heals portal token alarms and scheduler state`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_PORTALS_RESTORE_TOKEN to " token ",
+                KEY_ALARMS to "{bad",
+                KEY_ALARM_SCHEDULER_STATE to "{bad",
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.loadStartupState()
+
+        assertEquals("token", store.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN))
+        assertEquals(DEFAULT_ALARMS, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
+        assertEquals(
+            AlarmSchedulerState(),
+            client.peekAlarmSchedulerState()
+        )
+        assertEquals(3, store.writeCount)
+    }
+
+    @Test
     fun `provider resolution does not heal malformed credential and language settings`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
