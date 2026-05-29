@@ -552,8 +552,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun setCredentials(value: List<CredentialSetting>): Boolean {
-        val json = Json.encodeToString(value)
-        return setStringSettingIfChanged(KEY_CREDENTIALS, settingsStore.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS), json, KEY_CREDENTIALS)
+        val normalized = value.normalizedCredentials()
+        val json = Json.encodeToString(normalized)
+        return setStringSettingIfChanged(
+            KEY_CREDENTIALS,
+            settingsStore.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS),
+            json,
+            KEY_CREDENTIALS
+        )
     }
 
     /*
@@ -589,7 +595,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean {
         // Filter out the local providers before saving
-        val customProviders = value.filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+        val customProviders = value
+            .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+            .normalizedVoiceModelProviders()
         val json = Json.encodeToString(customProviders)
         return setStringSettingIfChanged(
             KEY_VOICE_MODEL_PROVIDERS,
@@ -635,7 +643,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean {
-        val json = Json.encodeToString(value)
+        val json = Json.encodeToString(value.normalizedTextModelProviders())
         return setStringSettingIfChanged(
             KEY_TEXT_MODEL_PROVIDERS,
             settingsStore.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS),
@@ -834,6 +842,40 @@ class SettingsClient(val settingsStore: SettingsStore) {
             DEFAULT_TEXT_OUTPUT_METHOD
         }
     }
+
+    private fun List<CredentialSetting>.normalizedCredentials(): List<CredentialSetting> =
+        map { credential ->
+            credential.copy(
+                id = credential.id.trim(),
+                name = credential.name.trim(),
+                value = credential.value.trim(),
+            )
+        }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.value.isNotBlank() }
+            .distinctBy { it.id }
+
+    private fun List<VoiceModelProviderSetting>.normalizedVoiceModelProviders(): List<VoiceModelProviderSetting> =
+        map { provider ->
+            provider.copy(
+                id = provider.id.trim(),
+                name = provider.name.trim(),
+                modelId = provider.modelId.trim(),
+                credentialId = provider.credentialId?.trim()?.takeIf { it.isNotBlank() },
+                baseUrl = provider.baseUrl?.trim()?.takeIf { it.isNotBlank() },
+            )
+        }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.modelId.isNotBlank() }
+            .distinctBy { it.id }
+
+    private fun List<TextModelProviderSetting>.normalizedTextModelProviders(): List<TextModelProviderSetting> =
+        map { provider ->
+            provider.copy(
+                id = provider.id.trim(),
+                name = provider.name.trim(),
+                modelId = provider.modelId.trim(),
+                credentialId = provider.credentialId?.trim()?.takeIf { it.isNotBlank() },
+                baseUrl = provider.baseUrl?.trim()?.takeIf { it.isNotBlank() },
+            )
+        }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.modelId.isNotBlank() }
+            .distinctBy { it.id }
 
     private fun readLanguageSetting(key: String, defaultValue: String): String {
         val raw = settingsStore.getString(key, defaultValue)
