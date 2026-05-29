@@ -6,12 +6,17 @@ import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_PROCESSING_ENABLED
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
+import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
 import com.zugaldia.speedofsound.core.plugins.AppPlugin
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.EmptyOptions
+import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
+import com.zugaldia.speedofsound.core.plugins.llm.OpenAiLlm
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertSame
 
 class LlmProviderManagerTest {
 
@@ -38,6 +43,50 @@ class LlmProviderManagerTest {
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)
+    }
+
+    @Test
+    fun `activateSelectedProvider uses the first visible provider when selection is stale`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-provider",
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-z",
+                            name = "Zulu",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-z",
+                        ),
+                        TextModelProviderSetting(
+                            id = "text-a",
+                            name = "Alpha",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val inactivePlugin = RecordingPlugin(id = "LLM_INACTIVE")
+        val activePlugin = RecordingPlugin(id = OpenAiLlm.ID)
+
+        registry.register(AppPluginCategory.LLM, inactivePlugin)
+        registry.register(AppPluginCategory.LLM, activePlugin)
+        registry.setActiveById(AppPluginCategory.LLM, inactivePlugin.id)
+
+        LlmProviderManager(registry, settingsClient).activateSelectedProvider()
+
+        assertEquals("text-a", settingsClient.loadSelectedTextModelProviderId())
+        assertEquals(true, settingsClient.loadTextProcessingEnabled())
+        assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(1, inactivePlugin.enableCount)
+        assertEquals(1, inactivePlugin.disableCount)
+        assertEquals(1, activePlugin.enableCount)
+        assertEquals(0, activePlugin.disableCount)
     }
 
     private class RecordingPlugin(
