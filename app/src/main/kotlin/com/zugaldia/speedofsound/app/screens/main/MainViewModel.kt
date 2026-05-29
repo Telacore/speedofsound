@@ -479,6 +479,10 @@ class MainViewModel(
                     handleFatalStartupError(error)
                 }
             }
+        if (hasFatalStartupError) {
+            updateModelLabels()
+            return
+        }
         val textProcessingEnabled = settingsClient.peekTextProcessingEnabled()
         val llmResult = runCatching { llmProviderManager.refreshProviderConfiguration() }
         llmResult

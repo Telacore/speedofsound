@@ -86,6 +86,49 @@ class MainViewModelCredentialsRefreshTest {
     }
 
     @Test
+    fun `refreshCredentials stops after fatal asr failure`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "whisper-1",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-text",
+                KEY_TEXT_MODEL_PROVIDERS to "",
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val viewModel = MainViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
+        asrProviderManager.registerAsrPlugins()
+
+        val failingPlugin = ThrowingPlugin(id = "ASR_FAIL")
+        registry.register(AppPluginCategory.ASR, failingPlugin)
+        registry.setActiveById(AppPluginCategory.ASR, failingPlugin.id)
+
+        invokePrivateUnit(viewModel, "refreshCredentials")
+
+        assertEquals("stale-text", settingsClient.loadSelectedTextModelProviderId())
+        assertEquals(true, settingsClient.loadTextProcessingEnabled())
+    }
+
+    @Test
     fun `refreshAsrSetting updates labels after asr refresh failure`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
