@@ -6,6 +6,7 @@ import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
 import com.zugaldia.speedofsound.core.Language
 import com.zugaldia.speedofsound.core.audio.AudioManager
 import com.zugaldia.speedofsound.core.models.voice.ModelManager
+import com.zugaldia.speedofsound.core.models.voice.resolveSafeChildPath
 import com.zugaldia.speedofsound.core.models.voice.VoiceModel
 import java.nio.file.Path
 
@@ -72,9 +73,10 @@ abstract class SherpaOfflineAsr<Options : AsrPluginOptions>(
             val reason = if (model == null) "not found" else "not downloaded"
             throw IllegalStateException("Model ${currentOptions.modelId} $reason.")
         }
+        require(model.components.isNotEmpty()) { "Model ${model.id} has no components." }
 
         val modelPath = modelManager.getModelPath(currentOptions.modelId)
-        val tokens = modelPath.resolve(model.components.last().name).toString()
+        val tokens = resolveSafeChildPath(modelPath, model.components.last().name).toString()
 
         val modelConfigBuilder = applyModelSpecificConfig(
             OfflineModelConfig.builder(),

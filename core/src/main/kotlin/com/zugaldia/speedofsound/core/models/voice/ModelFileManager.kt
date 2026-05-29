@@ -40,7 +40,7 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
         }
 
         return model.components.all { component ->
-            val filePath = modelPath.resolve(component.name)
+            val filePath = resolveSafeChildPath(modelPath, component.name)
             fileSystem.exists(filePath) &&
                 fileSystem.fileLength(filePath.toFile()) > 0 &&
                 !isLfsPointer(filePath.toFile())
@@ -103,15 +103,6 @@ class ModelFileManager(private val pathProvider: PathProvider, private val fileS
             }
         }
     }
-
-    private fun resolveSafeChildPath(basePath: Path, childName: String): Path {
-        val resolved = basePath.resolve(childName).normalize()
-        if (!resolved.startsWith(basePath.normalize())) {
-            throw IllegalArgumentException("Path escapes model directory: $childName")
-        }
-        return resolved
-    }
-
     private fun ensureModelDirectory(modelPath: Path) {
         val modelDir = modelPath.toFile()
         when {

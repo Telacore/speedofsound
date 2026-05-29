@@ -120,7 +120,7 @@ class ModelManager(
     private suspend fun downloadArchive(
         modelId: String, archiveFile: VoiceModelFile, tempDir: Path
     ): File {
-        val downloadedFile = tempDir.resolve("${modelId}.tar.bz2").toFile()
+        val downloadedFile = resolveSafeChildPath(tempDir, "${modelId}.tar.bz2").toFile()
         val archiveUrl = archiveFile.url ?: throw IllegalArgumentException("Archive URL not available")
         modelDownloaderFactory().use { downloader ->
             coroutineScope {

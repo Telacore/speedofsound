@@ -4,6 +4,7 @@ import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineNemoEncDecCtcModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTransducerModelConfig
 import com.zugaldia.speedofsound.core.Language
+import com.zugaldia.speedofsound.core.models.voice.resolveSafeChildPath
 import com.zugaldia.speedofsound.core.models.voice.VoiceModel
 import java.nio.file.Path
 
@@ -28,15 +29,15 @@ class SherpaParakeetAsr(
         return if (model.components.size == TRANSDUCER_COMPONENT_COUNT) {
             // Transducer model: encoder, decoder, joiner, tokens
             val transducer = OfflineTransducerModelConfig.builder()
-                .setEncoder(modelPath.resolve(model.components[0].name).toString())
-                .setDecoder(modelPath.resolve(model.components[1].name).toString())
-                .setJoiner(modelPath.resolve(model.components[2].name).toString())
+                .setEncoder(resolveSafeChildPath(modelPath, model.components[0].name).toString())
+                .setDecoder(resolveSafeChildPath(modelPath, model.components[1].name).toString())
+                .setJoiner(resolveSafeChildPath(modelPath, model.components[2].name).toString())
                 .build()
             builder.setTransducer(transducer)
         } else {
             // CTC model: model, tokens
             val nemo = OfflineNemoEncDecCtcModelConfig.builder()
-                .setModel(modelPath.resolve(model.components[0].name).toString())
+                .setModel(resolveSafeChildPath(modelPath, model.components[0].name).toString())
                 .build()
             builder.setNemo(nemo)
         }

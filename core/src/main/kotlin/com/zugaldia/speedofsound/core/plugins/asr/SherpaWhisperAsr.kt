@@ -5,6 +5,7 @@ import com.k2fsa.sherpa.onnx.OfflineWhisperModelConfig
 import com.zugaldia.speedofsound.core.FatalStartupException
 import com.zugaldia.speedofsound.core.Language
 import com.zugaldia.speedofsound.core.models.voice.ModelManager
+import com.zugaldia.speedofsound.core.models.voice.resolveSafeChildPath
 import com.zugaldia.speedofsound.core.models.voice.VoiceModel
 import java.nio.file.Path
 
@@ -25,8 +26,8 @@ class SherpaWhisperAsr(
         modelPath: Path,
         language: Language,
     ): OfflineModelConfig.Builder {
-        val encoder = modelPath.resolve(model.components[0].name).toString()
-        val decoder = modelPath.resolve(model.components[1].name).toString()
+        val encoder = resolveSafeChildPath(modelPath, model.components[0].name).toString()
+        val decoder = resolveSafeChildPath(modelPath, model.components[1].name).toString()
         val whisper = OfflineWhisperModelConfig.builder()
             .setEncoder(encoder)
             .setDecoder(decoder)

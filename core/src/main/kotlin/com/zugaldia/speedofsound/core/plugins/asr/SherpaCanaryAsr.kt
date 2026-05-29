@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.core.plugins.asr
 import com.k2fsa.sherpa.onnx.OfflineCanaryModelConfig
 import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.zugaldia.speedofsound.core.Language
+import com.zugaldia.speedofsound.core.models.voice.resolveSafeChildPath
 import com.zugaldia.speedofsound.core.models.voice.VoiceModel
 import java.nio.file.Path
 
@@ -23,8 +24,8 @@ class SherpaCanaryAsr(
         modelPath: Path,
         language: Language,
     ): OfflineModelConfig.Builder {
-        val encoder = modelPath.resolve(model.components[0].name).toString()
-        val decoder = modelPath.resolve(model.components[1].name).toString()
+        val encoder = resolveSafeChildPath(modelPath, model.components[0].name).toString()
+        val decoder = resolveSafeChildPath(modelPath, model.components[1].name).toString()
         val canary = OfflineCanaryModelConfig.builder()
             .setEncoder(encoder)
             .setDecoder(decoder)
