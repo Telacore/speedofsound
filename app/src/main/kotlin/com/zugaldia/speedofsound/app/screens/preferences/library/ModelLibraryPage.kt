@@ -104,7 +104,17 @@ class ModelLibraryPage(
                         addCssClass(STYLE_CLASS_FLAT)
                         valign = Align.CENTER
                         sensitive = !isDownloaded && !isOperationInProgressForButtons
-                        onClicked { handleDownloadModel(model.id) }
+                        onClicked {
+                            if (downloadingModels.contains(model.id)) {
+                                logger.info("Model download already in progress: ${model.id}")
+                            } else {
+                                logger.info("Download button clicked for model: ${model.id}")
+                                downloadingModels.add(model.id)
+                                notifyOperationsStateChanged()
+                                refreshModels()
+                                pageScope.launch { modelManager.downloadModel(model.id) }
+                            }
+                        }
                     }
 
                     val removeButton = Button.fromIconName(ICON_TRASH).apply {
@@ -117,7 +127,17 @@ class ModelLibraryPage(
                         addCssClass(STYLE_CLASS_FLAT)
                         valign = Align.CENTER
                         sensitive = isDownloaded && !isOperationInProgressForButtons && !isDefaultModel
-                        onClicked { handleRemoveModel(model.id) }
+                        onClicked {
+                            if (deletingModels.contains(model.id)) {
+                                logger.info("Model deletion already in progress: ${model.id}")
+                            } else {
+                                logger.info("Remove button clicked for model: ${model.id}")
+                                deletingModels.add(model.id)
+                                notifyOperationsStateChanged()
+                                refreshModels()
+                                pageScope.launch { modelManager.deleteModel(model.id) }
+                            }
+                        }
                     }
 
                     // Add action buttons as the second suffix
@@ -131,32 +151,6 @@ class ModelLibraryPage(
                 modelRows[model.id] = row
                 modelsListBox.append(row)
             }
-    }
-
-    private fun handleDownloadModel(modelId: String) {
-        if (downloadingModels.contains(modelId)) {
-            logger.info("Model download already in progress: $modelId")
-            return
-        }
-
-        logger.info("Download button clicked for model: $modelId")
-        downloadingModels.add(modelId)
-        notifyOperationsStateChanged()
-        refreshModels()
-        pageScope.launch { modelManager.downloadModel(modelId) }
-    }
-
-    private fun handleRemoveModel(modelId: String) {
-        if (deletingModels.contains(modelId)) {
-            logger.info("Model deletion already in progress: $modelId")
-            return
-        }
-
-        logger.info("Remove button clicked for model: $modelId")
-        deletingModels.add(modelId)
-        notifyOperationsStateChanged()
-        refreshModels()
-        pageScope.launch { modelManager.deleteModel(modelId) }
     }
 
     @Suppress("LongMethod")
