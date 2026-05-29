@@ -115,9 +115,10 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         currentAlarms
             .sortedWith(compareBy<AlarmSetting> { it.hour }.thenBy { it.minute }.thenBy { it.id })
             .forEach { alarm -> addAlarmToUI(alarm) }
-        updatePlaceholderVisibility(currentAlarms)
+        alarmsListBox.visible = currentAlarms.isNotEmpty()
+        placeholderBox.visible = currentAlarms.isEmpty()
         maxAlarmsRow.value = viewModel.peekMaxAlarms().toDouble()
-        updateAddButtonState(currentAlarms)
+        addButton.sensitive = currentAlarms.size < viewModel.peekMaxAlarms()
     }
 
     private fun showAlarmEditor(existingAlarm: AlarmSetting? = null) {
@@ -186,13 +187,4 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         deleteButton.onClicked { deleteAlarm(alarm.id) }
     }
 
-    private fun updatePlaceholderVisibility(currentAlarms: List<AlarmSetting>) {
-        val hasAlarms = currentAlarms.isNotEmpty()
-        alarmsListBox.visible = hasAlarms
-        placeholderBox.visible = !hasAlarms
-    }
-
-    private fun updateAddButtonState(currentAlarms: List<AlarmSetting>) {
-        addButton.sensitive = currentAlarms.size < viewModel.peekMaxAlarms()
-    }
 }
