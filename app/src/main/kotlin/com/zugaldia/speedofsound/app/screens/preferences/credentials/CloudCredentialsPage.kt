@@ -51,7 +51,10 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
 
         addButton = Button.withLabel("Add API Key").apply {
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
-            onClicked { showAddCredentialDialog() }
+            onClicked {
+                val dialog = AddCredentialDialog(viewModel) { credential -> onCredentialAdded(credential) }
+                dialog.present(this@CloudCredentialsPage)
+            }
         }
 
         credentialsListBox = ListBox().apply {
@@ -87,13 +90,9 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
 
         add(credentialsGroup)
         refreshSnapshots()
-        loadCredentials()
-        setupNotifications()
-    }
-
-    private fun loadCredentials() {
         currentCredentials.sortedBy { it.name.lowercase() }.forEach { credential -> addCredentialToUI(credential) }
         updatePlaceholderVisibility(currentCredentials)
+        setupNotifications()
     }
 
     private fun setupNotifications() {
@@ -117,12 +116,8 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         logger.info("Refreshing cloud credentials")
         refreshSnapshots()
         credentialsListBox.removeAll()
-        loadCredentials()
-    }
-
-    private fun showAddCredentialDialog() {
-        val dialog = AddCredentialDialog(viewModel) { credential -> onCredentialAdded(credential) }
-        dialog.present(this)
+        currentCredentials.sortedBy { it.name.lowercase() }.forEach { credential -> addCredentialToUI(credential) }
+        updatePlaceholderVisibility(currentCredentials)
     }
 
     private fun onCredentialAdded(credential: CredentialSetting): Boolean {
