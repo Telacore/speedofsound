@@ -104,7 +104,19 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
                     setButtonsEnabled(true)
                     result.fold(
                         onSuccess = { importResult ->
-                            showStatus(buildImportSummary(importResult))
+                            val parts = mutableListOf<String>()
+                            if (importResult.alarmsAdded > 0) parts.add("${importResult.alarmsAdded} alarm(s)")
+                            if (importResult.credentialsAdded > 0) parts.add("${importResult.credentialsAdded} credential(s)")
+                            if (importResult.voiceProvidersAdded > 0) parts.add("${importResult.voiceProvidersAdded} voice provider(s)")
+                            if (importResult.textProvidersAdded > 0) parts.add("${importResult.textProvidersAdded} text provider(s)")
+                            if (importResult.vocabularyWordsAdded > 0) parts.add("${importResult.vocabularyWordsAdded} vocabulary word(s)")
+                            if (importResult.alarmSchedulerStateImported) parts.add("alarm scheduler state")
+                            val summary = if (parts.isEmpty()) {
+                                "Import complete. No new items to add."
+                            } else {
+                                "Imported: ${parts.joinToString(", ")}."
+                            }
+                            showStatus(summary)
                             onImportSuccess()
                         },
                         onFailure = { error -> showStatus("Import failed: ${error.message}") }
@@ -127,20 +139,5 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
     private fun showStatus(message: String) {
         statusLabel.label = message
         statusLabel.visible = true
-    }
-
-    private fun buildImportSummary(result: ImportResult): String {
-        val parts = mutableListOf<String>()
-        if (result.alarmsAdded > 0) parts.add("${result.alarmsAdded} alarm(s)")
-        if (result.credentialsAdded > 0) parts.add("${result.credentialsAdded} credential(s)")
-        if (result.voiceProvidersAdded > 0) parts.add("${result.voiceProvidersAdded} voice provider(s)")
-        if (result.textProvidersAdded > 0) parts.add("${result.textProvidersAdded} text provider(s)")
-        if (result.vocabularyWordsAdded > 0) parts.add("${result.vocabularyWordsAdded} vocabulary word(s)")
-        if (result.alarmSchedulerStateImported) parts.add("alarm scheduler state")
-        return if (parts.isEmpty()) {
-            "Import complete. No new items to add."
-        } else {
-            "Imported: ${parts.joinToString(", ")}."
-        }
     }
 }
