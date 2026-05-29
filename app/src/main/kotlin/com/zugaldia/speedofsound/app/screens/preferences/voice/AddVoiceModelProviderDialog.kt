@@ -202,7 +202,8 @@ class AddVoiceModelProviderDialog(
         onClosed { dialogScope.cancel() }
 
         // Initialize state
-        refreshSnapshots()
+        currentCredentials = viewModel.peekCredentials()
+        currentProviders = viewModel.peekVoiceModelProviders(currentCredentials.map { it.id }.toSet())
         run {
             val options = mutableListOf("None")
             options.addAll(currentCredentials.map { it.name })
@@ -239,7 +240,8 @@ class AddVoiceModelProviderDialog(
                 .filter { it == KEY_CREDENTIALS || it == KEY_VOICE_MODEL_PROVIDERS }
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                        refreshSnapshots()
+                        currentCredentials = viewModel.peekCredentials()
+                        currentProviders = viewModel.peekVoiceModelProviders(currentCredentials.map { it.id }.toSet())
                         run {
                             val options = mutableListOf("None")
                             options.addAll(currentCredentials.map { it.name })
@@ -272,10 +274,5 @@ class AddVoiceModelProviderDialog(
             currentProviders.none { it.name == name } &&
             modelId != null &&
             (baseUrl == null || isValidUrl(baseUrl))
-    }
-
-    private fun refreshSnapshots() {
-        currentCredentials = viewModel.peekCredentials()
-        currentProviders = viewModel.peekVoiceModelProviders(currentCredentials.map { it.id }.toSet())
     }
 }
