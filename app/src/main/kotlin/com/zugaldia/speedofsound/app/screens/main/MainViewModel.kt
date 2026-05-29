@@ -137,6 +137,7 @@ class MainViewModel(
                 registry.setActiveById(AppPluginCategory.RECORDER, recorder.id)
                 asrProviderManager.activateSelectedProvider()
                 llmProviderManager.activateSelectedProvider()
+                refreshTextProcessingSetting()
                 activateSelectedTextOutput()
                 updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
                 registry.setActiveById(AppPluginCategory.DIRECTOR, DefaultDirector.ID)
@@ -396,7 +397,7 @@ class MainViewModel(
             }
         }
 
-        llmResult.onSuccess { updateModelLabels() }
+        llmResult.onSuccess { refreshTextProcessingSetting() }
             .onFailure { error ->
                 logger.error("Failed to apply LLM settings after {} change: {}", key, error.message)
                 portalsClient.showNotification(
@@ -414,6 +415,7 @@ class MainViewModel(
                 }
             }
         runCatching { llmProviderManager.refreshProviderConfiguration() }
+            .onSuccess { refreshTextProcessingSetting() }
             .onFailure { error ->
                 logger.error("Failed to refresh LLM provider configuration: {}", error.message)
                 portalsClient.showNotification(

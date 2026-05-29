@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.app.settings
 
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
+import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.llm.AnthropicLlm
@@ -50,7 +51,20 @@ class LlmProviderManager(
     private fun applySelectedProviderConfig(setActive: Boolean) {
         val selectedProviderId = settingsClient.getSelectedTextModelProviderId()
         val providers = settingsClient.getTextModelProviders()
-        val selectedProvider = providers.find { it.id == selectedProviderId } ?: return
+        val selectedProvider = providers.find { it.id == selectedProviderId }
+        if (selectedProvider == null) {
+            logger.warn(
+                "Selected LLM provider {} is missing; disabling text processing",
+                selectedProviderId.ifBlank { "<empty>" }
+            )
+            if (settingsClient.getTextProcessingEnabled()) {
+                settingsClient.setTextProcessingEnabled(false)
+            }
+            if (selectedProviderId.isNotEmpty()) {
+                settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
+            }
+            return
+        }
 
         val pluginId = pluginIdForProvider(selectedProvider.provider)
         val options = settingsClient.resolveTextProviderOptions(selectedProvider)
