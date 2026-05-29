@@ -489,6 +489,15 @@ class MainViewModel(
             if (settingsClient.peekTextProcessingEnabled() &&
                 registry.getActive(AppPluginCategory.LLM) == null
             ) {
+                if (settingsClient.setTextProcessingEnabled(false)) {
+                    logger.warn(
+                        "Disabled text processing after LLM refresh left no active provider"
+                    )
+                } else {
+                    logger.warn(
+                        "Could not persist text processing disable after LLM refresh left no active provider"
+                    )
+                }
                 logger.error(
                     "Failed to apply LLM settings after {} change: no active provider available",
                     key,
@@ -534,6 +543,13 @@ class MainViewModel(
             }
         if (llmResult.isSuccess && textProcessingEnabled) {
             if (registry.getActive(AppPluginCategory.LLM) == null) {
+                if (settingsClient.setTextProcessingEnabled(false)) {
+                    logger.warn("Disabled text processing after credential refresh left no active provider")
+                } else {
+                    logger.warn(
+                        "Could not persist text processing disable after credential refresh left no active provider"
+                    )
+                }
                 logger.error("Failed to refresh LLM provider configuration: no active provider available")
                 portalsClient.showNotification(
                     "Could not refresh LLM provider configuration: no active provider available"

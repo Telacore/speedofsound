@@ -139,7 +139,7 @@ class MainViewModelCredentialsRefreshTest {
 
         invokePrivateUnit(viewModel, "refreshCredentials")
 
-        assertEquals(true, settingsClient.loadTextProcessingEnabled())
+        assertEquals(false, settingsClient.loadTextProcessingEnabled())
         assertFalse(director.getOptions().enableTextProcessing)
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
         assertEquals("Alpha", viewModel.state.currentAsrModel())
@@ -454,6 +454,62 @@ class MainViewModelCredentialsRefreshTest {
         assertEquals("Bravo", viewModel.state.currentLlmModel())
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertSame(failingPlugin, registry.getActive(AppPluginCategory.LLM))
+    }
+
+    @Test
+    fun `refreshLlmSetting disables text processing when llm activation leaves no active provider`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "whisper-1",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-a",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-a",
+                            name = "Bravo",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "gpt-5.4-mini",
+                            baseUrl = "http://localhost:1234/v1",
+                        ),
+                    )
+                ),
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val viewModel = MainViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+
+        viewModel.state.updateAsrModel("stale-asr")
+        viewModel.state.updateLlmModel("stale-llm")
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val asrProviderManager = getPrivateField<AsrProviderManager>(viewModel, "asrProviderManager")
+        asrProviderManager.registerAsrPlugins()
+        asrProviderManager.activateSelectedProvider()
+        registry.register(AppPluginCategory.LLM, FailingEnablePlugin(OpenAiLlm.ID))
+
+        invokePrivateString(viewModel, "refreshLlmSetting", KEY_SELECTED_TEXT_MODEL_PROVIDER_ID)
+
+        assertEquals(false, settingsClient.loadTextProcessingEnabled())
+        assertEquals("Alpha", viewModel.state.currentAsrModel())
+        assertEquals("", viewModel.state.currentLlmModel())
+        assertEquals(null, registry.getActive(AppPluginCategory.LLM))
     }
 
     private fun invokePrivateUnit(instance: Any, methodName: String) {
