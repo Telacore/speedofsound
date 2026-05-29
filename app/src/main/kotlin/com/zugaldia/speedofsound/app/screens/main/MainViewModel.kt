@@ -477,8 +477,9 @@ class MainViewModel(
                     handleFatalStartupError(error)
                 }
             }
-        runCatching { llmProviderManager.refreshProviderConfiguration() }
-            .onSuccess { refreshTextProcessingSetting() }
+        val textProcessingEnabled = settingsClient.peekTextProcessingEnabled()
+        val llmResult = runCatching { llmProviderManager.refreshProviderConfiguration() }
+        llmResult
             .onFailure { error ->
                 logger.error("Failed to refresh LLM provider configuration: {}", error.message)
                 portalsClient.showNotification(
@@ -486,6 +487,11 @@ class MainViewModel(
                         "${error.message ?: "Unknown error"}"
                 )
             }
+        if (llmResult.isSuccess && textProcessingEnabled) {
+            refreshTextProcessingSetting()
+        } else {
+            updateModelLabels()
+        }
     }
 
     private fun updateModelLabels() {
