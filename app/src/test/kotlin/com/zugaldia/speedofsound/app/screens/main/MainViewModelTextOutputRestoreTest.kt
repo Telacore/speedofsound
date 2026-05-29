@@ -219,6 +219,34 @@ class MainViewModelTextOutputRestoreTest {
     }
 
     @Test
+    fun `refreshTextOutputMethodSetting keeps runtime clipboard fallback when persisting fallback fails`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_TEXT_OUTPUT_METHOD to TEXT_OUTPUT_METHOD_PORTAL,
+            ),
+            failOnSetStringKeys = setOf(KEY_TEXT_OUTPUT_METHOD),
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val portalsClient = PortalsClient(portalConnector = { Result.failure<DesktopPortal>(IllegalStateException("no portal")) })
+        val viewModel = MainViewModel(settingsClient, portalsClient)
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val clipboardOutput = RecordingTextOutputPlugin(ClipboardTextOutput.ID)
+        val failingPortal = ThrowingEnableTextOutputPlugin(PortalTextOutput.ID)
+
+        registry.register(AppPluginCategory.TEXT_OUTPUT, clipboardOutput)
+        registry.register(AppPluginCategory.TEXT_OUTPUT, failingPortal)
+
+        invokePrivateUnit(viewModel, "refreshTextOutputMethodSetting")
+
+        assertEquals(TEXT_OUTPUT_METHOD_PORTAL, settingsClient.loadTextOutputMethod())
+        assertSame(clipboardOutput, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+        assertEquals(1, clipboardOutput.enableCount)
+        assertEquals(1, failingPortal.enableCount)
+        assertEquals(1, failingPortal.disableCount)
+    }
+
+    @Test
     fun `refreshTextOutputMethodSetting does not persist clipboard fallback when clipboard activation fails`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -333,6 +361,7 @@ class MainViewModelTextOutputRestoreTest {
 
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
+        private val failOnSetStringKeys: Set<String> = emptySet(),
     ) : SettingsStore {
         private val values = initialValues
 
@@ -341,6 +370,9 @@ class MainViewModelTextOutputRestoreTest {
         override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
 
         override fun setString(key: String, value: String): Boolean {
+            if (key in failOnSetStringKeys) {
+                return false
+            }
             values[key] = value
             return true
         }

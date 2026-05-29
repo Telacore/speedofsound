@@ -647,13 +647,7 @@ class MainViewModel(
             }
             .onSuccess {
                 if (shouldPersistClipboardFallback(policy)) {
-                    settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
-                        .takeIf { !it }
-                        ?.let {
-                            logger.warn(
-                                "Could not persist text output method preference; continuing with runtime fallback"
-                            )
-                        }
+                    persistClipboardFallbackPreference()
                 }
                 GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                     updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
@@ -669,6 +663,14 @@ class MainViewModel(
             status,
         )
         state.updateRemoteDesktopStatus(uiStatus)
+    }
+
+    private fun persistClipboardFallbackPreference() {
+        if (!settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)) {
+            logger.warn(
+                "Could not persist text output method preference; continuing with runtime fallback"
+            )
+        }
     }
 
     fun startPortalsSession(token: String? = null) {
