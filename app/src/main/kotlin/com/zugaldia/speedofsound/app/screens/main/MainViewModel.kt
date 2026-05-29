@@ -2,7 +2,7 @@ package com.zugaldia.speedofsound.app.screens.main
 
 import com.zugaldia.speedofsound.app.APPEND_SPACE_TEXT
 import com.zugaldia.speedofsound.app.alarms.formatAlarmOverview
-import com.zugaldia.speedofsound.app.alarms.millisUntilNextAlarmSummaryRefresh
+import com.zugaldia.speedofsound.app.alarms.millisUntilNextMinuteBoundary
 import com.zugaldia.speedofsound.app.isGStreamerDisabled
 import com.zugaldia.speedofsound.app.plugins.recorder.GStreamerRecorder
 import com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput
@@ -368,7 +368,7 @@ class MainViewModel(
         alarmSummaryJob = viewModelScope.launch(Dispatchers.IO) {
             try {
                 while (true) {
-                    val delayMs = millisUntilNextAlarmSummaryRefresh(LocalDateTime.now())
+                    val delayMs = millisUntilNextMinuteBoundary(LocalDateTime.now())
                     delay(delayMs)
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                         refreshAlarmSummary()

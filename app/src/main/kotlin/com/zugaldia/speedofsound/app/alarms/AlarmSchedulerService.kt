@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 
 class AlarmSchedulerService(
     private val settingsClient: SettingsClient,
@@ -60,7 +60,7 @@ class AlarmSchedulerService(
         schedulerJob = scope.launch {
             while (true) {
                 checkAlarms()
-                delay(checkIntervalSeconds.seconds)
+                delay(millisUntilNextMinuteBoundary(LocalDateTime.now(clock)).milliseconds)
             }
         }
     }

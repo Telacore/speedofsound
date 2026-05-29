@@ -106,11 +106,14 @@ fun formatAlarmOverview(now: LocalDateTime, alarms: List<AlarmSetting>): String 
     return "$activeLabel · next $label $timing".trim()
 }
 
-fun millisUntilNextAlarmSummaryRefresh(now: LocalDateTime): Long {
+fun millisUntilNextMinuteBoundary(now: LocalDateTime): Long {
     val reference = now.withSecond(0).withNano(0)
     val nextMinute = reference.plusMinutes(1)
     return Duration.between(now, nextMinute).toMillis().coerceAtLeast(1)
 }
+
+fun millisUntilNextAlarmSummaryRefresh(now: LocalDateTime): Long =
+    millisUntilNextMinuteBoundary(now)
 
 fun resolveAlarmCheckWindowStart(
     lastCheckAt: LocalDateTime?,
