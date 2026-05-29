@@ -86,8 +86,6 @@ class PreferencesViewModel(
      */
 
     fun peekCredentials(): List<CredentialSetting> = settingsClient.peekCredentials()
-    fun setCredentials(value: List<CredentialSetting>): Boolean =
-        settingsClient.setCredentials(value)
     fun setCredentials(
         value: List<CredentialSetting>,
         availableVoiceProviders: List<VoiceModelProviderSetting>,
@@ -99,11 +97,8 @@ class PreferencesViewModel(
      * Voice Models page
      */
 
-    fun peekVoiceModelProviders(): List<VoiceModelProviderSetting> = settingsClient.peekVoiceModelProviders()
     fun peekVoiceModelProviders(validCredentialIds: Set<String>): List<VoiceModelProviderSetting> =
         settingsClient.peekVoiceModelProviders(validCredentialIds)
-    fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean =
-        settingsClient.setVoiceModelProviders(value)
     fun setVoiceModelProviders(
         value: List<VoiceModelProviderSetting>,
         validCredentialIds: Set<String>,
@@ -130,11 +125,8 @@ class PreferencesViewModel(
     fun peekTextProcessingEnabled(): Boolean = settingsClient.peekTextProcessingEnabled()
     fun setTextProcessingEnabled(value: Boolean): Boolean = settingsClient.setTextProcessingEnabled(value)
 
-    fun peekTextModelProviders(): List<TextModelProviderSetting> = settingsClient.peekTextModelProviders()
     fun peekTextModelProviders(validCredentialIds: Set<String>): List<TextModelProviderSetting> =
         settingsClient.peekTextModelProviders(validCredentialIds)
-    fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean =
-        settingsClient.setTextModelProviders(value)
     fun setTextModelProviders(
         value: List<TextModelProviderSetting>,
         validCredentialIds: Set<String>,
