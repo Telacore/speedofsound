@@ -140,6 +140,29 @@ class SettingsClientReadHealingTest {
     }
 
     @Test
+    fun `load startup state reads provider collections once while healing selected ids`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_VOICE_MODEL_PROVIDERS to "{bad",
+                KEY_TEXT_MODEL_PROVIDERS to "{bad",
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "missing-voice-provider",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "missing-text-provider",
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.loadStartupState()
+
+        assertEquals(1, store.stringReadCount(KEY_VOICE_MODEL_PROVIDERS))
+        assertEquals(1, store.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
+        assertEquals("[]", store.rawString(KEY_VOICE_MODEL_PROVIDERS))
+        assertEquals("[]", store.rawString(KEY_TEXT_MODEL_PROVIDERS))
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, store.rawString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID))
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, store.rawString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID))
+        assertEquals(4, store.writeCount)
+    }
+
+    @Test
     fun `provider resolution does not heal malformed credential and language settings`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -460,10 +483,18 @@ class SettingsClientReadHealingTest {
     ) : SettingsStore {
         private val values = initialValues
         var writeCount: Int = 0
+        private val stringReadCounts = mutableMapOf<String, Int>()
 
         override fun isAvailable(): Boolean = true
 
-        override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
+        override fun getString(key: String, defaultValue: String): String {
+            stringReadCounts[key] = (stringReadCounts[key] ?: 0) + 1
+            return values[key] ?: defaultValue
+        }
+
+        fun rawString(key: String): String? = values[key]
+
+        fun stringReadCount(key: String): Int = stringReadCounts[key] ?: 0
 
         override fun setString(key: String, value: String): Boolean {
             values[key] = value
