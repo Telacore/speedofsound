@@ -776,7 +776,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
         setSelectedVoiceModelProviderId(value, peekVoiceModelProviders())
 
-    private fun setSelectedVoiceModelProviderId(
+    fun setSelectedVoiceModelProviderId(
+        value: String,
+        availableProviders: List<VoiceModelProviderSetting>,
+    ): Boolean =
+        setSelectedVoiceModelProviderIdInternal(value, availableProviders)
+
+    private fun setSelectedVoiceModelProviderIdInternal(
         value: String,
         availableProviders: List<SelectableProviderSetting>,
     ): Boolean =
@@ -868,7 +874,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun setSelectedTextModelProviderId(value: String): Boolean =
         setSelectedTextModelProviderId(value, peekTextModelProviders())
 
-    private fun setSelectedTextModelProviderId(
+    fun setSelectedTextModelProviderId(
+        value: String,
+        availableProviders: List<TextModelProviderSetting>,
+    ): Boolean =
+        setSelectedTextModelProviderIdInternal(value, availableProviders)
+
+    private fun setSelectedTextModelProviderIdInternal(
         value: String,
         availableProviders: List<SelectableProviderSetting>,
     ): Boolean =
@@ -1285,7 +1297,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
                 availableProviders = availableProviders,
             )
-            setSelectedVoiceModelProviderId(normalizedSelectedProviderId, availableProviders)
+            setSelectedVoiceModelProviderIdInternal(normalizedSelectedProviderId, availableProviders)
         }
     }
 
@@ -1297,7 +1309,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
             availableProviders = availableProviders,
         )
-        return setSelectedTextModelProviderId(normalizedSelectedProviderId, availableProviders)
+        return setSelectedTextModelProviderIdInternal(normalizedSelectedProviderId, availableProviders)
     }
 
     private fun List<VoiceModelProviderSetting>.normalizedCustomVoiceModelProviders(

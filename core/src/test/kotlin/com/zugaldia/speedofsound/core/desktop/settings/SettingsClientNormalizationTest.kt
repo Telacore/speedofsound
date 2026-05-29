@@ -3,6 +3,12 @@ package com.zugaldia.speedofsound.core.desktop.settings
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
+import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -299,6 +305,40 @@ class SettingsClientNormalizationTest {
         assertEquals(Json.encodeToString(emptyList<VoiceModelProviderSetting>()), store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS))
         assertEquals("stale-voice", store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID))
         assertEquals(0, store.writeCount)
+    }
+
+    @Test
+    fun `selected provider setters reuse provided snapshots`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-voice",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-text",
+            )
+        )
+        val client = SettingsClient(store)
+        val voiceProviders = listOf(
+            VoiceModelProviderSetting(
+                id = "voice-a",
+                name = "Alpha",
+                provider = AsrProvider.OPENAI,
+                modelId = "model-a",
+            )
+        )
+        val textProviders = listOf(
+            TextModelProviderSetting(
+                id = "text-a",
+                name = "Alpha",
+                provider = LlmProvider.OPENAI,
+                modelId = "model-a",
+            )
+        )
+
+        assertEquals(true, client.setSelectedVoiceModelProviderId("missing-voice", voiceProviders))
+        assertEquals(true, client.setSelectedTextModelProviderId("missing-text", textProviders))
+        assertEquals("voice-a", store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID))
+        assertEquals("text-a", store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID))
+        assertEquals(0, store.stringReadCount(KEY_VOICE_MODEL_PROVIDERS))
+        assertEquals(0, store.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
     }
 
     @Test

@@ -231,7 +231,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         return if (shouldPreserveExactWhisperSelection(exactSelectedProviderId, availableVoiceProviders)) {
             viewModel.setSelectedVoiceModelProviderIdExact(exactSelectedProviderId)
         } else {
-            viewModel.setSelectedVoiceModelProviderId(selectedProviderId)
+            viewModel.setSelectedVoiceModelProviderId(selectedProviderId, availableVoiceProviders)
         }
     }
 
@@ -289,7 +289,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         }
         restoreWrite("text model providers") { viewModel.setTextModelProviders(snapshot.textProviders) }
         restoreWrite("selected text model provider") {
-            viewModel.setSelectedTextModelProviderId(snapshot.selectedTextProviderId)
+            viewModel.setSelectedTextModelProviderId(snapshot.selectedTextProviderId, snapshot.textProviders)
         }
         restoreWrite("text processing enabled") { viewModel.setTextProcessingEnabled(snapshot.textProcessingEnabled) }
         restoreWrite("custom vocabulary") { viewModel.setCustomVocabulary(snapshot.customVocabulary) }

@@ -102,6 +102,11 @@ class PreferencesViewModel(
         settingsClient.peekSelectedVoiceModelProviderIdExact()
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
         settingsClient.setSelectedVoiceModelProviderId(value)
+    fun setSelectedVoiceModelProviderId(
+        value: String,
+        availableProviders: List<VoiceModelProviderSetting>,
+    ): Boolean =
+        settingsClient.setSelectedVoiceModelProviderId(value, availableProviders)
 
     /*
      * Text Models page
@@ -120,6 +125,11 @@ class PreferencesViewModel(
         settingsClient.peekSelectedTextModelProviderId()
     fun setSelectedTextModelProviderId(value: String): Boolean =
         settingsClient.setSelectedTextModelProviderId(value)
+    fun setSelectedTextModelProviderId(
+        value: String,
+        availableProviders: List<TextModelProviderSetting>,
+    ): Boolean =
+        settingsClient.setSelectedTextModelProviderId(value, availableProviders)
 
     /*
      * Personalization page
