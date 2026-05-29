@@ -103,6 +103,23 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `setAlarms avoids rewriting an unchanged normalized list`() {
+        val normalizedAlarms = listOf(
+            AlarmSetting(id = "alarm-1", name = "Morning", hour = 7, minute = 30),
+            AlarmSetting(id = "alarm-2", name = "Noon", hour = 12, minute = 0),
+        )
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARMS to Json.encodeToString(normalizedAlarms)
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(true, client.setAlarms(normalizedAlarms))
+        assertEquals(0, store.stringWriteCount)
+    }
+
+    @Test
     fun `setAlarms normalizes repeat days and falls back to daily when empty`() {
         val store = MapSettingsStore()
         val client = SettingsClient(store)

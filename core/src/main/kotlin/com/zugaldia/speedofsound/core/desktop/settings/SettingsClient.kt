@@ -186,7 +186,8 @@ class SettingsClient(val settingsStore: SettingsStore) {
         if (dropped > 0) {
             logger.warn("Adjusted {} alarm(s) while saving settings", dropped)
         }
-        return persistAlarms(normalizedAlarms, emitChange = true)
+        val json = Json.encodeToString(normalizedAlarms)
+        return setStringSettingIfChanged(KEY_ALARMS, settingsStore.getString(KEY_ALARMS, DEFAULT_ALARMS), json, KEY_ALARMS)
     }
 
     fun loadAlarmSchedulerState(): AlarmSchedulerState {
