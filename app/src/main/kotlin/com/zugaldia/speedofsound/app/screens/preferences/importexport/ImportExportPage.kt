@@ -82,39 +82,35 @@ class ImportExportPage(viewModel: PreferencesViewModel, private val onImportSucc
         add(importGroup)
         add(statusGroup)
 
-        exportButton.onClicked { onExportClicked() }
-        importButton.onClicked { onImportClicked() }
-    }
-
-    private fun onExportClicked() {
-        setButtonsEnabled(false)
-        pageScope.launch {
-            val result = manager.export()
-            GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                setButtonsEnabled(true)
-                result.fold(
-                    onSuccess = { filePath -> showStatus("Exported to: $filePath") },
-                    onFailure = { error -> showStatus("Export failed: ${error.message}") }
-                )
-                false
+        exportButton.onClicked {
+            setButtonsEnabled(false)
+            pageScope.launch {
+                val result = manager.export()
+                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                    setButtonsEnabled(true)
+                    result.fold(
+                        onSuccess = { filePath -> showStatus("Exported to: $filePath") },
+                        onFailure = { error -> showStatus("Export failed: ${error.message}") }
+                    )
+                    false
+                }
             }
         }
-    }
-
-    private fun onImportClicked() {
-        setButtonsEnabled(false)
-        pageScope.launch {
-            val result = manager.importSettings()
-            GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                setButtonsEnabled(true)
-                result.fold(
-                    onSuccess = { importResult ->
-                        showStatus(buildImportSummary(importResult))
-                        onImportSuccess()
-                    },
-                    onFailure = { error -> showStatus("Import failed: ${error.message}") }
-                )
-                false
+        importButton.onClicked {
+            setButtonsEnabled(false)
+            pageScope.launch {
+                val result = manager.importSettings()
+                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                    setButtonsEnabled(true)
+                    result.fold(
+                        onSuccess = { importResult ->
+                            showStatus(buildImportSummary(importResult))
+                            onImportSuccess()
+                        },
+                        onFailure = { error -> showStatus("Import failed: ${error.message}") }
+                    )
+                    false
+                }
             }
         }
     }
