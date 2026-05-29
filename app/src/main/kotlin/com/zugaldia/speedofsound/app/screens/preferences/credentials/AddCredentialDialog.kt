@@ -44,6 +44,7 @@ class AddCredentialDialog(
     private val nameEntry: EntryRow
     private val apiKeyEntry: PasswordEntryRow
     private val addButton: Button
+    private var currentCredentials: List<CredentialSetting> = emptyList()
 
     init {
         title = "Add Credential"
@@ -80,8 +81,7 @@ class AddCredentialDialog(
             onClicked {
                 val name = nameEntry.text.trim()
                 val apiKey = apiKeyEntry.text.trim()
-                val credentials = viewModel.peekCredentials()
-                if (validateInput(name, apiKey, credentials)) {
+                if (validateInput(name, apiKey, currentCredentials)) {
                     val credential = CredentialSetting(
                         id = generateUniqueId(),
                         type = CredentialType.API_KEY,
@@ -115,6 +115,7 @@ class AddCredentialDialog(
         child = contentBox
         nameEntry.onNotify("text") { updateAddButtonState() }
         apiKeyEntry.onNotify("text") { updateAddButtonState() }
+        refreshCredentialSnapshot()
         setupNotifications()
         onClosed { dialogScope.cancel() }
     }
@@ -125,6 +126,7 @@ class AddCredentialDialog(
                 .filter { it == KEY_CREDENTIALS }
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        refreshCredentialSnapshot()
                         updateAddButtonState()
                         false
                     }
@@ -135,7 +137,7 @@ class AddCredentialDialog(
     private fun updateAddButtonState() {
         val name = nameEntry.text.trim()
         val apiKey = apiKeyEntry.text.trim()
-        addButton.sensitive = validateInput(name, apiKey, viewModel.peekCredentials())
+        addButton.sensitive = validateInput(name, apiKey, currentCredentials)
     }
 
     @Suppress("ReturnCount")
@@ -161,5 +163,9 @@ class AddCredentialDialog(
         }
 
         return true
+    }
+
+    private fun refreshCredentialSnapshot() {
+        currentCredentials = viewModel.peekCredentials()
     }
 }
