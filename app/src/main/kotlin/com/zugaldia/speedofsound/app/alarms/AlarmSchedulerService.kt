@@ -104,7 +104,12 @@ class AlarmSchedulerService(
     internal fun onSettingsChanged(key: String) {
         when (key) {
             KEY_ALARMS -> reloadAlarms()
-            KEY_ALARM_SCHEDULER_STATE, KEY_ALARM_LAST_TRIGGERED_DATES, KEY_ALARM_LAST_CHECK_AT -> reloadSchedulerState()
+            KEY_ALARM_SCHEDULER_STATE, KEY_ALARM_LAST_TRIGGERED_DATES, KEY_ALARM_LAST_CHECK_AT -> {
+                reloadSchedulerState()
+                if (schedulerStateReady) {
+                    persistSchedulerState()
+                }
+            }
         }
     }
 
