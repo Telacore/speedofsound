@@ -358,7 +358,7 @@ class MainViewModel(
 
     private fun refreshAlarmSummary() {
         state.updateAlarmSummary(
-            formatAlarmOverview(LocalDateTime.now(), settingsClient.getAlarms())
+            formatAlarmOverview(LocalDateTime.now(), settingsClient.peekAlarms())
         )
     }
 
