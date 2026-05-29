@@ -54,8 +54,6 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
                 .normalizedCredentialRefs(viewModel.peekCredentials().map { it.id }.toSet()),
             textModelProviders = viewModel.peekTextModelProviders()
                 .normalizedCredentialRefs(viewModel.peekCredentials().map { it.id }.toSet()),
-            selectedVoiceProviderId = viewModel.peekSelectedVoiceModelProviderIdExact(),
-            selectedTextProviderId = viewModel.peekSelectedTextModelProviderId(),
             sanitizeSpecialChars = viewModel.peekSanitizeSpecialChars(),
             postHideDelayMs = viewModel.peekPostHideDelayMs(),
             typingDelayMs = viewModel.peekTypingDelayMs(),

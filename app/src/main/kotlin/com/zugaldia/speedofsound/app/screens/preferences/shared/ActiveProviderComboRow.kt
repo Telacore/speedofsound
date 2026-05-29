@@ -79,9 +79,7 @@ class ActiveProviderComboRow<T>(
                     val restoredIndex = providers.indexOfFirst { it.id == restoredProviderId }
                     isUpdating = true
                     try {
-                        if (restoredIndex >= 0) {
-                            selected = restoredIndex
-                        }
+                        selected = if (restoredIndex >= 0) restoredIndex else 0
                     } finally {
                         isUpdating = false
                     }
