@@ -22,7 +22,9 @@ class AdvancedPage(private val viewModel: PreferencesViewModel) : PreferencesPag
                     "Enable this if your desktop portal does not correctly handle Unicode key symbols."
             active = viewModel.peekSanitizeSpecialChars()
             onNotify("active") {
-                viewModel.setSanitizeSpecialChars(active)
+                if (!viewModel.setSanitizeSpecialChars(active)) {
+                    sanitizeSpecialCharsRow.active = viewModel.peekSanitizeSpecialChars()
+                }
             }
         }
 
@@ -33,7 +35,9 @@ class AdvancedPage(private val viewModel: PreferencesViewModel) : PreferencesPag
             digits = 0
             value = viewModel.peekPostHideDelayMs().toDouble()
             onNotify("value") {
-                viewModel.setPostHideDelayMs(value.toInt())
+                if (!viewModel.setPostHideDelayMs(value.toInt())) {
+                    postHideDelayRow.value = viewModel.peekPostHideDelayMs().toDouble()
+                }
             }
         }
 
@@ -45,7 +49,9 @@ class AdvancedPage(private val viewModel: PreferencesViewModel) : PreferencesPag
             digits = 0
             value = viewModel.peekTypingDelayMs().toDouble()
             onNotify("value") {
-                viewModel.setTypingDelayMs(value.toInt())
+                if (!viewModel.setTypingDelayMs(value.toInt())) {
+                    typingDelayRow.value = viewModel.peekTypingDelayMs().toDouble()
+                }
             }
         }
 

@@ -160,7 +160,10 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
         buffer.getBounds(start, end)
         val text = buffer.getText(start, end, false)
         logger.info("Saving instructions: ${text.length} chars.")
-        viewModel.setCustomContext(text)
+        if (!viewModel.setCustomContext(text)) {
+            logger.warn("Failed to persist custom context")
+            refresh()
+        }
     }
 
     /**
@@ -183,16 +186,14 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
         }
     }
 
-    private fun saveVocabulary() {
-        val vocabulary = mutableListOf<String>()
-        var child = vocabularyListBox.firstChild
-        while (child != null) {
-            if (child is ActionRow) { vocabulary.add(child.title) }
-            child = child.nextSibling
-        }
-
+    private fun saveVocabulary(vocabulary: List<String>): Boolean {
         logger.info("Saving vocabulary: ${vocabulary.size} words.")
-        viewModel.setCustomVocabulary(vocabulary)
+        if (!viewModel.setCustomVocabulary(vocabulary)) {
+            logger.warn("Failed to persist custom vocabulary")
+            refresh()
+            return false
+        }
+        return true
     }
 
     private fun addVocabularyWord(entry: Entry) {
@@ -211,9 +212,11 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
             return
         }
 
-        addVocabularyWordToUI(word)
-        entry.text = ""
-        saveVocabulary()
+        val updatedVocabulary = currentVocabulary() + word
+        if (saveVocabulary(updatedVocabulary)) {
+            addVocabularyWordToUI(word)
+            entry.text = ""
+        }
     }
 
     private fun addVocabularyWordToUI(word: String) {
@@ -222,12 +225,24 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
             addCssClass(STYLE_CLASS_FLAT)
             valign = Align.CENTER
             onClicked {
-                vocabularyListBox.remove(row)
-                saveVocabulary()
+                val updatedVocabulary = currentVocabulary().filterNot { it == row.title }
+                if (saveVocabulary(updatedVocabulary)) {
+                    vocabularyListBox.remove(row)
+                }
             }
         }
 
         row.addSuffix(deleteButton)
         vocabularyListBox.append(row)
+    }
+
+    private fun currentVocabulary(): List<String> {
+        val vocabulary = mutableListOf<String>()
+        var child = vocabularyListBox.firstChild
+        while (child != null) {
+            if (child is ActionRow) { vocabulary.add(child.title) }
+            child = child.nextSibling
+        }
+        return vocabulary
     }
 }

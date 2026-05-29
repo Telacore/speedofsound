@@ -12,7 +12,7 @@ class LanguageComboRow(
     rowTitle: String,
     rowSubtitle: String,
     private val getLanguage: () -> String,
-    private val setLanguage: (String) -> Unit
+    private val setLanguage: (String) -> Boolean
 ) : ComboRow() {
     private val logger = LoggerFactory.getLogger(LanguageComboRow::class.java)
 
@@ -53,7 +53,10 @@ class LanguageComboRow(
             val selectedIndex = selected
             if (selectedIndex in languages.indices) {
                 logger.info("Default language changed to ${languages[selectedIndex].name}")
-                setLanguage(languages[selectedIndex].iso2)
+                if (!setLanguage(languages[selectedIndex].iso2)) {
+                    logger.warn("Failed to persist default language change to ${languages[selectedIndex].iso2}")
+                    refresh()
+                }
             }
         }
     }

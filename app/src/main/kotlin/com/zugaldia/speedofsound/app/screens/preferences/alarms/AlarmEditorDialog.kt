@@ -31,7 +31,7 @@ import org.gnome.gtk.StringList
 
 class AlarmEditorDialog(
     private val existingAlarm: AlarmSetting? = null,
-    private val onAlarmSaved: (AlarmSetting) -> Unit,
+    private val onAlarmSaved: (AlarmSetting) -> Boolean,
 ) : Dialog() {
     private val nameRow: EntryRow
     private val hourRow: SpinRow
@@ -136,7 +136,7 @@ class AlarmEditorDialog(
         val saveButton = Button.withLabel("Save").apply {
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
             onClicked {
-                onAlarmSaved(
+                if (onAlarmSaved(
                     AlarmSetting(
                         id = existingAlarm?.id ?: generateUniqueId(),
                         name = nameRow.text.trim(),
@@ -146,8 +146,9 @@ class AlarmEditorDialog(
                         enabled = enabledRow.active,
                         repeatDays = selectedRepeatDays(),
                     )
-                )
-                close()
+                )) {
+                    close()
+                }
             }
         }
 

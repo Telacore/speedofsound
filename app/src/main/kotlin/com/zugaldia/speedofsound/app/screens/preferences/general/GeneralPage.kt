@@ -145,13 +145,25 @@ class GeneralPage(private val viewModel: PreferencesViewModel) : PreferencesPage
         primaryComboRow.setupNotifications()
         secondaryComboRow.setupNotifications()
         textOutputMethodRow.setupNotifications()
-        appendSpaceRow.onNotify("active") { viewModel.setAppendSpace(appendSpaceRow.active) }
-        stayHiddenOnActivationRow.onNotify("active") {
-            viewModel.setStayHiddenOnActivation(stayHiddenOnActivationRow.active)
+        appendSpaceRow.onNotify("active") {
+            if (!viewModel.setAppendSpace(appendSpaceRow.active)) {
+                appendSpaceRow.active = viewModel.peekAppendSpace()
+            }
         }
-        backgroundRecordingRow.onNotify("active") { viewModel.setBackgroundRecording(backgroundRecordingRow.active) }
+        stayHiddenOnActivationRow.onNotify("active") {
+            if (!viewModel.setStayHiddenOnActivation(stayHiddenOnActivationRow.active)) {
+                stayHiddenOnActivationRow.active = viewModel.peekStayHiddenOnActivation()
+            }
+        }
+        backgroundRecordingRow.onNotify("active") {
+            if (!viewModel.setBackgroundRecording(backgroundRecordingRow.active)) {
+                backgroundRecordingRow.active = viewModel.peekBackgroundRecording()
+            }
+        }
         hideInsteadOfMinimizeRow.onNotify("active") {
-            viewModel.setHideInsteadOfMinimize(hideInsteadOfMinimizeRow.active)
+            if (!viewModel.setHideInsteadOfMinimize(hideInsteadOfMinimizeRow.active)) {
+                hideInsteadOfMinimizeRow.active = viewModel.peekHideInsteadOfMinimize()
+            }
         }
     }
 
@@ -247,7 +259,9 @@ class GeneralPage(private val viewModel: PreferencesViewModel) : PreferencesPage
         val triggers = shortcuts.mapNotNull { it.triggerDescription }
         logger.info("Showing {} shortcut(s): {}", shortcuts.size, triggers)
 
-        viewModel.setShortcutConfigured(true)
+        if (!viewModel.setShortcutConfigured(true)) {
+            logger.warn("Failed to persist shortcut configured state")
+        }
         shortcutSetupRow.visible = false
         val subtitle = triggers.joinToString(", ").ifEmpty { "Configured" }
         shortcutActiveRow.subtitle = GLib.markupEscapeText(subtitle, subtitle.length.toLong())

@@ -12,7 +12,7 @@ import org.gnome.gtk.StringObject
  */
 class TextOutputMethodComboRow(
     private val getMethod: () -> String,
-    private val setMethod: (String) -> Unit,
+    private val setMethod: (String) -> Boolean,
 ) : ComboRow() {
 
     private var isRefreshing = false
@@ -40,7 +40,9 @@ class TextOutputMethodComboRow(
             if (isRefreshing) return@onNotify
             val index = selected
             if (index in METHOD_VALUES.indices) {
-                setMethod(METHOD_VALUES[index])
+                if (!setMethod(METHOD_VALUES[index])) {
+                    refresh()
+                }
             }
         }
     }

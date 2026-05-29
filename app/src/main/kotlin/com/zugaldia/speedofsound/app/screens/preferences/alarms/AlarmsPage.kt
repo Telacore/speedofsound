@@ -92,7 +92,9 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
 
         maxAlarmsRow.onNotify("value") {
             if (isRefreshing) return@onNotify
-            viewModel.setMaxAlarms(maxAlarmsRow.value.toInt())
+            if (!viewModel.setMaxAlarms(maxAlarmsRow.value.toInt())) {
+                logger.warn("Failed to persist max alarms change")
+            }
             refresh()
         }
     }
@@ -123,7 +125,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         dialog.present(this)
     }
 
-    private fun upsertAlarm(alarm: AlarmSetting) {
+    private fun upsertAlarm(alarm: AlarmSetting): Boolean {
         val currentAlarms = viewModel.peekAlarms().toMutableList()
         val index = currentAlarms.indexOfFirst { it.id == alarm.id }
         if (index >= 0) {
@@ -131,14 +133,24 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         } else {
             currentAlarms.add(alarm)
         }
-        viewModel.setAlarms(currentAlarms)
+        if (!viewModel.setAlarms(currentAlarms)) {
+            logger.warn("Failed to persist alarm '${alarm.id}'")
+            refresh()
+            return false
+        }
         refresh()
+        return true
     }
 
-    private fun deleteAlarm(alarmId: String) {
+    private fun deleteAlarm(alarmId: String): Boolean {
         val updatedAlarms = viewModel.peekAlarms().filterNot { it.id == alarmId }
-        viewModel.setAlarms(updatedAlarms)
+        if (!viewModel.setAlarms(updatedAlarms)) {
+            logger.warn("Failed to persist alarm deletion '$alarmId'")
+            refresh()
+            return false
+        }
         refresh()
+        return true
     }
 
     private fun addAlarmToUI(alarm: AlarmSetting) {
