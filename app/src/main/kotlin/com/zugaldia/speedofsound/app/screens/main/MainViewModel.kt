@@ -177,6 +177,14 @@ class MainViewModel(
 
         // Check if the portal session needs reconnection. This typically happens when the user locks the screen and
         // comes back. The remote desktop session is closed in those circumstances for security reasons.
+        if (shouldRestorePortalOutput(
+                settingsClient.getTextOutputMethod(),
+                (registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? TextOutputPlugin<*>)?.id,
+                portalsClient.isPortalAvailable,
+            )
+        ) {
+            activateSelectedTextOutput()
+        }
         if (shouldAttemptPortalReconnect(settingsClient.getTextOutputMethod())) {
             portalsSessionManager.attemptReconnect(viewModelScope)
         }

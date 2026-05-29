@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.app.screens.main
 
 import com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus
+import com.zugaldia.speedofsound.app.plugins.textoutput.PortalTextOutput
 import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_CLIPBOARD
 import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL
 
@@ -36,3 +37,11 @@ internal enum class ClipboardFallbackPolicy {
 
 internal fun shouldPersistClipboardFallback(policy: ClipboardFallbackPolicy): Boolean =
     policy == ClipboardFallbackPolicy.PERSIST_PREFERENCE
+
+internal fun shouldRestorePortalOutput(
+    textOutputMethod: String,
+    activeTextOutputId: String?,
+    isPortalAvailable: Boolean,
+): Boolean = textOutputMethod == TEXT_OUTPUT_METHOD_PORTAL &&
+    isPortalAvailable &&
+    activeTextOutputId != PortalTextOutput.ID

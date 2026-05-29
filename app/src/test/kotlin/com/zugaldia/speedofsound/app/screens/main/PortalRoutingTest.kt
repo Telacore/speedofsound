@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.app.screens.main
 
 import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_CLIPBOARD
 import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL
+import com.zugaldia.speedofsound.app.plugins.textoutput.PortalTextOutput
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -97,6 +98,28 @@ class PortalRoutingTest {
     @Test
     fun `shouldPersistClipboardFallback returns false for runtime fallback`() {
         assertFalse(shouldPersistClipboardFallback(ClipboardFallbackPolicy.RUNTIME_ONLY))
+    }
+
+    @Test
+    fun `shouldRestorePortalOutput returns true when portal is selected after clipboard fallback`() {
+        assertTrue(
+            shouldRestorePortalOutput(
+                textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                activeTextOutputId = com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput.ID,
+                isPortalAvailable = true,
+            )
+        )
+    }
+
+    @Test
+    fun `shouldRestorePortalOutput returns false when portal output is already active`() {
+        assertFalse(
+            shouldRestorePortalOutput(
+                textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                activeTextOutputId = PortalTextOutput.ID,
+                isPortalAvailable = true,
+            )
+        )
     }
 
     @Test
