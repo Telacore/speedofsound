@@ -74,12 +74,10 @@ class PreferencesViewModel(
      * Alarms page
      */
 
-    fun getAlarms(): List<AlarmSetting> = settingsClient.getAlarms()
     fun peekAlarms(): List<AlarmSetting> = settingsClient.peekAlarms()
     fun setAlarms(value: List<AlarmSetting>): Boolean = settingsClient.setAlarms(value)
     fun getMaxAlarms(): Int = settingsClient.getMaxAlarms()
     fun setMaxAlarms(value: Int): Boolean = settingsClient.setMaxAlarms(value)
-    fun getAlarmSchedulerState(): AlarmSchedulerState = settingsClient.getAlarmSchedulerState()
     fun setAlarmSchedulerState(value: AlarmSchedulerState): Boolean = settingsClient.setAlarmSchedulerState(value)
     fun peekAlarmSchedulerState(): AlarmSchedulerState = settingsClient.peekAlarmSchedulerState()
 
