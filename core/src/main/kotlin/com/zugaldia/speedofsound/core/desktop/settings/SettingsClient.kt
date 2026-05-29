@@ -224,7 +224,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun getAlarmSchedulerState(): AlarmSchedulerState {
         readAlarmSchedulerState()?.let { return it }
-        return loadLegacyAlarmSchedulerState()
+        val legacyState = loadLegacyAlarmSchedulerState()
+        if (legacyState.lastCheckAt != null || legacyState.lastTriggeredDates.isNotEmpty()) {
+            setAlarmSchedulerState(legacyState, emitChange = false)
+        }
+        return legacyState
     }
 
     fun setAlarmSchedulerState(value: AlarmSchedulerState, emitChange: Boolean = true): Boolean {

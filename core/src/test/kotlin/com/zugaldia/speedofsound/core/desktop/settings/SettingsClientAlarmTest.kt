@@ -252,6 +252,17 @@ class SettingsClientAlarmTest {
             ),
             client.getAlarmSchedulerState()
         )
+        assertEquals(
+            AlarmSchedulerState(
+                lastCheckAt = "2026-05-29T09:15:30",
+                lastTriggeredDates = mapOf(
+                    "alarm-1" to "2026-05-29",
+                ),
+            ),
+            Json.decodeFromString<AlarmSchedulerState>(
+                store.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
+            )
+        )
     }
 
     @Test
