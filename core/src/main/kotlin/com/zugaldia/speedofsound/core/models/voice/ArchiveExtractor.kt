@@ -33,7 +33,7 @@ class ArchiveExtractor {
                             if (entry.isDirectory) {
                                 log.info("Creating directory: ${outputFile.absolutePath}")
                                 outputFile.mkdirs()
-                            } else {
+                            } else if (entry.isFile) {
                                 log.info("Extracting file: ${outputFile.absolutePath}")
                                 outputFile.parentFile?.mkdirs()
                                 AtomicFileWriter.write(outputFile) { tempFile ->
@@ -41,6 +41,8 @@ class ArchiveExtractor {
                                         tarInput.copyTo(output)
                                     }
                                 }.getOrThrow()
+                            } else {
+                                throw IllegalArgumentException("Unsupported archive entry type: ${entry.name}")
                             }
                         }
                     }
