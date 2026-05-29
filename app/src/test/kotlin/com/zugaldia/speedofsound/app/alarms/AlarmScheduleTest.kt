@@ -173,6 +173,13 @@ class AlarmScheduleTest {
     }
 
     @Test
+    fun `alarm overview explains when no alarms are configured`() {
+        val now = LocalDateTime.of(2026, 5, 29, 9, 0)
+
+        assertEquals("No alarms configured", formatAlarmOverview(now, emptyList()))
+    }
+
+    @Test
     fun `active alarm helper only counts enabled alarms`() {
         assertTrue(
             hasActiveAlarms(

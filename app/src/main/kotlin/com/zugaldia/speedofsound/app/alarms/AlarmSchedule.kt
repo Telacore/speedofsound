@@ -93,7 +93,7 @@ fun nextAlarmOccurrence(now: LocalDateTime, alarms: List<AlarmSetting>): AlarmOc
 
 fun formatAlarmOverview(now: LocalDateTime, alarms: List<AlarmSetting>): String {
     if (alarms.isEmpty()) {
-        return ""
+        return "No alarms configured"
     }
 
     val activeAlarms = alarms.filter { it.enabled }
