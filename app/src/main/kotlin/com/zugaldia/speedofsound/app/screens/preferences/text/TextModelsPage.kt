@@ -238,26 +238,19 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
             addCssClass(STYLE_CLASS_FLAT)
             valign = Align.CENTER
             onClicked {
-                if (onProviderDeleted(providerSetting.id)) {
-                    providersListBox.remove(row)
+                val updatedProviders = currentProviders.filter { it.id != providerSetting.id }
+                logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
+                if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
+                    logger.warn("Failed to persist text provider deletion '${providerSetting.id}'")
+                    refreshProviders()
+                } else {
+                    renderProviders(updatedProviders, currentTextProcessingEnabled)
                 }
             }
         }
 
         row.addSuffix(deleteButton)
         providersListBox.append(row)
-    }
-
-    private fun onProviderDeleted(providerId: String): Boolean {
-        val updatedProviders = currentProviders.filter { it.id != providerId }
-        logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
-            logger.warn("Failed to persist text provider deletion '$providerId'")
-            refreshProviders()
-            return false
-        }
-        renderProviders(updatedProviders, currentTextProcessingEnabled)
-        return true
     }
 
     private fun updateActiveProviderSensitivity(
