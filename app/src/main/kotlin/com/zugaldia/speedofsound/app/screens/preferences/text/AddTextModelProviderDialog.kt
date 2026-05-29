@@ -231,16 +231,12 @@ class AddTextModelProviderDialog(
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                         refreshSnapshots()
-                        refreshCredentialList()
+                        loadCredentialList(selectedCredentialId)
+                        updateAddButtonState()
                         false
                     }
                 }
         }
-    }
-
-    private fun refreshCredentialList() {
-        loadCredentialList(selectedCredentialId)
-        updateAddButtonState()
     }
 
     private fun refreshDialog() {
