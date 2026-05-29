@@ -409,6 +409,7 @@ class MainViewModel(
                 if (error is FatalStartupException) {
                     handleFatalStartupError(error)
                 }
+                updateModelLabels()
             }
     }
 
@@ -466,6 +467,7 @@ class MainViewModel(
                 portalsClient.showNotification(
                     "Could not apply LLM setting '$key': ${error.message ?: "Unknown error"}"
                 )
+                updateModelLabels()
             }
     }
 
