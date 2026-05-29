@@ -33,6 +33,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
     private val placeholderBox: Box
     private val addButton: Button
     private val maxAlarmsRow: SpinRow
+    private var isRefreshing = false
 
     init {
         title = "Alarms"
@@ -89,6 +90,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         loadAlarms()
 
         maxAlarmsRow.onNotify("value") {
+            if (isRefreshing) return@onNotify
             viewModel.setMaxAlarms(maxAlarmsRow.value.toInt())
             refresh()
         }
@@ -96,8 +98,13 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
 
     fun refresh() {
         logger.info("Refreshing alarms")
-        alarmsListBox.removeAll()
-        loadAlarms()
+        isRefreshing = true
+        try {
+            alarmsListBox.removeAll()
+            loadAlarms()
+        } finally {
+            isRefreshing = false
+        }
     }
 
     private fun loadAlarms() {
