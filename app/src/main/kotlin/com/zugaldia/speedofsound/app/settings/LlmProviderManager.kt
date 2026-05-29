@@ -69,11 +69,17 @@ class LlmProviderManager(
 
         val currentActiveId = registry.getActive(AppPluginCategory.LLM)?.id
         val textProcessingEnabled = settingsClient.peekTextProcessingEnabled()
+        if (!textProcessingEnabled && !setActive) {
+            if (currentActiveId != null) {
+                registry.clearActive(AppPluginCategory.LLM)
+            }
+            return
+        }
         val pluginId = pluginIdForProvider(selectedProvider.provider)
         val options = settingsClient.resolveTextProviderOptions(selectedProvider)
         applyLlmOptions(pluginId, options)
 
-        if (setActive || (textProcessingEnabled && currentActiveId != pluginId)) {
+        if (setActive || currentActiveId != pluginId) {
             registry.setActiveById(AppPluginCategory.LLM, pluginId)
         }
     }

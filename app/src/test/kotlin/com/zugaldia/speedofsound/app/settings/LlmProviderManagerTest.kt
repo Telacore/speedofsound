@@ -127,7 +127,7 @@ class LlmProviderManagerTest {
     }
 
     @Test
-    fun `refreshProviderConfiguration keeps text processing disabled without activating a different plugin`() {
+    fun `refreshProviderConfiguration clears active llm when text processing is disabled`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
                 KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-a",
@@ -155,9 +155,9 @@ class LlmProviderManagerTest {
 
         LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
 
-        assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(null, registry.getActive(AppPluginCategory.LLM))
         assertEquals(1, activePlugin.enableCount)
-        assertEquals(0, activePlugin.disableCount)
+        assertEquals(1, activePlugin.disableCount)
         assertEquals(0, selectedPlugin.enableCount)
         assertEquals(0, selectedPlugin.disableCount)
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
