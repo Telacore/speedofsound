@@ -90,6 +90,38 @@ class LlmProviderManagerTest {
     }
 
     @Test
+    fun `activateSelectedProvider disables text processing when activation leaves no active provider`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-a",
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-a",
+                            name = "Alpha",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val failingPlugin = ThrowingEnablePlugin(id = OpenAiLlm.ID)
+
+        registry.register(AppPluginCategory.LLM, failingPlugin)
+
+        LlmProviderManager(registry, settingsClient).activateSelectedProvider()
+
+        assertEquals(false, settingsClient.loadTextProcessingEnabled())
+        assertEquals(null, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(1, failingPlugin.enableCount)
+        assertEquals(1, failingPlugin.disableCount)
+    }
+
+    @Test
     fun `refreshProviderConfiguration reactivates the selected provider when active plugin is stale`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -266,6 +298,24 @@ class LlmProviderManagerTest {
         override fun disable() {
             disableCount += 1
             throw IllegalStateException("disable failed")
+        }
+    }
+
+    private class ThrowingEnablePlugin(
+        override val id: String,
+    ) : AppPlugin<EmptyOptions>(EmptyOptions) {
+        var enableCount: Int = 0
+            private set
+        var disableCount: Int = 0
+            private set
+
+        override fun enable() {
+            enableCount += 1
+            throw IllegalStateException("enable failed")
+        }
+
+        override fun disable() {
+            disableCount += 1
         }
     }
 

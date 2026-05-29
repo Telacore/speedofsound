@@ -105,6 +105,22 @@ class LlmProviderManager(
                     )
                 }
         }
+
+        if (registry.getActive(AppPluginCategory.LLM) != null) {
+            return
+        }
+
+        if (!settingsClient.peekTextProcessingEnabled()) {
+            return
+        }
+
+        logger.warn(
+            "No active LLM provider after applying {}; disabling text processing",
+            pluginId
+        )
+        if (!settingsClient.setTextProcessingEnabled(false)) {
+            logger.warn("Could not persist text processing disable after LLM activation left no active provider")
+        }
     }
 
     private fun applyLlmOptions(pluginId: String, options: LlmPluginOptions) {
