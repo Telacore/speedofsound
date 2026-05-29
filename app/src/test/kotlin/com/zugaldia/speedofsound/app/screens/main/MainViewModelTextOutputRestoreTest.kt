@@ -173,6 +173,34 @@ class MainViewModelTextOutputRestoreTest {
         assertEquals(1, failingPortal.disableCount)
     }
 
+    @Test
+    fun `refreshTextOutputMethodSetting does not persist clipboard fallback when clipboard activation fails`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_TEXT_OUTPUT_METHOD to TEXT_OUTPUT_METHOD_PORTAL,
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val portalsClient = PortalsClient(portalConnector = { Result.failure<DesktopPortal>(IllegalStateException("no portal")) })
+        val viewModel = MainViewModel(settingsClient, portalsClient)
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val activePortal = RecordingTextOutputPlugin(PortalTextOutput.ID)
+        val failingClipboard = ThrowingEnableTextOutputPlugin(ClipboardTextOutput.ID)
+
+        registry.register(AppPluginCategory.TEXT_OUTPUT, activePortal)
+        registry.register(AppPluginCategory.TEXT_OUTPUT, failingClipboard)
+        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, activePortal.id)
+
+        invokePrivateUnit(viewModel, "refreshTextOutputMethodSetting")
+
+        assertEquals(TEXT_OUTPUT_METHOD_PORTAL, settingsClient.loadTextOutputMethod())
+        assertSame(activePortal, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+        assertEquals(1, failingClipboard.enableCount)
+        assertEquals(1, failingClipboard.disableCount)
+        assertEquals(1, activePortal.enableCount)
+    }
+
     private inline fun <reified T> getPrivateField(instance: Any, fieldName: String): T {
         val field = instance.javaClass.getDeclaredField(fieldName)
         field.isAccessible = true

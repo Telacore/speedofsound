@@ -627,15 +627,6 @@ class MainViewModel(
 
         logger.warn("Falling back to Clipboard output: {}", reason)
         runCatching {
-            if (shouldPersistClipboardFallback(policy)) {
-                settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
-                    .takeIf { !it }
-                    ?.let {
-                        logger.warn(
-                            "Could not persist text output method preference; continuing with runtime fallback"
-                        )
-                    }
-            }
             activateTextOutput(forceClipboard = true)
         }
             .onFailure { error ->
@@ -645,6 +636,15 @@ class MainViewModel(
                 )
             }
             .onSuccess {
+                if (shouldPersistClipboardFallback(policy)) {
+                    settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
+                        .takeIf { !it }
+                        ?.let {
+                            logger.warn(
+                                "Could not persist text output method preference; continuing with runtime fallback"
+                            )
+                        }
+                }
                 GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                     updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
                     false
