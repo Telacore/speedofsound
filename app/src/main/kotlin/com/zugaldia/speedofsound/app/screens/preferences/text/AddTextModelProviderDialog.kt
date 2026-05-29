@@ -98,7 +98,11 @@ class AddTextModelProviderDialog(
             getCurrentProvider = { selectedProvider },
             onProviderSelected = { provider: LlmProvider ->
                 selectedProvider = provider
-                refreshDialog()
+                fetchedModels = null
+                baseUrlEntry.clear()
+                updateMessageLabel("")
+                modelComboRow.refreshComboRows()
+                updateAddButtonState()
             },
             providers = LlmProvider.entries
         )
@@ -228,7 +232,11 @@ class AddTextModelProviderDialog(
         refreshSnapshots()
         loadCredentialList()
         renderProviders(currentProviders, viewModel.peekTextProcessingEnabled())
-        refreshDialog()
+        fetchedModels = null
+        baseUrlEntry.clear()
+        updateMessageLabel("")
+        modelComboRow.refreshComboRows()
+        updateAddButtonState()
 
         // Set up notifications after all widgets are initialized
         providerComboRow.setupNotifications()
@@ -256,14 +264,6 @@ class AddTextModelProviderDialog(
                     }
                 }
         }
-    }
-
-    private fun refreshDialog() {
-        fetchedModels = null
-        baseUrlEntry.clear()
-        updateMessageLabel("")
-        modelComboRow.refreshComboRows()
-        updateAddButtonState()
     }
 
     private fun loadCredentialList(preservedCredentialId: String? = null) {
