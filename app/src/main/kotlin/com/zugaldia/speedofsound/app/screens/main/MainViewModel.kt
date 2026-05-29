@@ -448,6 +448,10 @@ class MainViewModel(
             return
         }
         if (!activateSelectedTextOutput()) {
+            switchToClipboardFallback(
+                reason = "Failed to activate selected text output.",
+                policy = ClipboardFallbackPolicy.RUNTIME_ONLY,
+            )
             updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
             return
         }
