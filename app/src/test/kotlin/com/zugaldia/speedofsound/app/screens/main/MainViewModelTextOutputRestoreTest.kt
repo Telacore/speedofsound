@@ -39,20 +39,25 @@ class MainViewModelTextOutputRestoreTest {
         viewModel.state.updateStage(AppStage.IDLE)
 
         val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
-        val activeClipboard = ThrowingDisableTextOutputPlugin(ClipboardTextOutput.ID)
-        val portalOutput = RecordingTextOutputPlugin(PortalTextOutput.ID)
+        val activeDummy = RecordingTextOutputPlugin("TEXT_OUTPUT_DUMMY")
+        val activeClipboard = RecordingTextOutputPlugin(ClipboardTextOutput.ID)
+        val failingPortal = ThrowingEnableTextOutputPlugin(PortalTextOutput.ID)
 
+        registry.register(AppPluginCategory.TEXT_OUTPUT, activeDummy)
         registry.register(AppPluginCategory.TEXT_OUTPUT, activeClipboard)
-        registry.register(AppPluginCategory.TEXT_OUTPUT, portalOutput)
-        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, activeClipboard.id)
+        registry.register(AppPluginCategory.TEXT_OUTPUT, failingPortal)
+        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, activeDummy.id)
 
         viewModel.onTriggerAction()
 
+        assertEquals(2, activeDummy.enableCount)
+        assertEquals(2, activeDummy.disableCount)
+        assertEquals(0, activeClipboard.disableCount)
         assertEquals(1, activeClipboard.enableCount)
-        assertEquals(1, activeClipboard.disableCount)
-        assertEquals(0, portalOutput.enableCount)
-        assertEquals(0, portalOutput.disableCount)
+        assertEquals(1, failingPortal.enableCount)
+        assertEquals(1, failingPortal.disableCount)
         assertSame(activeClipboard, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+        assertEquals(com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL, settingsClient.loadTextOutputMethod())
         assertEquals(AppStage.IDLE, viewModel.state.currentStage())
     }
 
