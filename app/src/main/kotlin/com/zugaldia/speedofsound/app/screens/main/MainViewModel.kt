@@ -199,7 +199,9 @@ class MainViewModel(
                 portalsClient.isPortalAvailable,
             )
         ) {
-            activateSelectedTextOutput()
+            if (!restoreSelectedTextOutput()) {
+                return
+            }
             updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
         }
         if (shouldAttemptPortalReconnect(settingsClient.peekTextOutputMethod())) {
@@ -537,6 +539,16 @@ class MainViewModel(
     private fun activateSelectedTextOutput() {
         activateTextOutput()
     }
+
+    private fun restoreSelectedTextOutput(): Boolean =
+        runCatching {
+            activateSelectedTextOutput()
+        }.onFailure { error ->
+            logger.error("Failed to restore selected text output: {}", error.message)
+            portalsClient.showNotification(
+                "Could not restore text output: ${error.message ?: "Unknown error"}"
+            )
+        }.isSuccess
 
     private fun activateTextOutput(forceClipboard: Boolean = false) {
         registry.setActiveById(
