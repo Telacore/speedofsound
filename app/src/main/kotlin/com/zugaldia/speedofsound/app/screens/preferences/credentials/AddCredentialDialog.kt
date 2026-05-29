@@ -113,8 +113,16 @@ class AddCredentialDialog(
         }
 
         child = contentBox
-        nameEntry.onNotify("text") { updateAddButtonState() }
-        apiKeyEntry.onNotify("text") { updateAddButtonState() }
+        nameEntry.onNotify("text") {
+            val name = nameEntry.text.trim()
+            val apiKey = apiKeyEntry.text.trim()
+            addButton.sensitive = validateInput(name, apiKey, currentCredentials)
+        }
+        apiKeyEntry.onNotify("text") {
+            val name = nameEntry.text.trim()
+            val apiKey = apiKeyEntry.text.trim()
+            addButton.sensitive = validateInput(name, apiKey, currentCredentials)
+        }
         refreshCredentialSnapshot()
         dialogScope.launch {
             viewModel.settingsChanged
@@ -122,18 +130,14 @@ class AddCredentialDialog(
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                         refreshCredentialSnapshot()
-                        updateAddButtonState()
+                        val name = nameEntry.text.trim()
+                        val apiKey = apiKeyEntry.text.trim()
+                        addButton.sensitive = validateInput(name, apiKey, currentCredentials)
                         false
                     }
                 }
         }
         onClosed { dialogScope.cancel() }
-    }
-
-    private fun updateAddButtonState() {
-        val name = nameEntry.text.trim()
-        val apiKey = apiKeyEntry.text.trim()
-        addButton.sensitive = validateInput(name, apiKey, currentCredentials)
     }
 
     @Suppress("ReturnCount")
