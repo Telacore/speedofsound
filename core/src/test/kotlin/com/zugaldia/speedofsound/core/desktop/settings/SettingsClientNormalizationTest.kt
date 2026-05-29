@@ -114,6 +114,79 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
+    fun `setting credentials clears dangling provider credential refs on save`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_CREDENTIALS to Json.encodeToString(
+                    listOf(
+                        CredentialSetting(id = "cred-keep", type = CredentialType.API_KEY, name = "Keep", value = "keep"),
+                        CredentialSetting(id = "cred-drop", type = CredentialType.API_KEY, name = "Drop", value = "drop"),
+                    )
+                ),
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-1",
+                            name = "Whisper",
+                            provider = AsrProvider.SHERPA_WHISPER,
+                            modelId = "model-1",
+                            credentialId = "cred-drop",
+                        ),
+                    )
+                ),
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-1",
+                            name = "LLM",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-2",
+                            credentialId = "cred-drop",
+                        ),
+                    )
+                ),
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.setCredentials(
+            listOf(
+                CredentialSetting(id = "cred-keep", type = CredentialType.API_KEY, name = "Keep", value = "keep"),
+            )
+        )
+
+        assertEquals(
+            listOf(
+                VoiceModelProviderSetting(
+                    id = "voice-1",
+                    name = "Whisper",
+                    provider = AsrProvider.SHERPA_WHISPER,
+                    modelId = "model-1",
+                    credentialId = null,
+                ),
+            ),
+            Json.decodeFromString<List<VoiceModelProviderSetting>>(
+                store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)
+            )
+        )
+        assertEquals(
+            listOf(
+                TextModelProviderSetting(
+                    id = "text-1",
+                    name = "LLM",
+                    provider = LlmProvider.OPENAI,
+                    modelId = "model-2",
+                    credentialId = null,
+                ),
+            ),
+            Json.decodeFromString<List<TextModelProviderSetting>>(
+                store.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)
+            )
+        )
+        assertEquals(3, store.writeCount)
+    }
+
+    @Test
     fun `selected provider setters do not heal malformed provider json`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

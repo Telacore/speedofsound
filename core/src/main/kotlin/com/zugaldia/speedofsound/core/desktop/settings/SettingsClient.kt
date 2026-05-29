@@ -644,12 +644,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun setCredentials(value: List<CredentialSetting>): Boolean {
         val normalized = value.normalizedCredentials()
         val json = Json.encodeToString(normalized)
-        return setStringSettingIfChanged(
+        val credentialsSaved = setStringSettingIfChanged(
             KEY_CREDENTIALS,
             settingsStore.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS),
             json,
             KEY_CREDENTIALS
         )
+        val providersSaved = normalizeStoredProviderCredentialRefs()
+        return credentialsSaved || providersSaved
     }
 
     /*
@@ -672,11 +674,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun loadVoiceModelProviders(): List<VoiceModelProviderSetting> {
+        val validCredentialIds = loadCredentials().map { it.id }.toSet()
         val customProviders = readNormalizedJsonListSetting<VoiceModelProviderSetting>(
             key = KEY_VOICE_MODEL_PROVIDERS,
             defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
             label = "voice model providers",
-            normalize = { it.normalizedCustomVoiceModelProviders() },
+            normalize = { it.normalizedCustomVoiceModelProviders(validCredentialIds) },
         )
 
         // Include the local provider first
@@ -684,18 +687,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun peekVoiceModelProviders(): List<VoiceModelProviderSetting> {
+        val validCredentialIds = peekCredentials().map { it.id }.toSet()
         val customProviders = peekNormalizedJsonListSetting<VoiceModelProviderSetting>(
             key = KEY_VOICE_MODEL_PROVIDERS,
             defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
             label = "voice model providers",
-            normalize = { it.normalizedCustomVoiceModelProviders() },
+            normalize = { it.normalizedCustomVoiceModelProviders(validCredentialIds) },
         )
 
         return getLocalVoiceModelProviders() + customProviders
     }
 
     fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean {
-        val customProviders = value.normalizedCustomVoiceModelProviders()
+        val validCredentialIds = peekCredentials().map { it.id }.toSet()
+        val customProviders = value.normalizedCustomVoiceModelProviders(validCredentialIds)
         val json = Json.encodeToString(customProviders)
         return setStringSettingIfChanged(
             KEY_VOICE_MODEL_PROVIDERS,
@@ -815,24 +820,28 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun loadTextModelProviders(): List<TextModelProviderSetting> {
+        val validCredentialIds = loadCredentials().map { it.id }.toSet()
         return readNormalizedJsonListSetting<TextModelProviderSetting>(
             key = KEY_TEXT_MODEL_PROVIDERS,
             defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,
             label = "text model providers",
-            normalize = { it.normalizedTextModelProviders() },
+            normalize = { it.normalizedTextModelProviders(validCredentialIds) },
         )
     }
 
-    fun peekTextModelProviders(): List<TextModelProviderSetting> =
-        peekNormalizedJsonListSetting(
+    fun peekTextModelProviders(): List<TextModelProviderSetting> {
+        val validCredentialIds = peekCredentials().map { it.id }.toSet()
+        return peekNormalizedJsonListSetting(
             key = KEY_TEXT_MODEL_PROVIDERS,
             defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,
             label = "text model providers",
-            normalize = { it.normalizedTextModelProviders() },
+            normalize = { it.normalizedTextModelProviders(validCredentialIds) },
         )
+    }
 
     fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean {
-        val json = Json.encodeToString(value.normalizedTextModelProviders())
+        val validCredentialIds = peekCredentials().map { it.id }.toSet()
+        val json = Json.encodeToString(value.normalizedTextModelProviders(validCredentialIds))
         return setStringSettingIfChanged(
             KEY_TEXT_MODEL_PROVIDERS,
             settingsStore.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS),
@@ -1128,26 +1137,36 @@ class SettingsClient(val settingsStore: SettingsStore) {
             .distinctBy { it.id }
             .take(MAX_CREDENTIALS)
 
-    private fun List<VoiceModelProviderSetting>.normalizedCustomVoiceModelProviders(): List<VoiceModelProviderSetting> =
+    private fun normalizeStoredProviderCredentialRefs(): Boolean {
+        val voiceSaved = setVoiceModelProviders(peekVoiceModelProviders())
+        val textSaved = setTextModelProviders(peekTextModelProviders())
+        return voiceSaved || textSaved
+    }
+
+    private fun List<VoiceModelProviderSetting>.normalizedCustomVoiceModelProviders(
+        validCredentialIds: Set<String>,
+    ): List<VoiceModelProviderSetting> =
         map { provider ->
             provider.copy(
                 id = provider.id.trim(),
                 name = provider.name.trim().take(MAX_PROVIDER_CONFIG_NAME_LENGTH),
                 modelId = provider.modelId.trim(),
-                credentialId = provider.credentialId?.trim()?.takeIf { it.isNotBlank() },
+                credentialId = provider.credentialId?.trim()?.takeIf { it.isNotBlank() && it in validCredentialIds },
                 baseUrl = provider.baseUrl?.trim()?.takeIf { it.isNotBlank() },
             )
         }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.modelId.isNotBlank() && it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
             .distinctBy { it.id }
             .take(MAX_VOICE_MODEL_PROVIDERS)
 
-    private fun List<TextModelProviderSetting>.normalizedTextModelProviders(): List<TextModelProviderSetting> =
+    private fun List<TextModelProviderSetting>.normalizedTextModelProviders(
+        validCredentialIds: Set<String>,
+    ): List<TextModelProviderSetting> =
         map { provider ->
             provider.copy(
                 id = provider.id.trim(),
                 name = provider.name.trim().take(MAX_PROVIDER_CONFIG_NAME_LENGTH),
                 modelId = provider.modelId.trim(),
-                credentialId = provider.credentialId?.trim()?.takeIf { it.isNotBlank() },
+                credentialId = provider.credentialId?.trim()?.takeIf { it.isNotBlank() && it in validCredentialIds },
                 baseUrl = provider.baseUrl?.trim()?.takeIf { it.isNotBlank() },
             )
         }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.modelId.isNotBlank() }

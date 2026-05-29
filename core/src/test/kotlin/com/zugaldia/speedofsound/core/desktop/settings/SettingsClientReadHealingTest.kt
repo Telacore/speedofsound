@@ -106,6 +106,74 @@ class SettingsClientReadHealingTest {
     }
 
     @Test
+    fun `malformed provider credential refs are healed on read`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_CREDENTIALS to Json.encodeToString(
+                    listOf(
+                        CredentialSetting(id = "cred-keep", type = CredentialType.API_KEY, name = "Keep", value = "keep"),
+                    )
+                ),
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-1",
+                            name = "Whisper",
+                            provider = AsrProvider.SHERPA_WHISPER,
+                            modelId = "model-1",
+                            credentialId = "missing-credential",
+                        ),
+                    )
+                ),
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-1",
+                            name = "LLM",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-2",
+                            credentialId = "missing-credential",
+                        ),
+                    )
+                ),
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(null, client.loadVoiceModelProviders().first { it.id == "voice-1" }.credentialId)
+        assertEquals(null, client.loadTextModelProviders().first { it.id == "text-1" }.credentialId)
+        assertEquals(
+            listOf(
+                VoiceModelProviderSetting(
+                    id = "voice-1",
+                    name = "Whisper",
+                    provider = AsrProvider.SHERPA_WHISPER,
+                    modelId = "model-1",
+                    credentialId = null,
+                ),
+            ),
+            Json.decodeFromString<List<VoiceModelProviderSetting>>(
+                store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)
+            )
+        )
+        assertEquals(
+            listOf(
+                TextModelProviderSetting(
+                    id = "text-1",
+                    name = "LLM",
+                    provider = LlmProvider.OPENAI,
+                    modelId = "model-2",
+                    credentialId = null,
+                ),
+            ),
+            Json.decodeFromString<List<TextModelProviderSetting>>(
+                store.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)
+            )
+        )
+        assertEquals(2, store.writeCount)
+    }
+
+    @Test
     fun `peek director and portal reads do not heal malformed startup settings`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
