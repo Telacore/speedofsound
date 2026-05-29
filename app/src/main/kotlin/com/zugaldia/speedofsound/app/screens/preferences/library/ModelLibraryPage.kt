@@ -54,7 +54,91 @@ class ModelLibraryPage(
 
         add(modelsGroup)
         refreshModels()
-        observeModelEvents()
+        pageScope.launch {
+            modelManager.events.collect { event ->
+                when (event) {
+                    is ModelManagerEvent.Progress -> {
+                        when (event.operation) {
+                            ModelManagerEvent.Progress.Operation.DOWNLOADING -> {
+                                val percentage = event.percentage
+                                val subtitle = if (percentage != null) {
+                                    "Downloading (${percentage.toInt()}%)..."
+                                } else {
+                                    event.message
+                                }
+                                updateRowSubtitle(event.modelId, subtitle)
+                            }
+
+                            ModelManagerEvent.Progress.Operation.VERIFYING_CHECKSUM -> {
+                                updateRowSubtitle(event.modelId, "Verifying integrity...")
+                            }
+
+                            ModelManagerEvent.Progress.Operation.EXTRACTING -> {
+                                updateRowSubtitle(event.modelId, "Extracting archive...")
+                            }
+
+                            ModelManagerEvent.Progress.Operation.COPYING_FILES -> {
+                                updateRowSubtitle(event.modelId, "Installing files...")
+                            }
+
+                            ModelManagerEvent.Progress.Operation.DELETING -> {
+                                updateRowSubtitle(event.modelId, event.message)
+                            }
+                        }
+                    }
+
+                    is ModelManagerEvent.Completed -> {
+                        when (event.operation) {
+                            ModelManagerEvent.Completed.Operation.DOWNLOAD -> {
+                                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                                    downloadingModels.remove(event.modelId)
+                                    logger.info("Successfully downloaded model: ${event.modelId}")
+                                    notifyOperationsStateChanged()
+                                    refreshModels()
+                                    false
+                                }
+                            }
+
+                            ModelManagerEvent.Completed.Operation.DELETE -> {
+                                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                                    deletingModels.remove(event.modelId)
+                                    logger.info("Successfully deleted model: ${event.modelId}")
+                                    notifyOperationsStateChanged()
+                                    refreshModels()
+                                    false
+                                }
+                            }
+                        }
+                    }
+
+                    is ModelManagerEvent.Error -> {
+                        when (event.operation) {
+                            ModelManagerEvent.Error.Operation.DOWNLOAD -> {
+                                updateRowSubtitle(event.modelId, "Error: ${event.message}")
+                                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                                    downloadingModels.remove(event.modelId)
+                                    logger.error("Failed to download model: ${event.modelId}", event.exception)
+                                    notifyOperationsStateChanged()
+                                    refreshModels()
+                                    false
+                                }
+                            }
+
+                            ModelManagerEvent.Error.Operation.DELETE -> {
+                                updateRowSubtitle(event.modelId, "Error: ${event.message}")
+                                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                                    deletingModels.remove(event.modelId)
+                                    logger.error("Failed to delete model: ${event.modelId}", event.exception)
+                                    notifyOperationsStateChanged()
+                                    refreshModels()
+                                    false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun refreshModels() {
@@ -151,95 +235,6 @@ class ModelLibraryPage(
                 modelRows[model.id] = row
                 modelsListBox.append(row)
             }
-    }
-
-    @Suppress("LongMethod")
-    private fun observeModelEvents() {
-        pageScope.launch {
-            modelManager.events.collect { event ->
-                when (event) {
-                    is ModelManagerEvent.Progress -> {
-                        when (event.operation) {
-                            ModelManagerEvent.Progress.Operation.DOWNLOADING -> {
-                                val percentage = event.percentage
-                                val subtitle = if (percentage != null) {
-                                    "Downloading (${percentage.toInt()}%)..."
-                                } else {
-                                    event.message
-                                }
-                                updateRowSubtitle(event.modelId, subtitle)
-                            }
-
-                            ModelManagerEvent.Progress.Operation.VERIFYING_CHECKSUM -> {
-                                updateRowSubtitle(event.modelId, "Verifying integrity...")
-                            }
-
-                            ModelManagerEvent.Progress.Operation.EXTRACTING -> {
-                                updateRowSubtitle(event.modelId, "Extracting archive...")
-                            }
-
-                            ModelManagerEvent.Progress.Operation.COPYING_FILES -> {
-                                updateRowSubtitle(event.modelId, "Installing files...")
-                            }
-
-                            ModelManagerEvent.Progress.Operation.DELETING -> {
-                                updateRowSubtitle(event.modelId, event.message)
-                            }
-                        }
-                    }
-
-                    is ModelManagerEvent.Completed -> {
-                        when (event.operation) {
-                            ModelManagerEvent.Completed.Operation.DOWNLOAD -> {
-                                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                                    downloadingModels.remove(event.modelId)
-                                    logger.info("Successfully downloaded model: ${event.modelId}")
-                                    notifyOperationsStateChanged()
-                                    refreshModels()
-                                    false
-                                }
-                            }
-
-                            ModelManagerEvent.Completed.Operation.DELETE -> {
-                                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                                    deletingModels.remove(event.modelId)
-                                    logger.info("Successfully deleted model: ${event.modelId}")
-                                    notifyOperationsStateChanged()
-                                    refreshModels()
-                                    false
-                                }
-                            }
-                        }
-                    }
-
-                    is ModelManagerEvent.Error -> {
-                        when (event.operation) {
-                            ModelManagerEvent.Error.Operation.DOWNLOAD -> {
-                                updateRowSubtitle(event.modelId, "Error: ${event.message}")
-                                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                                    downloadingModels.remove(event.modelId)
-                                    logger.error("Failed to download model: ${event.modelId}", event.exception)
-                                    notifyOperationsStateChanged()
-                                    refreshModels()
-                                    false
-                                }
-                            }
-
-                            ModelManagerEvent.Error.Operation.DELETE -> {
-                                updateRowSubtitle(event.modelId, "Error: ${event.message}")
-                                GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
-                                    deletingModels.remove(event.modelId)
-                                    logger.error("Failed to delete model: ${event.modelId}", event.exception)
-                                    notifyOperationsStateChanged()
-                                    refreshModels()
-                                    false
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private fun updateRowSubtitle(modelId: String, subtitle: String) {
