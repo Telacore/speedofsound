@@ -196,10 +196,6 @@ class AddVoiceModelProviderDialog(
         providerComboRow.setupNotifications()
         modelComboRow.setupNotifications()
         baseUrlEntry.setupNotifications()
-        setupNotifications()
-    }
-
-    private fun setupNotifications() {
         nameEntry.onNotify("text") { updateAddButtonState() }
         credentialComboRow.onNotify("selected") {
             selectedCredentialId = getSelectedCredentialId(currentCredentials)
