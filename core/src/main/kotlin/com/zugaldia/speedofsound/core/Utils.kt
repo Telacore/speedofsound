@@ -53,15 +53,18 @@ internal fun resolveAppDir(
     val snapUserCommon = env["SNAP_USER_COMMON"] // In a Snap
     val xdgDir = env[xdgEnvVar] // Typically, in a Flatpak
     val appDir = if (!snapUserCommon.isNullOrEmpty()) {
-        if (snapSubDir != null) Paths.get(snapUserCommon, snapSubDir) else Paths.get(snapUserCommon)
+        val baseDir = resolveAbsoluteConfiguredPath(snapUserCommon, "SNAP_USER_COMMON")
+        if (snapSubDir != null) baseDir.resolve(snapSubDir) else baseDir
     } else if (!xdgDir.isNullOrEmpty()) {
+        val baseDir = resolveAbsoluteConfiguredPath(xdgDir, xdgEnvVar)
         if (APPLICATION_ID in xdgDir) {
-            Paths.get(xdgDir) // APPLICATION_ID already included in Flatpak sandboxes
+            baseDir // APPLICATION_ID already included in Flatpak sandboxes
         } else {
-            Paths.get(xdgDir, APPLICATION_SHORT)
+            baseDir.resolve(APPLICATION_SHORT)
         }
     } else {
-        Paths.get(userHome, *fallbackPath.toTypedArray(), APPLICATION_SHORT)
+        val homeDir = resolveAbsoluteConfiguredPath(userHome, "user.home")
+        Paths.get(homeDir.toString(), *fallbackPath.toTypedArray(), APPLICATION_SHORT).normalize()
     }
 
     val dir = appDir.toFile()
@@ -75,6 +78,14 @@ internal fun resolveAppDir(
     }
 
     return appDir
+}
+
+private fun resolveAbsoluteConfiguredPath(value: String, label: String): Path {
+    val path = Paths.get(value)
+    if (!path.isAbsolute) {
+        throw IllegalStateException("$label must be an absolute path: $value")
+    }
+    return path.normalize()
 }
 
 /**

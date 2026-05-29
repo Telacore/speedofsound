@@ -101,6 +101,39 @@ class UtilsTest {
     }
 
     @Test
+    fun `resolveAppDir rejects relative xdg directories`() {
+        val tempDir = createTempDirectory("sos-utils-relative-xdg")
+        try {
+            val exception = assertFailsWith<IllegalStateException> {
+                resolveAppDir(
+                    xdgEnvVar = "XDG_DATA_HOME",
+                    fallbackPath = listOf(".local", "share"),
+                    env = mapOf("XDG_DATA_HOME" to "relative/path"),
+                    userHome = tempDir.toString(),
+                )
+            }
+
+            assertTrue(exception.message?.contains("must be an absolute path") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `resolveAppDir rejects relative fallback user home`() {
+        val exception = assertFailsWith<IllegalStateException> {
+            resolveAppDir(
+                xdgEnvVar = "XDG_DATA_HOME",
+                fallbackPath = listOf(".local", "share"),
+                env = emptyMap(),
+                userHome = "relative/home",
+            )
+        }
+
+        assertTrue(exception.message?.contains("user.home must be an absolute path") == true)
+    }
+
+    @Test
     fun `generateTmpWavFilePath returns path with wav extension`() {
         val wavPath = generateTmpWavFilePath()
         assertTrue(wavPath.toString().endsWith(".wav"))
