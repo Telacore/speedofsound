@@ -86,7 +86,15 @@ class AddVoiceModelProviderDialog(
             getCurrentProvider = { selectedProvider },
             onProviderSelected = { provider: AsrProvider ->
                 selectedProvider = provider
-                refreshDialog()
+                baseUrlEntry.clear()
+                messageLabel.label = ""
+                messageLabel.removeCssClass(STYLE_CLASS_ACCENT)
+                messageLabel.removeCssClass(STYLE_CLASS_SUCCESS)
+                messageLabel.removeCssClass(STYLE_CLASS_WARNING)
+                messageLabel.removeCssClass(STYLE_CLASS_ERROR)
+                messageLabel.addCssClass(STYLE_CLASS_ACCENT)
+                modelComboRow.refreshComboRows()
+                updateAddButtonState()
             },
             providers = AsrProvider.getCustomProviders()
         )
@@ -190,7 +198,15 @@ class AddVoiceModelProviderDialog(
         // Initialize state
         refreshSnapshots()
         loadCredentialList()
-        refreshDialog()
+        baseUrlEntry.clear()
+        messageLabel.label = ""
+        messageLabel.removeCssClass(STYLE_CLASS_ACCENT)
+        messageLabel.removeCssClass(STYLE_CLASS_SUCCESS)
+        messageLabel.removeCssClass(STYLE_CLASS_WARNING)
+        messageLabel.removeCssClass(STYLE_CLASS_ERROR)
+        messageLabel.addCssClass(STYLE_CLASS_ACCENT)
+        modelComboRow.refreshComboRows()
+        updateAddButtonState()
 
         // Set up notifications after all widgets are initialized
         providerComboRow.setupNotifications()
@@ -218,18 +234,6 @@ class AddVoiceModelProviderDialog(
                     }
                 }
         }
-    }
-
-    private fun refreshDialog() {
-        baseUrlEntry.clear()
-        messageLabel.label = ""
-        messageLabel.removeCssClass(STYLE_CLASS_ACCENT)
-        messageLabel.removeCssClass(STYLE_CLASS_SUCCESS)
-        messageLabel.removeCssClass(STYLE_CLASS_WARNING)
-        messageLabel.removeCssClass(STYLE_CLASS_ERROR)
-        messageLabel.addCssClass(STYLE_CLASS_ACCENT)
-        modelComboRow.refreshComboRows()
-        updateAddButtonState()
     }
 
     private fun loadCredentialList(preservedCredentialId: String? = null) {
