@@ -59,7 +59,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         check(inputFile.exists()) { "Export file not found: ${inputFile.absolutePath}" }
 
         val exportData = prettyJson.decodeFromString<SettingsExport>(inputFile.readText())
-        if (exportData.version !in 1..3) {
+        if (exportData.version !in 1..4) {
             throw IllegalStateException("Unsupported export version: ${exportData.version}")
         }
 

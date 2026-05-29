@@ -8,6 +8,7 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_BOXED_LIST
 import com.zugaldia.speedofsound.app.STYLE_CLASS_DIM_LABEL
 import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
+import com.zugaldia.speedofsound.app.alarms.formatAlarmName
 import com.zugaldia.speedofsound.app.alarms.formatAlarmSummary
 import com.zugaldia.speedofsound.app.alarms.formatAlarmTime
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
@@ -77,7 +78,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
 
         val alarmsGroup = PreferencesGroup().apply {
             title = "Alarms"
-            description = "Define repeating daily alarms. The action controls notification urgency; " +
+            description = "Define repeating daily alarms and optionally name them. The action controls notification urgency; " +
                 "Silent alarms do not show a desktop notification. Hardware vibration is not guaranteed, " +
                 "so attention-level notifications are the best desktop approximation."
             add(maxAlarmsRow)
@@ -141,7 +142,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
 
     private fun addAlarmToUI(alarm: AlarmSetting) {
         val row = ActionRow().apply {
-            title = formatAlarmTime(alarm)
+            title = formatAlarmName(alarm)
             subtitle = formatAlarmSummary(alarm)
         }
 

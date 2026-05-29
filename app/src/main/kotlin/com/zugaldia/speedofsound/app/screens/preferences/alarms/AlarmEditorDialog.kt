@@ -11,6 +11,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
 import org.gnome.adw.ComboRow
 import org.gnome.adw.Dialog
+import org.gnome.adw.EntryRow
 import org.gnome.adw.PreferencesGroup
 import org.gnome.adw.SpinRow
 import org.gnome.adw.SwitchRow
@@ -24,6 +25,7 @@ class AlarmEditorDialog(
     private val existingAlarm: AlarmSetting? = null,
     private val onAlarmSaved: (AlarmSetting) -> Unit,
 ) : Dialog() {
+    private val nameRow: EntryRow
     private val hourRow: SpinRow
     private val minuteRow: SpinRow
     private val actionRow: ComboRow
@@ -34,6 +36,11 @@ class AlarmEditorDialog(
         contentWidth = DEFAULT_ADD_ALARM_DIALOG_WIDTH
         contentHeight = DEFAULT_ADD_ALARM_DIALOG_HEIGHT
 
+        nameRow = EntryRow().apply {
+            title = "Name"
+            subtitle = "Optional label shown in the list and notifications"
+            text = existingAlarm?.name ?: ""
+        }
         hourRow = SpinRow.withRange(0.0, 23.0, 1.0).apply {
             title = "Hour"
             subtitle = "24-hour clock"
@@ -64,9 +71,11 @@ class AlarmEditorDialog(
 
         val group = PreferencesGroup().apply {
             title = if (existingAlarm == null) "New Alarm" else "Alarm"
-            description = "Alarms repeat every day at the chosen time. " +
+            description = "Alarms repeat every day at the chosen time. Add an optional name to " +
+                "make multiple alarms easier to tell apart. " +
                 "Silent skips the desktop notification entirely. Attention and Urgent " +
                 "increase notification urgency; true hardware vibration is not guaranteed on desktop Linux."
+            add(nameRow)
             add(hourRow)
             add(minuteRow)
             add(actionRow)
@@ -83,6 +92,7 @@ class AlarmEditorDialog(
                 onAlarmSaved(
                     AlarmSetting(
                         id = existingAlarm?.id ?: generateUniqueId(),
+                        name = nameRow.text.trim(),
                         hour = hourRow.value.toInt(),
                         minute = minuteRow.value.toInt(),
                         action = selectedAction(),

@@ -239,6 +239,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 compareBy<AlarmSetting> { it.hour }
                     .thenBy { it.minute }
                     .thenBy { it.action.ordinal }
+                    .thenBy { it.name.lowercase() }
                     .thenBy { it.id }
             )
             .distinctBy { it.id }

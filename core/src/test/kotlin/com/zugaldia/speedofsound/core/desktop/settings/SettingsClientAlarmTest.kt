@@ -42,15 +42,16 @@ class SettingsClientAlarmTest {
         client.setMaxAlarms(2)
 
         val alarms = listOf(
-            AlarmSetting(id = "alarm-1", hour = 6, minute = 0),
-            AlarmSetting(id = "alarm-2", hour = 7, minute = 0),
-            AlarmSetting(id = "alarm-3", hour = 8, minute = 0),
+            AlarmSetting(id = "alarm-1", name = "Early", hour = 6, minute = 0),
+            AlarmSetting(id = "alarm-2", name = "Mid", hour = 7, minute = 0),
+            AlarmSetting(id = "alarm-3", name = "Late", hour = 8, minute = 0),
         )
 
         client.setAlarms(alarms)
 
         assertEquals(2, client.getAlarms().size)
         assertEquals(listOf("alarm-1", "alarm-2"), client.getAlarms().map { it.id })
+        assertEquals(listOf("Early", "Mid"), client.getAlarms().map { it.name })
     }
 
     @Test
@@ -58,12 +59,13 @@ class SettingsClientAlarmTest {
         val store = MapSettingsStore()
         val client = SettingsClient(store)
 
-        val validAlarm = AlarmSetting(id = "alarm-1", hour = 7, minute = 30, action = AlarmAction.ATTENTION)
-        val invalidAlarm = AlarmSetting(id = "alarm-2", hour = 25, minute = 99, action = AlarmAction.URGENT)
+        val validAlarm = AlarmSetting(id = "alarm-1", name = "Morning", hour = 7, minute = 30, action = AlarmAction.ATTENTION)
+        val invalidAlarm = AlarmSetting(id = "alarm-2", name = "Broken", hour = 25, minute = 99, action = AlarmAction.URGENT)
 
         client.setAlarms(listOf(validAlarm, invalidAlarm))
 
         assertEquals(listOf(validAlarm), client.getAlarms())
+        assertEquals(listOf("Morning"), client.getAlarms().map { it.name })
     }
 
     @Test

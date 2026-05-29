@@ -41,4 +41,22 @@ class AlarmScheduleTest {
         val alarm = AlarmSetting(id = "alarm-2", hour = 5, minute = 7)
         assertEquals("05:07", formatAlarmTime(alarm))
     }
+
+    @Test
+    fun `alarm name falls back to time when blank`() {
+        val unnamedAlarm = AlarmSetting(id = "alarm-3", hour = 9, minute = 45)
+        val namedAlarm = AlarmSetting(id = "alarm-4", name = "Breakfast", hour = 9, minute = 45)
+
+        assertEquals("Alarm 09:45", formatAlarmName(unnamedAlarm))
+        assertEquals("Breakfast", formatAlarmName(namedAlarm))
+    }
+
+    @Test
+    fun `alarm notification body uses name when present`() {
+        val unnamedAlarm = AlarmSetting(id = "alarm-5", hour = 9, minute = 45)
+        val namedAlarm = AlarmSetting(id = "alarm-6", name = "Breakfast", hour = 9, minute = 45)
+
+        assertEquals("Alarm 09:45 is due. (Normal)", formatAlarmNotificationBody(unnamedAlarm))
+        assertEquals("Breakfast is due at 09:45. (Normal)", formatAlarmNotificationBody(namedAlarm))
+    }
 }

@@ -88,7 +88,7 @@ class AlarmSchedulerService(
     }
 
     private fun fireAlarm(alarm: AlarmSetting) {
-        val body = "Alarm ${formatAlarmTime(alarm)} is due. (${formatAlarmAction(alarm.action)})"
+        val body = formatAlarmNotificationBody(alarm)
         logger.info("Firing alarm {} with action {}", alarm.id, alarm.action)
         if (!shouldNotifyAlarm(alarm.action)) {
             logger.info("Alarm {} is silent; skipping desktop notification.", alarm.id)

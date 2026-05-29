@@ -77,6 +77,7 @@ enum class AlarmAction {
 @Serializable
 data class AlarmSetting(
     val id: String,
+    val name: String = "",
     val hour: Int,
     val minute: Int,
     val action: AlarmAction = AlarmAction.NORMAL,
@@ -95,7 +96,7 @@ fun AlarmSetting.isValid(): Boolean =
  */
 @Serializable
 data class SettingsExport(
-    val version: Int = 3,
+    val version: Int = 4,
     val defaultLanguage: String = DEFAULT_LANGUAGE.iso2,
     val secondaryLanguage: String = DEFAULT_SECONDARY_LANGUAGE.iso2,
     val backgroundRecording: Boolean = DEFAULT_BACKGROUND_RECORDING,

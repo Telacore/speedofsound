@@ -9,6 +9,19 @@ import java.util.Locale
 fun formatAlarmTime(alarm: AlarmSetting): String =
     String.format(Locale.ROOT, "%02d:%02d", alarm.hour, alarm.minute)
 
+fun formatAlarmName(alarm: AlarmSetting): String =
+    alarm.name.trim().ifBlank { "Alarm ${formatAlarmTime(alarm)}" }
+
+fun formatAlarmNotificationBody(alarm: AlarmSetting): String {
+    val formattedTime = formatAlarmTime(alarm)
+    val trimmedName = alarm.name.trim()
+    return if (trimmedName.isBlank()) {
+        "Alarm $formattedTime is due. (${formatAlarmAction(alarm.action)})"
+    } else {
+        "$trimmedName is due at $formattedTime. (${formatAlarmAction(alarm.action)})"
+    }
+}
+
 fun formatAlarmAction(action: AlarmAction): String = when (action) {
     AlarmAction.SILENT -> "Silent"
     AlarmAction.NORMAL -> "Normal"
