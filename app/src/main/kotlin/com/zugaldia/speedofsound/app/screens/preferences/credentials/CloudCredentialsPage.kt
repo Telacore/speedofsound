@@ -157,41 +157,34 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         row.addSuffix(deleteButton)
         credentialsListBox.append(row)
         deleteButton.onClicked {
-            if (onCredentialDeleted(credential.id, credential.name)) {
+            val credentialToDelete = currentCredentials.find { it.id == credential.id }
+            if (credentialToDelete != null) {
+                val referencingProviders = buildList {
+                    addAll(currentTextProviders.filter { it.credentialId == credentialToDelete.id }.map {
+                        "Text: ${it.name}"
+                    })
+                    addAll(currentVoiceProviders.filter { it.credentialId == credentialToDelete.id }.map {
+                        "Voice: ${it.name}"
+                    })
+                }
+                if (referencingProviders.isNotEmpty()) {
+                    val providerNames = referencingProviders.joinToString(", ")
+                    logger.warn("Cannot delete credential '${credential.name}': used by providers: $providerNames")
+                    return@onClicked
+                }
+            }
+
+            val updatedCredentials = currentCredentials.filter { it.id != credential.id }
+            logger.info("Removing credential '${credential.name}', total is now ${updatedCredentials.size} entries.")
+            if (!viewModel.setCredentials(updatedCredentials, currentVoiceProviders, currentTextProviders)) {
+                logger.warn("Failed to persist credential deletion '${credential.name}'")
+                refresh()
+            } else {
+                currentCredentials = updatedCredentials
+                updatePlaceholderVisibility(currentCredentials)
                 credentialsListBox.remove(row)
             }
         }
-    }
-
-    private fun onCredentialDeleted(credentialId: String, credentialName: String): Boolean {
-        val credentialToDelete = currentCredentials.find { it.id == credentialId }
-        if (credentialToDelete != null) {
-            val referencingProviders = buildList {
-                addAll(currentTextProviders.filter { it.credentialId == credentialToDelete.id }.map {
-                    "Text: ${it.name}"
-                })
-                addAll(currentVoiceProviders.filter { it.credentialId == credentialToDelete.id }.map {
-                    "Voice: ${it.name}"
-                })
-            }
-            if (referencingProviders.isNotEmpty()) {
-                val providerNames = referencingProviders.joinToString(", ")
-                logger.warn("Cannot delete credential '$credentialName': used by providers: $providerNames")
-                return false
-            }
-        }
-
-        // Proceed with deletion
-        val updatedCredentials = currentCredentials.filter { it.id != credentialId }
-        logger.info("Removing credential '$credentialName', total is now ${updatedCredentials.size} entries.")
-        if (!viewModel.setCredentials(updatedCredentials, currentVoiceProviders, currentTextProviders)) {
-            logger.warn("Failed to persist credential deletion '$credentialName'")
-            refresh()
-            return false
-        }
-        currentCredentials = updatedCredentials
-        updatePlaceholderVisibility(currentCredentials)
-        return true
     }
 
     private fun updatePlaceholderVisibility(credentials: List<CredentialSetting> = currentCredentials) {
