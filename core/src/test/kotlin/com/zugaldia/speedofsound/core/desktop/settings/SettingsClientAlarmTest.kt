@@ -368,6 +368,24 @@ class SettingsClientAlarmTest {
         val client = SettingsClient(store)
 
         assertEquals(listOf(validAlarm), client.getAlarms())
+        assertEquals(Json.encodeToString(listOf(validAlarm)), store.getString(KEY_ALARMS, DEFAULT_ALARMS))
+    }
+
+    @Test
+    fun `peekAlarms does not heal invalid entries already stored`() {
+        val validAlarm = AlarmSetting(id = "alarm-1", hour = 6, minute = 15, action = AlarmAction.NORMAL)
+        val invalidAlarm = AlarmSetting(id = "", hour = 24, minute = -1, action = AlarmAction.SILENT)
+        val rawJson = Json.encodeToString(listOf(validAlarm, invalidAlarm))
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARMS to rawJson
+            )
+        )
+
+        val client = SettingsClient(store)
+
+        assertEquals(listOf(validAlarm), client.peekAlarms())
+        assertEquals(rawJson, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
     }
 
     @Test
@@ -381,6 +399,7 @@ class SettingsClientAlarmTest {
         val client = SettingsClient(store)
 
         assertEquals(emptyList(), client.getAlarms())
+        assertEquals(DEFAULT_ALARMS, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
     }
 
     private class MapSettingsStore(

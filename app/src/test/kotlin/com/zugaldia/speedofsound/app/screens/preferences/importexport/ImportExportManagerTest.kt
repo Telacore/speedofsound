@@ -3,8 +3,12 @@ package com.zugaldia.speedofsound.app.screens.preferences.importexport
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
+import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
+import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_ALARM_SCHEDULER_STATE
+import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARM_SCHEDULER_STATE
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
@@ -148,6 +152,32 @@ class ImportExportManagerTest {
             DEFAULT_ALARM_SCHEDULER_STATE,
             store.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
         )
+    }
+
+    @Test
+    fun `export does not heal invalid alarms`() {
+        val validAlarm = AlarmSetting(id = "alarm-1", name = "Morning", hour = 6, minute = 0, action = AlarmAction.ATTENTION)
+        val invalidAlarm = AlarmSetting(id = "alarm-2", name = "Broken", hour = 25, minute = 0, action = AlarmAction.URGENT)
+        val rawJson = Json.encodeToString(listOf(validAlarm, invalidAlarm))
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARMS to rawJson,
+            )
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        val exportPath = manager.export().getOrThrow()
+        val exported = Json.decodeFromString<SettingsExport>(File(exportPath).readText())
+
+        assertEquals(listOf(validAlarm), exported.alarms)
+        assertEquals(rawJson, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
     }
 
     private class MapSettingsStore(

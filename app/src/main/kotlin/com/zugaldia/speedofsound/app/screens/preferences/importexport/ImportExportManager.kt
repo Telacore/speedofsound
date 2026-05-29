@@ -38,7 +38,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             hideInsteadOfMinimize = viewModel.getHideInsteadOfMinimize(),
             stayHiddenOnActivation = viewModel.getStayHiddenOnActivation(),
             appendSpace = viewModel.getAppendSpace(),
-            alarms = viewModel.getAlarms(),
+            alarms = viewModel.peekAlarms(),
             maxAlarms = viewModel.getMaxAlarms(),
             alarmSchedulerState = AlarmSchedulerState(
                 lastCheckAt = schedulerState.lastCheckAt,

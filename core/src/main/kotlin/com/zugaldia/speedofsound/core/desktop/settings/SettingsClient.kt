@@ -190,25 +190,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
      * Alarms page
      */
 
-    fun getAlarms(): List<AlarmSetting> {
-        val json = settingsStore.getString(KEY_ALARMS, DEFAULT_ALARMS)
-        return if (json.isEmpty() || json == DEFAULT_ALARMS) {
-            emptyList()
-        } else {
-            val decoded = runCatching {
-                Json.decodeFromString<List<AlarmSetting>>(json)
-            }.getOrElse { error ->
-                logger.error("Failed to decode alarms from JSON", error)
-                emptyList()
-            }
-            val normalized = normalizeAlarms(decoded)
-            val dropped = decoded.size - normalized.size
-            if (dropped > 0) {
-                logger.warn("Adjusted {} alarm(s) while loading settings", dropped)
-            }
-            normalized
-        }
-    }
+    fun getAlarms(): List<AlarmSetting> = readAlarms(heal = true)
+
+    fun peekAlarms(): List<AlarmSetting> = readAlarms(heal = false)
 
     fun setAlarms(value: List<AlarmSetting>): Boolean {
         val normalizedAlarms = normalizeAlarms(value)
@@ -216,10 +200,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         if (dropped > 0) {
             logger.warn("Adjusted {} alarm(s) while saving settings", dropped)
         }
-        val json = Json.encodeToString(normalizedAlarms)
-        return settingsStore.setString(KEY_ALARMS, json).also { success ->
-            if (success) _settingsChanged.tryEmit(KEY_ALARMS)
-        }
+        return persistAlarms(normalizedAlarms, emitChange = true)
     }
 
     fun getAlarmSchedulerState(): AlarmSchedulerState {
@@ -321,6 +302,42 @@ class SettingsClient(val settingsStore: SettingsStore) {
             .toList()
 
         return sortedUniqueAlarms.take(getMaxAlarms())
+    }
+
+    private fun readAlarms(heal: Boolean): List<AlarmSetting> {
+        val json = settingsStore.getString(KEY_ALARMS, DEFAULT_ALARMS)
+        if (json.isEmpty() || json == DEFAULT_ALARMS) {
+            return emptyList()
+        }
+
+        val decoded = runCatching {
+            Json.decodeFromString<List<AlarmSetting>>(json)
+        }.getOrElse { error ->
+            logger.error("Failed to decode alarms from JSON", error)
+            if (heal) {
+                persistAlarms(emptyList(), emitChange = false)
+            }
+            return emptyList()
+        }
+
+        val normalized = normalizeAlarms(decoded)
+        val dropped = decoded.size - normalized.size
+        if (dropped > 0) {
+            logger.warn("Adjusted {} alarm(s) while loading settings", dropped)
+        }
+
+        if (heal && decoded != normalized) {
+            persistAlarms(normalized, emitChange = false)
+        }
+
+        return normalized
+    }
+
+    private fun persistAlarms(value: List<AlarmSetting>, emitChange: Boolean): Boolean {
+        val json = Json.encodeToString(value)
+        return settingsStore.setString(KEY_ALARMS, json).also { success ->
+            if (success && emitChange) _settingsChanged.tryEmit(KEY_ALARMS)
+        }
     }
 
     private fun normalizeStoredAlarmsToCurrentLimit() {
