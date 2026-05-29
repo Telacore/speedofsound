@@ -7,6 +7,16 @@ import kotlin.test.assertEquals
 class SettingsClientAlarmTest {
 
     @Test
+    fun `setMaxAlarms clamps the value to the supported range`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        client.setMaxAlarms(999)
+
+        assertEquals(MAX_MAX_ALARMS, client.getMaxAlarms())
+    }
+
+    @Test
     fun `setAlarms filters invalid entries before persisting`() {
         val store = MapSettingsStore()
         val client = SettingsClient(store)

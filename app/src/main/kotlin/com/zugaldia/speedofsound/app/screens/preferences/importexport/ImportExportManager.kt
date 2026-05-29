@@ -36,6 +36,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             stayHiddenOnActivation = viewModel.getStayHiddenOnActivation(),
             appendSpace = viewModel.getAppendSpace(),
             alarms = viewModel.getAlarms(),
+            maxAlarms = viewModel.getMaxAlarms(),
             credentials = viewModel.getCredentials(),
             voiceModelProviders = viewModel.getVoiceModelProviders()
                 .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys },
@@ -58,7 +59,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         check(inputFile.exists()) { "Export file not found: ${inputFile.absolutePath}" }
 
         val exportData = prettyJson.decodeFromString<SettingsExport>(inputFile.readText())
-        if (exportData.version !in 1..2) {
+        if (exportData.version !in 1..3) {
             throw IllegalStateException("Unsupported export version: ${exportData.version}")
         }
 
@@ -68,6 +69,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         viewModel.setHideInsteadOfMinimize(exportData.hideInsteadOfMinimize)
         viewModel.setStayHiddenOnActivation(exportData.stayHiddenOnActivation)
         viewModel.setAppendSpace(exportData.appendSpace)
+        viewModel.setMaxAlarms(exportData.maxAlarms)
 
         val existingAlarms = viewModel.getAlarms()
         val existingAlarmIds = existingAlarms.map { it.id }.toSet()

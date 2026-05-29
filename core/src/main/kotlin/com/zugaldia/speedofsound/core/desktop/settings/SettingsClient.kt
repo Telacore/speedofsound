@@ -220,6 +220,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
+    fun getMaxAlarms(): Int =
+        settingsStore.getInt(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS)
+            .coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)
+
+    fun setMaxAlarms(value: Int): Boolean =
+        settingsStore.setInt(KEY_MAX_ALARMS, value.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)).also { success ->
+            if (success) _settingsChanged.tryEmit(KEY_MAX_ALARMS)
+        }
+
     /*
      * Cloud Credentials page
      */

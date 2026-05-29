@@ -95,7 +95,7 @@ fun AlarmSetting.isValid(): Boolean =
  */
 @Serializable
 data class SettingsExport(
-    val version: Int = 2,
+    val version: Int = 3,
     val defaultLanguage: String = DEFAULT_LANGUAGE.iso2,
     val secondaryLanguage: String = DEFAULT_SECONDARY_LANGUAGE.iso2,
     val backgroundRecording: Boolean = DEFAULT_BACKGROUND_RECORDING,
@@ -103,6 +103,7 @@ data class SettingsExport(
     val stayHiddenOnActivation: Boolean = DEFAULT_STAY_HIDDEN_ON_ACTIVATION,
     val appendSpace: Boolean = DEFAULT_APPEND_SPACE,
     val alarms: List<AlarmSetting> = emptyList(),
+    val maxAlarms: Int = DEFAULT_MAX_ALARMS,
     val credentials: List<CredentialSetting> = emptyList(),
     val voiceModelProviders: List<VoiceModelProviderSetting> = emptyList(),
     val textModelProviders: List<TextModelProviderSetting> = emptyList(),

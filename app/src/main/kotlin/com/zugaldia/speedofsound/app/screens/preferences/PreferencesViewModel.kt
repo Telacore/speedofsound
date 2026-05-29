@@ -75,6 +75,8 @@ class PreferencesViewModel(
 
     fun getAlarms(): List<AlarmSetting> = settingsClient.getAlarms()
     fun setAlarms(value: List<AlarmSetting>): Boolean = settingsClient.setAlarms(value)
+    fun getMaxAlarms(): Int = settingsClient.getMaxAlarms()
+    fun setMaxAlarms(value: Int): Boolean = settingsClient.setMaxAlarms(value)
 
     /*
      * Cloud Credentials page

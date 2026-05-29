@@ -15,6 +15,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import org.gnome.adw.ActionRow
 import org.gnome.adw.PreferencesGroup
 import org.gnome.adw.PreferencesPage
+import org.gnome.adw.SpinRow
 import org.gnome.gtk.Align
 import org.gnome.gtk.Box
 import org.gnome.gtk.Button
@@ -31,6 +32,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
     private val alarmsListBox: ListBox
     private val placeholderBox: Box
     private val addButton: Button
+    private val maxAlarmsRow: SpinRow
 
     init {
         title = "Alarms"
@@ -39,6 +41,17 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         addButton = Button.withLabel("Add Alarm").apply {
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
             onClicked { showAlarmEditor() }
+        }
+
+        maxAlarmsRow = SpinRow.withRange(
+            com.zugaldia.speedofsound.core.desktop.settings.MIN_MAX_ALARMS.toDouble(),
+            com.zugaldia.speedofsound.core.desktop.settings.MAX_MAX_ALARMS.toDouble(),
+            1.0
+        ).apply {
+            title = "Maximum Alarms"
+            subtitle = "How many alarms you can define in total"
+            digits = 0
+            value = viewModel.getMaxAlarms().toDouble()
         }
 
         alarmsListBox = ListBox().apply {
@@ -66,6 +79,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
             description = "Define repeating daily alarms. The action controls notification urgency; " +
                 "Silent alarms do not show a desktop notification. Hardware vibration is not guaranteed, " +
                 "so attention-level notifications are the best desktop approximation."
+            add(maxAlarmsRow)
             add(addButton)
             add(alarmsListBox)
             add(placeholderBox)
@@ -73,6 +87,11 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
 
         add(alarmsGroup)
         loadAlarms()
+
+        maxAlarmsRow.onNotify("value") {
+            viewModel.setMaxAlarms(maxAlarmsRow.value.toInt())
+            updateAddButtonState()
+        }
     }
 
     fun refresh() {
@@ -86,6 +105,8 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
             .sortedWith(compareBy<AlarmSetting> { it.hour }.thenBy { it.minute }.thenBy { it.id })
             .forEach { alarm -> addAlarmToUI(alarm) }
         updatePlaceholderVisibility()
+        maxAlarmsRow.value = viewModel.getMaxAlarms().toDouble()
+        updateAddButtonState()
     }
 
     private fun showAlarmEditor(existingAlarm: AlarmSetting? = null) {
@@ -148,5 +169,9 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         val hasAlarms = viewModel.getAlarms().isNotEmpty()
         alarmsListBox.visible = hasAlarms
         placeholderBox.visible = !hasAlarms
+    }
+
+    private fun updateAddButtonState() {
+        addButton.sensitive = viewModel.getAlarms().size < viewModel.getMaxAlarms()
     }
 }

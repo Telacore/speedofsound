@@ -24,7 +24,7 @@ Voice typing for the Linux desktop:
 - Offline, on-device transcription powered by Whisper, Parakeet, Canary, and more. No data leaves your machine.
 - Multiple activation options: click the in-app button, use a global keyboard shortcut, or control the app from the system tray.
 - Types the result directly into any focused application using Portals for wide desktop support (X11, Wayland).
-- Configurable repeating alarms with per-alarm notification urgency, backed by desktop notifications.
+- Configurable repeating alarms with a user-defined alarm limit and per-alarm notification urgency, backed by desktop notifications.
 - Multi-language support with switchable primary and secondary languages on the fly.
 - Works out of the box with a built-in multilingual Whisper model. Download additional models from within the app to improve accuracy and language coverage.
 - *Optional* text polishing with LLMs (Anthropic, Google, OpenAI), with support for a custom context and vocabulary.
