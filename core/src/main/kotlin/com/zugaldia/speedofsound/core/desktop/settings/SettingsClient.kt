@@ -199,22 +199,22 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 logger.error("Failed to decode alarms from JSON", error)
                 emptyList()
             }
-            val filtered = decoded.filter { it.isValid() }
-            val dropped = decoded.size - filtered.size
+            val normalized = normalizeAlarms(decoded)
+            val dropped = decoded.size - normalized.size
             if (dropped > 0) {
-                logger.warn("Dropped {} invalid alarm(s) from settings", dropped)
+                logger.warn("Adjusted {} alarm(s) while loading settings", dropped)
             }
-            filtered
+            normalized
         }
     }
 
     fun setAlarms(value: List<AlarmSetting>): Boolean {
-        val validAlarms = value.filter { it.isValid() }
-        val dropped = value.size - validAlarms.size
+        val normalizedAlarms = normalizeAlarms(value)
+        val dropped = value.size - normalizedAlarms.size
         if (dropped > 0) {
-            logger.warn("Ignoring {} invalid alarm(s) while saving settings", dropped)
+            logger.warn("Adjusted {} alarm(s) while saving settings", dropped)
         }
-        val json = Json.encodeToString(validAlarms)
+        val json = Json.encodeToString(normalizedAlarms)
         return settingsStore.setString(KEY_ALARMS, json).also { success ->
             if (success) _settingsChanged.tryEmit(KEY_ALARMS)
         }
@@ -228,6 +228,21 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.setInt(KEY_MAX_ALARMS, value.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)).also { success ->
             if (success) _settingsChanged.tryEmit(KEY_MAX_ALARMS)
         }
+
+    private fun normalizeAlarms(value: List<AlarmSetting>): List<AlarmSetting> {
+        val sortedUniqueAlarms = value.asSequence()
+            .filter { it.isValid() }
+            .sortedWith(
+                compareBy<AlarmSetting> { it.hour }
+                    .thenBy { it.minute }
+                    .thenBy { it.action.ordinal }
+                    .thenBy { it.id }
+            )
+            .distinctBy { it.id }
+            .toList()
+
+        return sortedUniqueAlarms.take(getMaxAlarms())
+    }
 
     /*
      * Cloud Credentials page
