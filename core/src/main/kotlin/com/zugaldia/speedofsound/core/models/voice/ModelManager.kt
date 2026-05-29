@@ -100,7 +100,7 @@ class ModelManager(
     }
 
     private fun createTempDirectory(): Path {
-        val tempDir = pathProvider.getCacheDir().resolve(idGenerator.generateUniqueId())
+        val tempDir = resolveSafeChildPath(pathProvider.getCacheDir(), idGenerator.generateUniqueId())
         fileSystem.mkdirs(tempDir)
         ensureWritableDirectory(tempDir)
         return tempDir

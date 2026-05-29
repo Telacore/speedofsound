@@ -51,4 +51,51 @@ class ModelManagerTest {
             tempDir.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    fun `downloadModel rejects traversal temp directory ids`() = runBlocking {
+        val tempDir = createTempDirectory("sos-model-manager")
+        try {
+            val dataDir = tempDir.resolve("data")
+            val cacheDir = tempDir.resolve("cache")
+            dataDir.toFile().mkdirs()
+            cacheDir.toFile().mkdirs()
+
+            val model = VoiceModel(
+                id = "test-model",
+                name = "Test Model",
+                provider = AsrProvider.SHERPA_WHISPER,
+                archiveFile = VoiceModelFile(
+                    name = "model.tar.bz2",
+                    url = "https://example.com/model.tar.bz2",
+                    sha256sum = "deadbeef",
+                ),
+                components = listOf(VoiceModelFile(name = "model.onnx")),
+            )
+
+            val manager = ModelManager(
+                pathProvider = object : PathProvider {
+                    override fun getDataDir() = dataDir
+                    override fun getCacheDir() = cacheDir
+                },
+                voiceModelCatalog = object : VoiceModelCatalog {
+                    override fun getModel(modelId: String): VoiceModel? = model.takeIf { it.id == modelId }
+                    override fun getDefaultModelId(): String = model.id
+                },
+                idGenerator = object : IdGenerator {
+                    override fun generateUniqueId(): String = "../escape"
+                },
+                modelDownloaderFactory = {
+                    error("Model downloader must not be created when temp dir id is invalid")
+                }
+            )
+
+            val result = manager.downloadModel(model.id)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull()?.message?.contains("escapes model directory") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
 }
