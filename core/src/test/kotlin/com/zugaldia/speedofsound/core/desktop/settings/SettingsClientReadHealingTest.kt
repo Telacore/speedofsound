@@ -1,5 +1,8 @@
 package com.zugaldia.speedofsound.core.desktop.settings
 
+import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
+import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -89,6 +92,131 @@ class SettingsClientReadHealingTest {
             store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
         )
         assertEquals(2, store.writeCount)
+    }
+
+    @Test
+    fun `valid but dirty credential and provider json is normalized on read`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_CREDENTIALS to Json.encodeToString(
+                    listOf(
+                        CredentialSetting(
+                            id = " cred-1 ",
+                            type = CredentialType.API_KEY,
+                            name = " Primary ",
+                            value = " secret ",
+                        ),
+                        CredentialSetting(
+                            id = "cred-1",
+                            type = CredentialType.API_KEY,
+                            name = "Duplicate",
+                            value = "ignored",
+                        ),
+                    )
+                ),
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = " voice-1 ",
+                            name = " Whisper ",
+                            provider = AsrProvider.SHERPA_WHISPER,
+                            modelId = " model-1 ",
+                            credentialId = " cred-1 ",
+                            baseUrl = " https://example.com ",
+                        ),
+                    )
+                ),
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = " text-1 ",
+                            name = " LLM ",
+                            provider = LlmProvider.OPENAI,
+                            modelId = " model-2 ",
+                            credentialId = " cred-1 ",
+                            baseUrl = " https://example.com ",
+                            disableThinking = true,
+                        ),
+                    )
+                ),
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(
+            listOf(
+                CredentialSetting(id = "cred-1", type = CredentialType.API_KEY, name = "Primary", value = "secret"),
+            ),
+            client.getCredentials()
+        )
+        assertEquals(
+            listOf(
+                VoiceModelProviderSetting(
+                    id = "voice-1",
+                    name = "Whisper",
+                    provider = AsrProvider.SHERPA_WHISPER,
+                    modelId = "model-1",
+                    credentialId = "cred-1",
+                    baseUrl = "https://example.com",
+                ),
+            ),
+            client.getVoiceModelProviders().filter { it.id == "voice-1" }
+        )
+        assertEquals(
+            listOf(
+                TextModelProviderSetting(
+                    id = "text-1",
+                    name = "LLM",
+                    provider = LlmProvider.OPENAI,
+                    modelId = "model-2",
+                    credentialId = "cred-1",
+                    baseUrl = "https://example.com",
+                    disableThinking = true,
+                ),
+            ),
+            client.getTextModelProviders()
+        )
+
+        assertEquals(
+            Json.encodeToString(
+                listOf(
+                    CredentialSetting(id = "cred-1", type = CredentialType.API_KEY, name = "Primary", value = "secret"),
+                )
+            ),
+            store.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS)
+        )
+        assertEquals(
+            Json.encodeToString(
+                listOf(
+                    VoiceModelProviderSetting(
+                        id = "voice-1",
+                        name = "Whisper",
+                        provider = AsrProvider.SHERPA_WHISPER,
+                        modelId = "model-1",
+                        credentialId = "cred-1",
+                        baseUrl = "https://example.com",
+                    ),
+                )
+            ),
+            store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)
+        )
+        assertEquals(
+            Json.encodeToString(
+                listOf(
+                    TextModelProviderSetting(
+                        id = "text-1",
+                        name = "LLM",
+                        provider = LlmProvider.OPENAI,
+                        modelId = "model-2",
+                        credentialId = "cred-1",
+                        baseUrl = "https://example.com",
+                        disableThinking = true,
+                    ),
+                )
+            ),
+            store.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)
+        )
+        assertEquals(3, store.writeCount)
     }
 
     @Test

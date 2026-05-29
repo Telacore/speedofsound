@@ -548,11 +548,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
      */
 
     fun getCredentials(): List<CredentialSetting> {
-        return readJsonListSetting(
+        return readNormalizedJsonListSetting<CredentialSetting>(
             key = KEY_CREDENTIALS,
             defaultValue = DEFAULT_CREDENTIALS,
             label = "credentials",
-            heal = true,
+            normalize = { it.normalizedCredentials() },
         )
     }
 
@@ -587,11 +587,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun getVoiceModelProviders(): List<VoiceModelProviderSetting> {
-        val customProviders = readJsonListSetting(
+        val customProviders = readNormalizedJsonListSetting<VoiceModelProviderSetting>(
             key = KEY_VOICE_MODEL_PROVIDERS,
             defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
             label = "voice model providers",
-            heal = true,
+            normalize = { it.normalizedVoiceModelProviders() },
         )
 
         // Include the local provider first
@@ -694,11 +694,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getTextModelProviders(): List<TextModelProviderSetting> {
-        return readJsonListSetting(
+        return readNormalizedJsonListSetting<TextModelProviderSetting>(
             key = KEY_TEXT_MODEL_PROVIDERS,
             defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,
             label = "text model providers",
-            heal = true,
+            normalize = { it.normalizedTextModelProviders() },
         )
     }
 
@@ -849,11 +849,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
-    private inline fun <reified T> readJsonListSetting(
+    private inline fun <reified T> readNormalizedJsonListSetting(
         key: String,
         defaultValue: String,
         label: String,
-        heal: Boolean,
+        normalize: (List<T>) -> List<T>,
     ): List<T> {
         val json = settingsStore.getString(key, defaultValue)
         if (json.isEmpty() || json == defaultValue) {
@@ -862,11 +862,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
         return runCatching {
             Json.decodeFromString<List<T>>(json)
+        }.map { parsed ->
+            val normalized = normalize(parsed)
+            if (parsed != normalized) {
+                settingsStore.setString(key, Json.encodeToString(normalized))
+            }
+            normalized
         }.getOrElse { error ->
             logger.error("Failed to decode {} from JSON", label, error)
-            if (heal) {
-                settingsStore.setString(key, Json.encodeToString(emptyList<T>()))
-            }
+            settingsStore.setString(key, Json.encodeToString(emptyList<T>()))
             emptyList()
         }
     }
