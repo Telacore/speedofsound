@@ -91,6 +91,20 @@ class SettingsClientReadHealingTest {
         assertEquals(2, store.writeCount)
     }
 
+    @Test
+    fun `malformed custom vocabulary is healed on read`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_CUSTOM_VOCABULARY to " alpha ||| |||beta|||alpha|||  gamma  "
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(listOf("alpha", "beta", "gamma"), client.getCustomVocabulary())
+        assertEquals("alpha|||beta|||gamma", store.getString(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY.joinToString("|||")))
+        assertEquals(1, store.writeCount)
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {

@@ -730,13 +730,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(KEY_CUSTOM_CONTEXT, getCustomContext(), value, KEY_CUSTOM_CONTEXT)
 
     fun getCustomVocabulary(): List<String> =
-        settingsStore.getStringArray(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY)
+        readCustomVocabulary()
 
     fun setCustomVocabulary(value: List<String>): Boolean =
         setStringArraySettingIfChanged(
             KEY_CUSTOM_VOCABULARY,
             settingsStore.getString(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY.joinToString("|||")),
-            value,
+            value.normalizedCustomVocabulary(),
             KEY_CUSTOM_VOCABULARY
         )
 
@@ -933,6 +933,17 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.modelId.isNotBlank() }
             .distinctBy { it.id }
 
+    private fun readCustomVocabulary(): List<String> {
+        val raw = settingsStore.getStringArray(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY)
+        val normalized = raw.normalizedCustomVocabulary()
+        return if (raw != normalized) {
+            settingsStore.setStringArray(KEY_CUSTOM_VOCABULARY, normalized)
+            normalized
+        } else {
+            raw
+        }
+    }
+
     private fun readLanguageSetting(key: String, defaultValue: String): String {
         val raw = settingsStore.getString(key, defaultValue)
         val normalized = raw.trim().lowercase()
@@ -966,6 +977,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
             defaultValue
         }
     }
+
+    private fun List<String>.normalizedCustomVocabulary(): List<String> =
+        map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
 
     private data class LegacyAlarmSchedulerStateLoad(
         val state: AlarmSchedulerState,

@@ -19,7 +19,7 @@ class SettingsClientWriteOptimizationTest {
         client.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
         client.setBackgroundRecording(true)
         client.setPostHideDelayMs(250)
-        client.setCustomVocabulary(listOf("alpha", "beta"))
+        client.setCustomVocabulary(listOf(" alpha ", "beta", "", "alpha"))
 
         assertEquals(0, store.writeCount)
     }
