@@ -228,6 +228,18 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 .filterValues { it.isNotBlank() }
                 .toSortedMap()
         )
+        val currentCombined = readAlarmSchedulerState()
+        val currentLegacy = loadLegacyAlarmSchedulerState()
+        val rawJson = settingsStore.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
+        val alreadyStored = when {
+            currentCombined != null -> currentCombined == normalized && currentLegacy == normalized
+            rawJson.isBlank() || rawJson == DEFAULT_ALARM_SCHEDULER_STATE ->
+                normalized == AlarmSchedulerState() && currentLegacy == AlarmSchedulerState()
+            else -> false
+        }
+        if (alreadyStored) {
+            return true
+        }
         val json = Json.encodeToString(normalized)
         return settingsStore.setString(KEY_ALARM_SCHEDULER_STATE, json).also { success ->
             if (success) {

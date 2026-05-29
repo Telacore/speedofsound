@@ -256,6 +256,28 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `setAlarmSchedulerState avoids rewriting an unchanged normalized state`() {
+        val normalizedState = AlarmSchedulerState(
+            lastCheckAt = "2026-05-29T09:15:30",
+            lastTriggeredDates = mapOf(
+                "alarm-1" to "2026-05-29",
+                "alarm-2" to "2026-05-30",
+            ),
+        )
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARM_SCHEDULER_STATE to Json.encodeToString(normalizedState),
+                KEY_ALARM_LAST_TRIGGERED_DATES to Json.encodeToString(normalizedState.lastTriggeredDates),
+                KEY_ALARM_LAST_CHECK_AT to normalizedState.lastCheckAt!!,
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(true, client.setAlarmSchedulerState(normalizedState))
+        assertEquals(0, store.stringWriteCount)
+    }
+
+    @Test
     fun `alarm scheduler state falls back to legacy keys`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -472,6 +494,7 @@ class SettingsClientAlarmTest {
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
         private val values = initialValues
+        var stringWriteCount: Int = 0
 
         override fun isAvailable(): Boolean = true
 
@@ -479,6 +502,7 @@ class SettingsClientAlarmTest {
 
         override fun setString(key: String, value: String): Boolean {
             values[key] = value
+            stringWriteCount += 1
             return true
         }
 
