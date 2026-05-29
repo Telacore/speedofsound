@@ -81,14 +81,25 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.loadSelectedVoiceModelProviderId())
-        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.loadSelectedTextModelProviderId())
+        val expectedVoiceProviderId = client.peekVoiceModelProviders()
+            .sortedBy { it.name.lowercase() }
+            .firstOrNull()
+            ?.id
+            ?: DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID
+        val expectedTextProviderId = client.peekTextModelProviders()
+            .sortedBy { it.name.lowercase() }
+            .firstOrNull()
+            ?.id
+            ?: DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID
+
+        assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId())
+        assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId())
         assertEquals(
-            DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            expectedVoiceProviderId,
             store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
         )
         assertEquals(
-            DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            expectedTextProviderId,
             store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
         )
         assertEquals(2, store.writeCount)

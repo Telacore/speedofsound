@@ -134,11 +134,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         loadAlarms()
         loadAlarmSchedulerState()
         loadCredentials()
-        val availableVoiceProviderIds = loadVoiceModelProviders().map { it.id }.toSet()
-        loadSelectedVoiceModelProviderId(availableVoiceProviderIds)
+        val availableVoiceProviders = loadVoiceModelProviders()
+        loadSelectedVoiceModelProviderId(availableVoiceProviders)
         loadTextProcessingEnabled()
-        val availableTextProviderIds = loadTextModelProviders().map { it.id }.toSet()
-        loadSelectedTextModelProviderId(availableTextProviderIds)
+        val availableTextProviders = loadTextModelProviders()
+        loadSelectedTextModelProviderId(availableTextProviders)
         loadCustomContext()
         loadCustomVocabulary()
         loadSanitizeSpecialChars()
@@ -146,18 +146,18 @@ class SettingsClient(val settingsStore: SettingsStore) {
         loadTypingDelayMs()
     }
 
-    private fun loadSelectedVoiceModelProviderId(availableProviderIds: Set<String>): String =
+    private fun loadSelectedVoiceModelProviderId(availableProviders: List<SelectableProviderSetting>): String =
         readSelectedProviderId(
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
             DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            availableProviderIds
+            availableProviders
         )
 
-    private fun loadSelectedTextModelProviderId(availableProviderIds: Set<String>): String =
+    private fun loadSelectedTextModelProviderId(availableProviders: List<SelectableProviderSetting>): String =
         readSelectedProviderId(
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
             DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            availableProviderIds
+            availableProviders
         )
 
     fun setPortalsRestoreToken(value: String): Boolean =
@@ -709,14 +709,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
         readSelectedProviderId(
             key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            availableProviderIds = loadVoiceModelProviders().map { it.id }.toSet(),
+            availableProviders = loadVoiceModelProviders(),
         )
 
     fun peekSelectedVoiceModelProviderId(): String =
         peekSelectedProviderId(
             key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            availableProviderIds = peekVoiceModelProviders().map { it.id }.toSet(),
+            availableProviders = peekVoiceModelProviders(),
         )
 
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
@@ -726,7 +726,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             normalizeSelectedProviderId(
                 value = value,
                 defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-                availableProviderIds = peekVoiceModelProviders().map { it.id }.toSet(),
+                availableProviders = peekVoiceModelProviders(),
             ),
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
         )
@@ -734,10 +734,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
     private fun readSelectedProviderId(
         key: String,
         defaultValue: String,
-        availableProviderIds: Set<String>,
+        availableProviders: List<SelectableProviderSetting>,
     ): String {
         val raw = settingsStore.getString(key, defaultValue)
-        val normalized = normalizeSelectedProviderId(raw, defaultValue, availableProviderIds)
+        val normalized = normalizeSelectedProviderId(raw, defaultValue, availableProviders)
         return if (raw != normalized) {
             settingsStore.setString(key, normalized)
             normalized
@@ -749,22 +749,24 @@ class SettingsClient(val settingsStore: SettingsStore) {
     private fun peekSelectedProviderId(
         key: String,
         defaultValue: String,
-        availableProviderIds: Set<String>,
+        availableProviders: List<SelectableProviderSetting>,
     ): String {
         val raw = settingsStore.getString(key, defaultValue)
-        return normalizeSelectedProviderId(raw, defaultValue, availableProviderIds)
+        return normalizeSelectedProviderId(raw, defaultValue, availableProviders)
     }
 
     private fun normalizeSelectedProviderId(
         value: String,
         defaultValue: String,
-        availableProviderIds: Set<String>,
+        availableProviders: List<SelectableProviderSetting>,
     ): String {
         val trimmed = value.trim()
+        val sortedAvailableProviders = availableProviders.sortedBy { it.name.lowercase() }
+        val availableProviderIds = sortedAvailableProviders.map { it.id }
         return when {
-            trimmed.isBlank() -> defaultValue
+            trimmed.isBlank() -> sortedAvailableProviders.firstOrNull()?.id ?: defaultValue
             trimmed in availableProviderIds -> trimmed
-            else -> defaultValue
+            else -> sortedAvailableProviders.firstOrNull()?.id ?: defaultValue
         }
     }
 
@@ -772,14 +774,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
         readSelectedProviderId(
             key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            availableProviderIds = loadTextModelProviders().map { it.id }.toSet(),
+            availableProviders = loadTextModelProviders(),
         )
 
     fun peekSelectedTextModelProviderId(): String =
         peekSelectedProviderId(
             key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            availableProviderIds = peekTextModelProviders().map { it.id }.toSet(),
+            availableProviders = peekTextModelProviders(),
         )
 
     fun setSelectedTextModelProviderId(value: String): Boolean =
@@ -789,7 +791,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             normalizeSelectedProviderId(
                 value = value,
                 defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-                availableProviderIds = peekTextModelProviders().map { it.id }.toSet(),
+                availableProviders = peekTextModelProviders(),
             ),
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
         )

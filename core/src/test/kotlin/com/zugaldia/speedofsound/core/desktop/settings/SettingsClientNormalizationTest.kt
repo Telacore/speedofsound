@@ -179,6 +179,67 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
+    fun `selected provider ids fall back to the first visible provider`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-voice",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-text",
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.setVoiceModelProviders(
+            listOf(
+                VoiceModelProviderSetting(
+                    id = "voice-z",
+                    name = "Zulu",
+                    provider = AsrProvider.SHERPA_WHISPER,
+                    modelId = "model-z",
+                ),
+                VoiceModelProviderSetting(
+                    id = "voice-a",
+                    name = "Alpha",
+                    provider = AsrProvider.SHERPA_WHISPER,
+                    modelId = "model-a",
+                ),
+            )
+        )
+        client.setTextModelProviders(
+            listOf(
+                TextModelProviderSetting(
+                    id = "text-z",
+                    name = "Zulu",
+                    provider = LlmProvider.OPENAI,
+                    modelId = "model-z",
+                ),
+                TextModelProviderSetting(
+                    id = "text-a",
+                    name = "Alpha",
+                    provider = LlmProvider.OPENAI,
+                    modelId = "model-a",
+                ),
+            )
+        )
+
+        val expectedVoiceProviderId = client.peekVoiceModelProviders().sortedBy { it.name.lowercase() }.first().id
+        val expectedTextProviderId = client.peekTextModelProviders().sortedBy { it.name.lowercase() }.first().id
+
+        assertEquals(expectedVoiceProviderId, client.peekSelectedVoiceModelProviderId())
+        assertEquals(expectedTextProviderId, client.peekSelectedTextModelProviderId())
+        assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId())
+        assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId())
+        assertEquals(
+            expectedVoiceProviderId,
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
+        )
+        assertEquals(
+            expectedTextProviderId,
+            store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
+        )
+        assertEquals(4, store.writeCount)
+    }
+
+    @Test
     fun `local voice providers do not consume custom limit slots`() {
         val localProviderId = SUPPORTED_LOCAL_ASR_MODELS.keys.first()
         val store = MapSettingsStore()
