@@ -9,7 +9,12 @@ import kotlin.test.assertEquals
 class SettingsClientNormalizationTest {
     @Test
     fun `credentials and providers are normalized on save`() {
-        val store = MapSettingsStore()
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-voice",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "stale-text",
+            )
+        )
         val client = SettingsClient(store)
 
         client.setCredentials(
@@ -84,6 +89,19 @@ class SettingsClientNormalizationTest {
             ),
             client.getTextModelProviders()
         )
+        client.setSelectedVoiceModelProviderId(" missing-voice-provider ")
+        client.setSelectedTextModelProviderId(" missing-text-provider ")
+
+        assertEquals(
+            DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
+        )
+        assertEquals(
+            DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
+        )
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.getSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.getSelectedTextModelProviderId())
 
         assertEquals(
             Json.encodeToString(

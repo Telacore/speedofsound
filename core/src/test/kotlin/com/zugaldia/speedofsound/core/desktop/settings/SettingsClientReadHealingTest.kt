@@ -68,6 +68,29 @@ class SettingsClientReadHealingTest {
         assertEquals(2, store.writeCount)
     }
 
+    @Test
+    fun `malformed selected provider ids are healed on read`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "missing-voice-provider",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "missing-text-provider",
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.getSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.getSelectedTextModelProviderId())
+        assertEquals(
+            DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
+        )
+        assertEquals(
+            DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
+        )
+        assertEquals(2, store.writeCount)
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {

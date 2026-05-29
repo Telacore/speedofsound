@@ -608,14 +608,69 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun getSelectedVoiceModelProviderId(): String =
-        settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
+        readSelectedProviderId(
+            key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            availableProviderIds = getVoiceModelProviders().map { it.id }.toSet(),
+        )
 
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            getSelectedVoiceModelProviderId(),
-            value,
+            settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID),
+            normalizeSelectedProviderId(
+                value = value,
+                defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+                availableProviderIds = getVoiceModelProviders().map { it.id }.toSet(),
+            ),
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
+        )
+
+    private fun readSelectedProviderId(
+        key: String,
+        defaultValue: String,
+        availableProviderIds: Set<String>,
+    ): String {
+        val raw = settingsStore.getString(key, defaultValue)
+        val normalized = normalizeSelectedProviderId(raw, defaultValue, availableProviderIds)
+        return if (raw != normalized) {
+            settingsStore.setString(key, normalized)
+            normalized
+        } else {
+            raw
+        }
+    }
+
+    private fun normalizeSelectedProviderId(
+        value: String,
+        defaultValue: String,
+        availableProviderIds: Set<String>,
+    ): String {
+        val trimmed = value.trim()
+        return when {
+            trimmed.isBlank() -> defaultValue
+            trimmed in availableProviderIds -> trimmed
+            else -> defaultValue
+        }
+    }
+
+    fun getSelectedTextModelProviderId(): String =
+        readSelectedProviderId(
+            key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            availableProviderIds = getTextModelProviders().map { it.id }.toSet(),
+        )
+
+    fun setSelectedTextModelProviderId(value: String): Boolean =
+        setStringSettingIfChanged(
+            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID),
+            normalizeSelectedProviderId(
+                value = value,
+                defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+                availableProviderIds = getTextModelProviders().map { it.id }.toSet(),
+            ),
+            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
         )
 
     /*
@@ -652,14 +707,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
     }
 
-    fun getSelectedTextModelProviderId(): String =
-        settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
-
     fun setSelectedTextModelProviderId(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            getSelectedTextModelProviderId(),
-            value,
+            settingsStore.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID),
+            normalizeSelectedProviderId(
+                value = value,
+                defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+                availableProviderIds = getTextModelProviders().map { it.id }.toSet(),
+            ),
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
         )
 
