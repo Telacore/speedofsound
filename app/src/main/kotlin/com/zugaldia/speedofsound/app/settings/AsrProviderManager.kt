@@ -57,6 +57,7 @@ class AsrProviderManager(
         val selectedProviderId = settingsClient.getSelectedVoiceModelProviderId()
         val providers = settingsClient.getVoiceModelProviders()
         val selectedProvider = providers.find { it.id == selectedProviderId }
+        val shouldActivate = setActive || selectedProvider == null
         val pluginId = if (selectedProvider != null) {
             val options = settingsClient.resolveVoiceProviderOptions(selectedProvider)
             val id = pluginIdForProvider(selectedProvider.provider)
@@ -69,7 +70,7 @@ class AsrProviderManager(
             SherpaWhisperAsr.ID
         }
 
-        if (setActive) {
+        if (shouldActivate) {
             registry.setActiveById(AppPluginCategory.ASR, pluginId)
         }
     }
