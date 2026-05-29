@@ -112,6 +112,13 @@ fun millisUntilNextAlarmSummaryRefresh(now: LocalDateTime): Long {
     return Duration.between(now, nextMinute).toMillis().coerceAtLeast(1)
 }
 
+fun resolveAlarmCheckWindowStart(
+    lastCheckAt: LocalDateTime?,
+    now: LocalDateTime,
+    fallbackIntervalSeconds: Long,
+): LocalDateTime =
+    lastCheckAt?.takeIf { !it.isAfter(now) } ?: now.minusSeconds(fallbackIntervalSeconds)
+
 fun isAlarmDue(now: LocalDateTime, alarm: AlarmSetting): Boolean {
     if (!alarm.isScheduledOn(now.toLocalDate())) {
         return false

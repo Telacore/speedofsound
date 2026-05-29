@@ -93,7 +93,7 @@ class AlarmSchedulerService(
     private fun checkAlarms() {
         val now = LocalDateTime.now(clock)
         val previousCheck = synchronized(stateLock) {
-            lastCheckAt ?: now.minusSeconds(checkIntervalSeconds)
+            resolveAlarmCheckWindowStart(lastCheckAt, now, checkIntervalSeconds)
         }
         val dueAlarmEvents = synchronized(stateLock) {
             activeAlarms.flatMap { alarm ->

@@ -228,4 +228,15 @@ class AlarmScheduleTest {
 
         assertEquals(30000L, millisUntilNextAlarmSummaryRefresh(now))
     }
+
+    @Test
+    fun `alarm check window start clamps future last check times`() {
+        val now = LocalDateTime.of(2026, 5, 29, 9, 0, 30)
+        val futureLastCheckAt = LocalDateTime.of(2026, 5, 29, 10, 0, 0)
+
+        assertEquals(
+            LocalDateTime.of(2026, 5, 29, 9, 0, 15),
+            resolveAlarmCheckWindowStart(futureLastCheckAt, now, 15)
+        )
+    }
 }
