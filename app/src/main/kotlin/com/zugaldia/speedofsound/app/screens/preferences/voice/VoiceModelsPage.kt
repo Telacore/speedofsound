@@ -10,6 +10,7 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ActiveProviderComboRow
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
@@ -80,7 +81,8 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         scope.launch {
             viewModel.settingsChanged
                 .filter {
-                    it == KEY_SELECTED_VOICE_MODEL_PROVIDER_ID ||
+                    it == KEY_CREDENTIALS ||
+                        it == KEY_SELECTED_VOICE_MODEL_PROVIDER_ID ||
                         it == KEY_VOICE_MODEL_PROVIDERS
                 }
                 .collect {

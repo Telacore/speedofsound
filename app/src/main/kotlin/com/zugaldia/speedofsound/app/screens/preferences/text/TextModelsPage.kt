@@ -11,6 +11,7 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ActiveProviderComboRow
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_PROCESSING_ENABLED
@@ -146,13 +147,17 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         scope.launch {
             viewModel.settingsChanged
                 .filter {
-                    it == KEY_TEXT_PROCESSING_ENABLED ||
+                    it == KEY_CREDENTIALS ||
+                        it == KEY_TEXT_PROCESSING_ENABLED ||
                         it == KEY_SELECTED_TEXT_MODEL_PROVIDER_ID ||
                         it == KEY_TEXT_MODEL_PROVIDERS
                 }
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                         when (it) {
+                            KEY_CREDENTIALS -> {
+                                refreshProviders()
+                            }
                             KEY_TEXT_PROCESSING_ENABLED -> {
                                 syncEnableSwitch()
                                 updateActiveProviderSensitivity()
