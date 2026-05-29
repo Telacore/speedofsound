@@ -299,6 +299,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         value: AlarmSchedulerState,
         emitChange: Boolean = true,
         forceLegacyWrite: Boolean = false,
+        persistLegacyState: Boolean = true,
     ): Boolean {
         val normalized = value.copy(
             lastCheckAt = value.lastCheckAt?.takeIf { it.isNotBlank() },
@@ -310,20 +311,24 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 .toSortedMap()
         )
         val currentCombined = readAlarmSchedulerState()
-        val currentLegacy = loadLegacyAlarmSchedulerState()
         val rawJson = settingsStore.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
+        val currentLegacy = if (persistLegacyState) loadLegacyAlarmSchedulerState() else null
         val alreadyStored = when {
-            currentCombined != null -> currentCombined == normalized && currentLegacy.state == normalized
-            rawJson.isBlank() || rawJson == DEFAULT_ALARM_SCHEDULER_STATE ->
-                normalized == AlarmSchedulerState() && currentLegacy.state == AlarmSchedulerState()
+            persistLegacyState && currentCombined != null ->
+                currentCombined == normalized && currentLegacy?.state == normalized
+            persistLegacyState && (rawJson.isBlank() || rawJson == DEFAULT_ALARM_SCHEDULER_STATE) ->
+                normalized == AlarmSchedulerState() && currentLegacy?.state == AlarmSchedulerState()
+            !persistLegacyState && currentCombined != null ->
+                currentCombined == normalized
+            !persistLegacyState && (rawJson.isBlank() || rawJson == DEFAULT_ALARM_SCHEDULER_STATE) ->
+                normalized == AlarmSchedulerState()
             else -> false
         }
-        if (alreadyStored && !forceLegacyWrite) {
+        if (alreadyStored && !(persistLegacyState && forceLegacyWrite)) {
             return true
         }
         val json = Json.encodeToString(normalized)
         val combinedChanged = currentCombined != normalized
-        val legacyChanged = forceLegacyWrite || currentLegacy.state != normalized
         val combinedSaved = if (combinedChanged) {
             settingsStore.setString(KEY_ALARM_SCHEDULER_STATE, json).also { success ->
                 if (success && emitChange) {
@@ -333,10 +338,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
         } else {
             true
         }
-        val legacySaved = if (legacyChanged) {
+        val legacySaved = if (persistLegacyState && (forceLegacyWrite || currentLegacy?.state != normalized)) {
             persistLegacyAlarmSchedulerState(
                 state = normalized,
-                currentState = currentLegacy.state,
+                currentState = currentLegacy?.state ?: AlarmSchedulerState(),
                 forceWrite = forceLegacyWrite,
             )
         } else {
@@ -381,7 +386,8 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setAlarmSchedulerState(
             peekAlarmSchedulerState().copy(
                 lastTriggeredDates = value.mapValues { (_, date) -> date.toString() }
-            )
+            ),
+            persistLegacyState = false,
         )
 
     fun setAlarmLastTriggeredDate(alarmId: String, date: LocalDate): Boolean =
@@ -391,13 +397,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
                     lastTriggeredDates = currentState.lastTriggeredDates.toMutableMap().apply {
                         this[alarmId] = date.toString()
                     }
-                )
+                ),
+                persistLegacyState = false,
             )
         }
 
     fun setAlarmLastCheckAt(value: LocalDateTime): Boolean =
         setAlarmSchedulerState(
-            peekAlarmSchedulerState().copy(lastCheckAt = value.toString())
+            peekAlarmSchedulerState().copy(lastCheckAt = value.toString()),
+            persistLegacyState = false,
         )
 
     fun loadMaxAlarms(): Int =

@@ -568,7 +568,7 @@ class SettingsClientAlarmTest {
 
         client.setAlarmLastCheckAt(timestamp)
 
-        assertEquals(2, store.stringWriteCount)
+        assertEquals(1, store.stringWriteCount)
         assertEquals("{bad-trigger", store.getString(KEY_ALARM_LAST_TRIGGERED_DATES, DEFAULT_ALARM_LAST_TRIGGERED_DATES))
         assertEquals(timestamp.toString(), store.getString(KEY_ALARM_LAST_CHECK_AT, DEFAULT_ALARM_LAST_CHECK_AT))
     }
