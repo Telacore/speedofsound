@@ -17,6 +17,7 @@ import java.lang.reflect.Field
 import sun.misc.Unsafe
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertSame
 
 class MainViewModelTextOutputRestoreTest {
@@ -53,6 +54,38 @@ class MainViewModelTextOutputRestoreTest {
         assertEquals(AppStage.IDLE, viewModel.state.currentStage())
     }
 
+    @Test
+    fun `activateSelectedTextOutput tolerates failing text output switch`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_TEXT_OUTPUT_METHOD to com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL,
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val portalsClient = PortalsClient(
+            portalConnector = { Result.success(unsafeAllocateDesktopPortal()) },
+            portalCloser = { },
+        )
+        val viewModel = MainViewModel(settingsClient, portalsClient)
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val activeClipboard = ThrowingDisableTextOutputPlugin(ClipboardTextOutput.ID)
+        val portalOutput = RecordingTextOutputPlugin(PortalTextOutput.ID)
+
+        registry.register(AppPluginCategory.TEXT_OUTPUT, activeClipboard)
+        registry.register(AppPluginCategory.TEXT_OUTPUT, portalOutput)
+        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, activeClipboard.id)
+
+        val activated = invokePrivateBoolean(viewModel, "activateSelectedTextOutput")
+
+        assertFalse(activated)
+        assertEquals(1, activeClipboard.enableCount)
+        assertEquals(1, activeClipboard.disableCount)
+        assertEquals(0, portalOutput.enableCount)
+        assertEquals(0, portalOutput.disableCount)
+        assertSame(activeClipboard, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+    }
+
     private inline fun <reified T> getPrivateField(instance: Any, fieldName: String): T {
         val field = instance.javaClass.getDeclaredField(fieldName)
         field.isAccessible = true
@@ -65,6 +98,12 @@ class MainViewModelTextOutputRestoreTest {
         unsafeField.isAccessible = true
         val unsafe = unsafeField.get(null) as Unsafe
         return unsafe.allocateInstance(DesktopPortal::class.java) as DesktopPortal
+    }
+
+    private fun invokePrivateBoolean(instance: Any, fieldName: String): Boolean {
+        val method = instance.javaClass.getDeclaredMethod(fieldName)
+        method.isAccessible = true
+        return method.invoke(instance) as Boolean
     }
 
     private class RecordingTextOutputPlugin(

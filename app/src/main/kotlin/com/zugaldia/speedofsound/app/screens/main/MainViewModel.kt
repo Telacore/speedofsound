@@ -152,7 +152,12 @@ class MainViewModel(
                     .onFailure { error ->
                         handleStartupLlmFailure(error)
                     }
-                activateSelectedTextOutput()
+                if (!activateSelectedTextOutput()) {
+                    switchToClipboardFallback(
+                        reason = "Failed to activate selected text output during startup.",
+                        policy = ClipboardFallbackPolicy.RUNTIME_ONLY,
+                    )
+                }
                 updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
                 registry.setActiveById(AppPluginCategory.DIRECTOR, DefaultDirector.ID)
                 if (shouldForceClipboardFallback(settingsClient.peekTextOutputMethod(), portalsClient.isPortalAvailable)) {
@@ -536,19 +541,17 @@ class MainViewModel(
         state.updateLlmModel(llmModelName)
     }
 
-    private fun activateSelectedTextOutput() {
-        activateTextOutput()
-    }
-
-    private fun restoreSelectedTextOutput(): Boolean =
+    private fun activateSelectedTextOutput(): Boolean =
         runCatching {
-            activateSelectedTextOutput()
+            activateTextOutput()
         }.onFailure { error ->
-            logger.error("Failed to restore selected text output: {}", error.message)
+            logger.error("Failed to activate selected text output: {}", error.message)
             portalsClient.showNotification(
-                "Could not restore text output: ${error.message ?: "Unknown error"}"
+                "Could not activate text output: ${error.message ?: "Unknown error"}"
             )
         }.isSuccess
+
+    private fun restoreSelectedTextOutput(): Boolean = activateSelectedTextOutput()
 
     private fun activateTextOutput(forceClipboard: Boolean = false) {
         registry.setActiveById(
