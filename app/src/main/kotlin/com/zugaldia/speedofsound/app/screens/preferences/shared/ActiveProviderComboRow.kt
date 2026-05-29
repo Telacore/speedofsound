@@ -49,7 +49,7 @@ class ActiveProviderComboRow<T>(
             model = StringList(providerNames)
 
             val savedProviderId = getSelectedProviderId()
-            val selectedIndex = resolveSelectedIndex(savedProviderId)
+            val selectedIndex = resolveSelectedProviderIndex(savedProviderId, providers)
             if (selectedIndex >= 0) {
                 selected = selectedIndex
             } else if (providers.isNotEmpty()) {
@@ -77,7 +77,7 @@ class ActiveProviderComboRow<T>(
                     logger.warn("Failed to persist provider selection to ${selectedProvider.id}, restoring previous selection")
                     isUpdating = true
                     try {
-                        selected = restoreSelectedIndex()
+                        selected = restoreSelectedProviderIndex(getSelectedProviderId(), providers)
                     } finally {
                         isUpdating = false
                     }
@@ -85,10 +85,4 @@ class ActiveProviderComboRow<T>(
             }
         }
     }
-
-    private fun resolveSelectedIndex(savedProviderId: String): Int =
-        providers.indexOfFirst { it.id == savedProviderId }
-
-    private fun restoreSelectedIndex(): Int =
-        resolveSelectedIndex(getSelectedProviderId()).takeIf { it >= 0 } ?: 0
 }
