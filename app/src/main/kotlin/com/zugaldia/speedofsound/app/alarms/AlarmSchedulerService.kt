@@ -213,7 +213,7 @@ class AlarmSchedulerService(
         if (snapshot == settingsClient.peekAlarmSchedulerState()) {
             return
         }
-        if (!settingsClient.setAlarmSchedulerState(snapshot, emitChange = false)) {
+        if (!settingsClient.setAlarmSchedulerState(snapshot, emitChange = false, persistLegacyState = false)) {
             logger.warn("Failed to persist alarm scheduler state.")
         }
     }

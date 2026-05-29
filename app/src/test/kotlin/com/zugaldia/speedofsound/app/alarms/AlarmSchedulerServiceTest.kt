@@ -251,7 +251,7 @@ class AlarmSchedulerServiceTest {
         service.checkAlarms()
 
         assertEquals(writesAfterFirstTick, writesAfterSecondTick)
-        assertEquals(writesAfterFirstTick + 3, store.stringWriteCount)
+        assertEquals(writesAfterFirstTick + 1, store.stringWriteCount)
     }
 
     @Test
