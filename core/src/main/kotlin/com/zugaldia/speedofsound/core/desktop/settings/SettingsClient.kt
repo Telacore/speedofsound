@@ -111,6 +111,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun getWelcomeScreenShown(): Boolean =
         readBooleanSetting(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN)
 
+    fun peekWelcomeScreenShown(): Boolean =
+        peekBooleanSetting(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN)
+
     fun setWelcomeScreenShown(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
             KEY_WELCOME_SCREEN_SHOWN,
@@ -132,6 +135,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun getShortcutConfigured(): Boolean =
         readBooleanSetting(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED)
 
+    fun peekShortcutConfigured(): Boolean =
+        peekBooleanSetting(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED)
+
     fun setShortcutConfigured(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
             KEY_SHORTCUT_CONFIGURED,
@@ -146,17 +152,26 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun getDefaultLanguage(): String =
         readLanguageSetting(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2)
 
+    fun peekDefaultLanguage(): String =
+        peekLanguageSetting(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2)
+
     fun setDefaultLanguage(value: String): Boolean =
         setStringSettingIfChanged(KEY_DEFAULT_LANGUAGE, getDefaultLanguage(), value, KEY_DEFAULT_LANGUAGE)
 
     fun getSecondaryLanguage(): String =
         readLanguageSetting(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
 
+    fun peekSecondaryLanguage(): String =
+        peekLanguageSetting(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
+
     fun setSecondaryLanguage(value: String): Boolean =
         setStringSettingIfChanged(KEY_SECONDARY_LANGUAGE, getSecondaryLanguage(), value, KEY_SECONDARY_LANGUAGE)
 
     fun getBackgroundRecording(): Boolean =
         readBooleanSetting(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING)
+
+    fun peekBackgroundRecording(): Boolean =
+        peekBooleanSetting(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING)
 
     fun setBackgroundRecording(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -169,6 +184,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun getAppendSpace(): Boolean =
         readBooleanSetting(KEY_APPEND_SPACE, DEFAULT_APPEND_SPACE)
 
+    fun peekAppendSpace(): Boolean =
+        peekBooleanSetting(KEY_APPEND_SPACE, DEFAULT_APPEND_SPACE)
+
     fun setAppendSpace(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
             KEY_APPEND_SPACE,
@@ -180,6 +198,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun getHideInsteadOfMinimize(): Boolean =
         readBooleanSetting(KEY_HIDE_INSTEAD_OF_MINIMIZE, DEFAULT_HIDE_INSTEAD_OF_MINIMIZE)
 
+    fun peekHideInsteadOfMinimize(): Boolean =
+        peekBooleanSetting(KEY_HIDE_INSTEAD_OF_MINIMIZE, DEFAULT_HIDE_INSTEAD_OF_MINIMIZE)
+
     fun setHideInsteadOfMinimize(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
             KEY_HIDE_INSTEAD_OF_MINIMIZE,
@@ -190,6 +211,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun getStayHiddenOnActivation(): Boolean =
         readBooleanSetting(KEY_STAY_HIDDEN_ON_ACTIVATION, DEFAULT_STAY_HIDDEN_ON_ACTIVATION)
+
+    fun peekStayHiddenOnActivation(): Boolean =
+        peekBooleanSetting(KEY_STAY_HIDDEN_ON_ACTIVATION, DEFAULT_STAY_HIDDEN_ON_ACTIVATION)
 
     fun setStayHiddenOnActivation(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -355,6 +379,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun getMaxAlarms(): Int =
         readIntSetting(
+            key = KEY_MAX_ALARMS,
+            defaultValue = DEFAULT_MAX_ALARMS,
+        ) { it.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS) }
+
+    fun peekMaxAlarms(): Int =
+        peekIntSetting(
             key = KEY_MAX_ALARMS,
             defaultValue = DEFAULT_MAX_ALARMS,
         ) { it.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS) }
@@ -556,6 +586,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
     }
 
+    fun peekCredentials(): List<CredentialSetting> =
+        peekNormalizedJsonListSetting(
+            key = KEY_CREDENTIALS,
+            defaultValue = DEFAULT_CREDENTIALS,
+            label = "credentials",
+            normalize = { it.normalizedCredentials() },
+        )
+
     fun setCredentials(value: List<CredentialSetting>): Boolean {
         val normalized = value.normalizedCredentials()
         val json = Json.encodeToString(normalized)
@@ -595,6 +633,17 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
         // Include the local provider first
+        return getLocalVoiceModelProviders() + customProviders
+    }
+
+    fun peekVoiceModelProviders(): List<VoiceModelProviderSetting> {
+        val customProviders = peekNormalizedJsonListSetting<VoiceModelProviderSetting>(
+            key = KEY_VOICE_MODEL_PROVIDERS,
+            defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
+            label = "voice model providers",
+            normalize = { it.normalizedCustomVoiceModelProviders() },
+        )
+
         return getLocalVoiceModelProviders() + customProviders
     }
 
@@ -699,6 +748,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
     }
 
+    fun peekTextModelProviders(): List<TextModelProviderSetting> =
+        peekNormalizedJsonListSetting(
+            key = KEY_TEXT_MODEL_PROVIDERS,
+            defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,
+            label = "text model providers",
+            normalize = { it.normalizedTextModelProviders() },
+        )
+
     fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean {
         val json = Json.encodeToString(value.normalizedTextModelProviders())
         return setStringSettingIfChanged(
@@ -728,6 +785,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun getCustomContext(): String =
         readCustomContext()
 
+    fun peekCustomContext(): String =
+        peekCustomContextValue()
+
     fun setCustomContext(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_CUSTOM_CONTEXT,
@@ -738,6 +798,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun getCustomVocabulary(): List<String> =
         readCustomVocabulary()
+
+    fun peekCustomVocabulary(): List<String> =
+        peekCustomVocabularyValue()
 
     fun setCustomVocabulary(value: List<String>): Boolean =
         setStringArraySettingIfChanged(
@@ -754,6 +817,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun getSanitizeSpecialChars(): Boolean =
         readBooleanSetting(KEY_SANITIZE_SPECIAL_CHARS, DEFAULT_SANITIZE_SPECIAL_CHARS)
 
+    fun peekSanitizeSpecialChars(): Boolean =
+        peekBooleanSetting(KEY_SANITIZE_SPECIAL_CHARS, DEFAULT_SANITIZE_SPECIAL_CHARS)
+
     fun setSanitizeSpecialChars(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
             KEY_SANITIZE_SPECIAL_CHARS,
@@ -765,6 +831,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun getPostHideDelayMs(): Int =
         readIntSetting(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS)
 
+    fun peekPostHideDelayMs(): Int =
+        peekIntSetting(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS)
+
     fun setPostHideDelayMs(value: Int): Boolean =
         setIntSettingIfChanged(
             KEY_POST_HIDE_DELAY_MS,
@@ -775,6 +844,9 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun getTypingDelayMs(): Int =
         readIntSetting(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS)
+
+    fun peekTypingDelayMs(): Int =
+        peekIntSetting(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS)
 
     fun setTypingDelayMs(value: Int): Boolean =
         setIntSettingIfChanged(
@@ -877,6 +949,27 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
+    private inline fun <reified T> peekNormalizedJsonListSetting(
+        key: String,
+        defaultValue: String,
+        label: String,
+        normalize: (List<T>) -> List<T>,
+    ): List<T> {
+        val json = settingsStore.getString(key, defaultValue)
+        if (json.isEmpty() || json == defaultValue) {
+            return emptyList()
+        }
+
+        return runCatching {
+            Json.decodeFromString<List<T>>(json)
+        }.map { parsed ->
+            normalize(parsed)
+        }.getOrElse { error ->
+            logger.error("Failed to decode {} from JSON", label, error)
+            emptyList()
+        }
+    }
+
     private fun readBooleanSetting(key: String, defaultValue: Boolean): Boolean {
         val raw = settingsStore.getString(key, defaultValue.toString())
         val parsed = when {
@@ -893,6 +986,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
         } else {
             settingsStore.setBoolean(key, defaultValue)
             defaultValue
+        }
+    }
+
+    private fun peekBooleanSetting(key: String, defaultValue: Boolean): Boolean {
+        val raw = settingsStore.getString(key, defaultValue.toString())
+        return when {
+            raw.equals("true", ignoreCase = true) -> true
+            raw.equals("false", ignoreCase = true) -> false
+            else -> defaultValue
         }
     }
 
@@ -932,6 +1034,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         } else {
             raw
         }
+    }
+
+    private fun peekCustomContextValue(): String {
+        val raw = settingsStore.getString(KEY_CUSTOM_CONTEXT, DEFAULT_CUSTOM_CONTEXT)
+        return normalizeCustomContext(raw)
     }
 
     private fun normalizeCustomContext(value: String): String =
@@ -989,6 +1096,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
+    private fun peekCustomVocabularyValue(): List<String> {
+        val raw = settingsStore.getStringArray(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY)
+        return raw.normalizedCustomVocabulary()
+    }
+
     private fun readLanguageSetting(key: String, defaultValue: String): String {
         val raw = settingsStore.getString(key, defaultValue)
         val normalized = raw.trim().lowercase()
@@ -1002,6 +1114,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
             settingsStore.setString(key, defaultValue)
             defaultValue
         }
+    }
+
+    private fun peekLanguageSetting(key: String, defaultValue: String): String {
+        val raw = settingsStore.getString(key, defaultValue)
+        val normalized = raw.trim().lowercase()
+        return languageFromIso2(normalized)?.iso2 ?: defaultValue
     }
 
     private fun readIntSetting(
@@ -1021,6 +1139,16 @@ class SettingsClient(val settingsStore: SettingsStore) {
             settingsStore.setInt(key, defaultValue)
             defaultValue
         }
+    }
+
+    private fun peekIntSetting(
+        key: String,
+        defaultValue: Int,
+        normalize: (Int) -> Int = { it },
+    ): Int {
+        val raw = settingsStore.getString(key, defaultValue.toString())
+        val parsed = raw.toIntOrNull() ?: return defaultValue
+        return normalize(parsed)
     }
 
     private fun List<String>.normalizedCustomVocabulary(): List<String> =

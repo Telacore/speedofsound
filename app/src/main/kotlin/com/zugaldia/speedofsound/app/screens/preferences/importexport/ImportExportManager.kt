@@ -33,27 +33,27 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         // also includes built-in voice models, which we filter out below.
         val schedulerState = viewModel.peekAlarmSchedulerState()
         val exportData = SettingsExport(
-            defaultLanguage = viewModel.getDefaultLanguage(),
-            secondaryLanguage = viewModel.getSecondaryLanguage(),
-            backgroundRecording = viewModel.getBackgroundRecording(),
-            hideInsteadOfMinimize = viewModel.getHideInsteadOfMinimize(),
-            stayHiddenOnActivation = viewModel.getStayHiddenOnActivation(),
-            appendSpace = viewModel.getAppendSpace(),
+            defaultLanguage = viewModel.peekDefaultLanguage(),
+            secondaryLanguage = viewModel.peekSecondaryLanguage(),
+            backgroundRecording = viewModel.peekBackgroundRecording(),
+            hideInsteadOfMinimize = viewModel.peekHideInsteadOfMinimize(),
+            stayHiddenOnActivation = viewModel.peekStayHiddenOnActivation(),
+            appendSpace = viewModel.peekAppendSpace(),
             alarms = viewModel.peekAlarms(),
-            maxAlarms = viewModel.getMaxAlarms(),
+            maxAlarms = viewModel.peekMaxAlarms(),
             alarmSchedulerState = AlarmSchedulerState(
                 lastCheckAt = schedulerState.lastCheckAt,
                 lastTriggeredDates = schedulerState.lastTriggeredDates,
             ),
-            credentials = viewModel.getCredentials(),
-            voiceModelProviders = viewModel.getVoiceModelProviders()
+            credentials = viewModel.peekCredentials(),
+            voiceModelProviders = viewModel.peekVoiceModelProviders()
                 .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys },
-            textModelProviders = viewModel.getTextModelProviders(),
-            sanitizeSpecialChars = viewModel.getSanitizeSpecialChars(),
-            postHideDelayMs = viewModel.getPostHideDelayMs(),
-            typingDelayMs = viewModel.getTypingDelayMs(),
-            customContext = viewModel.getCustomContext(),
-            customVocabulary = viewModel.getCustomVocabulary()
+            textModelProviders = viewModel.peekTextModelProviders(),
+            sanitizeSpecialChars = viewModel.peekSanitizeSpecialChars(),
+            postHideDelayMs = viewModel.peekPostHideDelayMs(),
+            typingDelayMs = viewModel.peekTypingDelayMs(),
+            customContext = viewModel.peekCustomContext(),
+            customVocabulary = viewModel.peekCustomVocabulary()
         )
 
         val outputFile = getDataDir().resolve(EXPORT_FILENAME).toFile()

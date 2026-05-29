@@ -192,6 +192,94 @@ class ImportExportManagerTest {
     }
 
     @Test
+    fun `export stays side effect free for malformed shared settings`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_DEFAULT_LANGUAGE to "EN",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_SECONDARY_LANGUAGE to "zz",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_BACKGROUND_RECORDING to "maybe",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_HIDE_INSTEAD_OF_MINIMIZE to "maybe",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_STAY_HIDDEN_ON_ACTIVATION to "maybe",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_APPEND_SPACE to "maybe",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_MAX_ALARMS to "999",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_SANITIZE_SPECIAL_CHARS to "maybe",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_POST_HIDE_DELAY_MS to "250ms",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_TYPING_DELAY_MS to "003",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_CUSTOM_CONTEXT to "x".repeat(com.zugaldia.speedofsound.core.desktop.settings.MAX_CUSTOM_CONTEXT_CHARS + 13),
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_CUSTOM_VOCABULARY to " alpha ||| |||beta|||alpha ",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS to Json.encodeToString(
+                    listOf(
+                        CredentialSetting(
+                            id = " cred-1 ",
+                            type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY,
+                            name = " Primary ",
+                            value = " secret ",
+                        )
+                    )
+                ),
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = " voice-1 ",
+                            name = " Whisper ",
+                            provider = com.zugaldia.speedofsound.core.plugins.asr.AsrProvider.SHERPA_WHISPER,
+                            modelId = " model-1 ",
+                            credentialId = " cred-1 ",
+                            baseUrl = " https://example.com ",
+                        )
+                    )
+                ),
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = " text-1 ",
+                            name = " LLM ",
+                            provider = com.zugaldia.speedofsound.core.plugins.llm.LlmProvider.OPENAI,
+                            modelId = " model-2 ",
+                            credentialId = " cred-1 ",
+                            baseUrl = " https://example.com ",
+                            disableThinking = true,
+                        )
+                    )
+                ),
+                KEY_ALARMS to "{bad",
+            )
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        val exportPath = manager.export().getOrThrow()
+        val exported = Json.decodeFromString<SettingsExport>(File(exportPath).readText())
+
+        assertEquals(0, store.writeCount)
+        assertEquals("en", exported.defaultLanguage)
+        assertEquals("es", exported.secondaryLanguage)
+        assertEquals(false, exported.backgroundRecording)
+        assertEquals(false, exported.hideInsteadOfMinimize)
+        assertEquals(false, exported.stayHiddenOnActivation)
+        assertEquals(false, exported.appendSpace)
+        assertEquals(false, exported.sanitizeSpecialChars)
+        assertEquals(100, exported.postHideDelayMs)
+        assertEquals(3, exported.typingDelayMs)
+        assertEquals(2, exported.customVocabulary.size)
+        assertEquals(2000, exported.customContext.length)
+        assertEquals(1, exported.credentials.size)
+        assertEquals("cred-1", exported.credentials.first().id)
+        assertEquals(1, exported.voiceModelProviders.size)
+        assertEquals("voice-1", exported.voiceModelProviders.first().id)
+        assertEquals(1, exported.textModelProviders.size)
+        assertEquals("text-1", exported.textModelProviders.first().id)
+        assertEquals(50, exported.maxAlarms)
+        assertEquals(emptyList<AlarmSetting>(), exported.alarms)
+    }
+
+    @Test
     fun `import heals malformed alarms during merge`() {
         val rawJson = "{not-json"
         val store = MapSettingsStore(
@@ -393,6 +481,7 @@ class ImportExportManagerTest {
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
         private val values = initialValues
+        var writeCount: Int = 0
 
         override fun isAvailable(): Boolean = true
 
@@ -400,6 +489,7 @@ class ImportExportManagerTest {
 
         override fun setString(key: String, value: String): Boolean {
             values[key] = value
+            writeCount += 1
             return true
         }
 
@@ -410,6 +500,7 @@ class ImportExportManagerTest {
 
         override fun setStringArray(key: String, value: List<String>): Boolean {
             values[key] = value.joinToString("|||")
+            writeCount += 1
             return true
         }
 
@@ -418,6 +509,7 @@ class ImportExportManagerTest {
 
         override fun setBoolean(key: String, value: Boolean): Boolean {
             values[key] = value.toString()
+            writeCount += 1
             return true
         }
 
@@ -426,6 +518,7 @@ class ImportExportManagerTest {
 
         override fun setInt(key: String, value: Int): Boolean {
             values[key] = value.toString()
+            writeCount += 1
             return true
         }
     }
