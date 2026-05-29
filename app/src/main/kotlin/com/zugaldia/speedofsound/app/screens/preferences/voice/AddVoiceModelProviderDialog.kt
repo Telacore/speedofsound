@@ -4,7 +4,6 @@ import com.zugaldia.speedofsound.app.DEFAULT_ADD_VOICE_PROVIDER_DIALOG_HEIGHT
 import com.zugaldia.speedofsound.app.DEFAULT_ADD_PROVIDER_DIALOG_WIDTH
 import com.zugaldia.speedofsound.app.DEFAULT_BOX_SPACING
 import com.zugaldia.speedofsound.app.DEFAULT_MARGIN
-import com.zugaldia.speedofsound.app.MAX_PROVIDER_CONFIG_NAME_LENGTH
 import com.zugaldia.speedofsound.app.STYLE_CLASS_ACCENT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_ERROR
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUCCESS
@@ -15,6 +14,7 @@ import com.zugaldia.speedofsound.app.screens.preferences.shared.CustomServicePre
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ModelComboRow
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ProviderComboRow
 import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_PROVIDER_CONFIG_NAME_LENGTH
 import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
 import com.zugaldia.speedofsound.core.isValidUrl

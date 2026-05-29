@@ -5,7 +5,6 @@ import com.zugaldia.speedofsound.app.ICON_PASSWORD
 import com.zugaldia.speedofsound.app.ICON_SERVER
 import com.zugaldia.speedofsound.app.ICON_TEXT_EDITOR
 import com.zugaldia.speedofsound.app.ICON_TRASH
-import com.zugaldia.speedofsound.app.MAX_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.app.STYLE_CLASS_BOXED_LIST
 import com.zugaldia.speedofsound.app.STYLE_CLASS_DIM_LABEL
 import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
@@ -15,6 +14,7 @@ import com.zugaldia.speedofsound.app.screens.preferences.shared.ActiveProviderCo
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_PROCESSING_ENABLED
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter

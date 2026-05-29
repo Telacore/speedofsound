@@ -54,23 +54,11 @@ const val STYLE_CLASS_DIM_LABEL = "dim-label"
 const val STYLE_CLASS_FLAT = "flat"
 const val STYLE_CLASS_LINKED = "linked"
 
-// Personalization limits
-const val MAX_VOCABULARY_WORDS = 50
-
-// Credential limits
-const val MAX_CREDENTIALS = 25
-const val MAX_CREDENTIAL_NAME_LENGTH = 100
-const val MAX_CREDENTIAL_VALUE_LENGTH = 500
-
 // Credential masking
 const val MIN_CREDENTIAL_LENGTH_FOR_MASKING = 10
 const val CREDENTIAL_MASK_PREFIX_LENGTH = 4
 const val CREDENTIAL_MASK_SUFFIX_LENGTH = 4
 
-// Voice + Text model provider limits
-const val MAX_VOICE_MODEL_PROVIDERS = 10
-const val MAX_TEXT_MODEL_PROVIDERS = 10
-const val MAX_PROVIDER_CONFIG_NAME_LENGTH = 100
 const val DEFAULT_ADD_PROVIDER_DIALOG_WIDTH = 600
 const val DEFAULT_ADD_VOICE_PROVIDER_DIALOG_HEIGHT = 500
 const val DEFAULT_ADD_TEXT_PROVIDER_DIALOG_HEIGHT = 560

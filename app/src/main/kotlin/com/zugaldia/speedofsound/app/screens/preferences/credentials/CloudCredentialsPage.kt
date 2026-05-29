@@ -5,7 +5,6 @@ import com.zugaldia.speedofsound.app.CREDENTIAL_MASK_SUFFIX_LENGTH
 import com.zugaldia.speedofsound.app.ICON_SERVER
 import com.zugaldia.speedofsound.app.ICON_TRASH
 import com.zugaldia.speedofsound.app.DEFAULT_BOX_SPACING
-import com.zugaldia.speedofsound.app.MAX_CREDENTIALS
 import com.zugaldia.speedofsound.app.MIN_CREDENTIAL_LENGTH_FOR_MASKING
 import com.zugaldia.speedofsound.app.STYLE_CLASS_BOXED_LIST
 import com.zugaldia.speedofsound.app.STYLE_CLASS_DIM_LABEL
@@ -13,6 +12,7 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_CREDENTIALS
 import org.gnome.adw.ActionRow
 import org.gnome.adw.PreferencesGroup
 import org.gnome.adw.PreferencesPage

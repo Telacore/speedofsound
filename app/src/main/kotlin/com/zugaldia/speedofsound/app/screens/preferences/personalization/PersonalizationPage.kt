@@ -6,13 +6,13 @@ import com.zugaldia.speedofsound.app.ICON_TRASH
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.DEFAULT_TEXT_VIEW_HEIGHT
 import com.zugaldia.speedofsound.app.DEFAULT_TEXT_VIEW_PADDING
-import com.zugaldia.speedofsound.app.MAX_VOCABULARY_WORDS
 import com.zugaldia.speedofsound.app.SETTINGS_SAVE_DEBOUNCE_MS
 import com.zugaldia.speedofsound.app.STYLE_CLASS_BOXED_LIST
 import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_LINKED
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_CUSTOM_CONTEXT_CHARS
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_VOCABULARY_WORDS
 import org.gnome.adw.ActionRow
 import org.gnome.adw.PreferencesGroup
 import org.gnome.adw.PreferencesPage

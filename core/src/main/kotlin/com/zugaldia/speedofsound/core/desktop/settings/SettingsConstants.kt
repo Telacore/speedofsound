@@ -63,6 +63,9 @@ const val DEFAULT_TEXT_OUTPUT_METHOD = TEXT_OUTPUT_METHOD_PORTAL
 
 const val KEY_CREDENTIALS = "credentials"
 const val DEFAULT_CREDENTIALS = "[]"
+const val MAX_CREDENTIALS = 25
+const val MAX_CREDENTIAL_NAME_LENGTH = 100
+const val MAX_CREDENTIAL_VALUE_LENGTH = 500
 
 // Voice Models page
 
@@ -73,6 +76,8 @@ val SUPPORTED_LOCAL_ASR_MODELS =
 
 const val KEY_VOICE_MODEL_PROVIDERS = "voice-model-providers"
 const val DEFAULT_VOICE_MODEL_PROVIDERS = "[]"
+const val MAX_VOICE_MODEL_PROVIDERS = 10
+const val MAX_PROVIDER_CONFIG_NAME_LENGTH = 100
 
 const val KEY_SELECTED_VOICE_MODEL_PROVIDER_ID = "selected-voice-model-provider-id"
 const val DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID = DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
@@ -84,6 +89,7 @@ const val DEFAULT_TEXT_PROCESSING_ENABLED = false
 
 const val KEY_TEXT_MODEL_PROVIDERS = "text-model-providers"
 const val DEFAULT_TEXT_MODEL_PROVIDERS = "[]"
+const val MAX_TEXT_MODEL_PROVIDERS = 10
 
 const val KEY_SELECTED_TEXT_MODEL_PROVIDER_ID = "selected-text-model-provider-id"
 const val DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID = ""
@@ -106,4 +112,5 @@ const val DEFAULT_CUSTOM_CONTEXT = ""
 const val MAX_CUSTOM_CONTEXT_CHARS = 2000 // Approximately 3 paragraphs
 
 const val KEY_CUSTOM_VOCABULARY = "custom-vocabulary"
+const val MAX_VOCABULARY_WORDS = 50
 val DEFAULT_CUSTOM_VOCABULARY = emptyList<String>()

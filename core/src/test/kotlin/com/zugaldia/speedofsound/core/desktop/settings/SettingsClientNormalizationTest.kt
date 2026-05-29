@@ -150,6 +150,85 @@ class SettingsClientNormalizationTest {
         )
     }
 
+    @Test
+    fun `credential provider and vocabulary limits are enforced on save`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        client.setCredentials(
+            buildList {
+                add(
+                    CredentialSetting(
+                        id = " cred-0 ",
+                        type = CredentialType.API_KEY,
+                        name = " ${"n".repeat(MAX_CREDENTIAL_NAME_LENGTH + 9)} ",
+                        value = " ${"v".repeat(MAX_CREDENTIAL_VALUE_LENGTH + 9)} ",
+                    )
+                )
+                repeat(MAX_CREDENTIALS + 5) { index ->
+                    add(
+                        CredentialSetting(
+                            id = "cred-$index",
+                            type = CredentialType.API_KEY,
+                            name = "name-$index",
+                            value = "value-$index",
+                        )
+                    )
+                }
+            }
+        )
+        client.setVoiceModelProviders(
+            buildList {
+                repeat(MAX_VOICE_MODEL_PROVIDERS + 5) { index ->
+                    add(
+                        VoiceModelProviderSetting(
+                            id = "voice-$index",
+                            name = " ${"w".repeat(MAX_PROVIDER_CONFIG_NAME_LENGTH + 7)} ",
+                            provider = AsrProvider.SHERPA_WHISPER,
+                            modelId = "model-$index",
+                        )
+                    )
+                }
+            }
+        )
+        client.setTextModelProviders(
+            buildList {
+                repeat(MAX_TEXT_MODEL_PROVIDERS + 5) { index ->
+                    add(
+                        TextModelProviderSetting(
+                            id = "text-$index",
+                            name = " ${"t".repeat(MAX_PROVIDER_CONFIG_NAME_LENGTH + 7)} ",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-$index",
+                            disableThinking = index % 2 == 0,
+                        )
+                    )
+                }
+            }
+        )
+        client.setCustomVocabulary((0 until MAX_VOCABULARY_WORDS + 7).map { " word-$it " })
+
+        val storedCredentials = Json.decodeFromString<List<CredentialSetting>>(
+            store.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS)
+        )
+        val storedVoiceProviders = Json.decodeFromString<List<VoiceModelProviderSetting>>(
+            store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)
+        )
+        val storedTextProviders = Json.decodeFromString<List<TextModelProviderSetting>>(
+            store.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)
+        )
+
+        assertEquals(MAX_CREDENTIALS, storedCredentials.size)
+        assertEquals(MAX_CREDENTIAL_NAME_LENGTH, storedCredentials.first().name.length)
+        assertEquals(MAX_CREDENTIAL_VALUE_LENGTH, storedCredentials.first().value.length)
+        assertEquals(MAX_VOICE_MODEL_PROVIDERS, storedVoiceProviders.size)
+        assertEquals(MAX_PROVIDER_CONFIG_NAME_LENGTH, storedVoiceProviders.first().name.length)
+        assertEquals(MAX_TEXT_MODEL_PROVIDERS, storedTextProviders.size)
+        assertEquals(MAX_PROVIDER_CONFIG_NAME_LENGTH, storedTextProviders.first().name.length)
+        assertEquals(MAX_VOCABULARY_WORDS, store.getStringArray(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY).size)
+        assertEquals(4, store.writeCount)
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {

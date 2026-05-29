@@ -228,6 +228,86 @@ class SettingsClientReadHealingTest {
     }
 
     @Test
+    fun `oversized credential provider and vocabulary json is capped on read`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_CREDENTIALS to Json.encodeToString(
+                    buildList {
+                        add(
+                            CredentialSetting(
+                                id = "cred-0",
+                                type = CredentialType.API_KEY,
+                                name = " ${"n".repeat(MAX_CREDENTIAL_NAME_LENGTH + 5)} ",
+                                value = " ${"v".repeat(MAX_CREDENTIAL_VALUE_LENGTH + 5)} ",
+                            )
+                        )
+                        repeat(MAX_CREDENTIALS + 4) { index ->
+                            add(
+                                CredentialSetting(
+                                    id = "cred-$index",
+                                    type = CredentialType.API_KEY,
+                                    name = "name-$index",
+                                    value = "value-$index",
+                                )
+                            )
+                        }
+                    }
+                ),
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    buildList {
+                        repeat(MAX_VOICE_MODEL_PROVIDERS + 4) { index ->
+                            add(
+                                VoiceModelProviderSetting(
+                                    id = "voice-$index",
+                                    name = " ${"w".repeat(MAX_PROVIDER_CONFIG_NAME_LENGTH + 4)} ",
+                                    provider = AsrProvider.SHERPA_WHISPER,
+                                    modelId = "model-$index",
+                                )
+                            )
+                        }
+                    }
+                ),
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    buildList {
+                        repeat(MAX_TEXT_MODEL_PROVIDERS + 4) { index ->
+                            add(
+                                TextModelProviderSetting(
+                                    id = "text-$index",
+                                    name = " ${"t".repeat(MAX_PROVIDER_CONFIG_NAME_LENGTH + 4)} ",
+                                    provider = LlmProvider.OPENAI,
+                                    modelId = "model-$index",
+                                    disableThinking = index % 2 == 0,
+                                )
+                            )
+                        }
+                    }
+                ),
+                KEY_CUSTOM_VOCABULARY to (0 until MAX_VOCABULARY_WORDS + 7).joinToString("|||") { " word-$it " },
+            )
+        )
+        val client = SettingsClient(store)
+
+        val credentials = client.getCredentials()
+        val voiceProviders = client.getVoiceModelProviders().filter { it.id.startsWith("voice-") }
+        val textProviders = client.getTextModelProviders()
+        val vocabulary = client.getCustomVocabulary()
+
+        assertEquals(MAX_CREDENTIALS, credentials.size)
+        assertEquals(MAX_CREDENTIAL_NAME_LENGTH, credentials.first().name.length)
+        assertEquals(MAX_CREDENTIAL_VALUE_LENGTH, credentials.first().value.length)
+        assertEquals(MAX_VOICE_MODEL_PROVIDERS, voiceProviders.size)
+        assertEquals(MAX_PROVIDER_CONFIG_NAME_LENGTH, voiceProviders.first().name.length)
+        assertEquals(MAX_TEXT_MODEL_PROVIDERS, textProviders.size)
+        assertEquals(MAX_PROVIDER_CONFIG_NAME_LENGTH, textProviders.first().name.length)
+        assertEquals(MAX_VOCABULARY_WORDS, vocabulary.size)
+        assertEquals(MAX_CREDENTIALS, Json.decodeFromString<List<CredentialSetting>>(store.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS)).size)
+        assertEquals(MAX_VOICE_MODEL_PROVIDERS, Json.decodeFromString<List<VoiceModelProviderSetting>>(store.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)).size)
+        assertEquals(MAX_TEXT_MODEL_PROVIDERS, Json.decodeFromString<List<TextModelProviderSetting>>(store.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)).size)
+        assertEquals(MAX_VOCABULARY_WORDS, store.getStringArray(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY).size)
+        assertEquals(4, store.writeCount)
+    }
+
+    @Test
     fun `malformed portals restore token is healed on read`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

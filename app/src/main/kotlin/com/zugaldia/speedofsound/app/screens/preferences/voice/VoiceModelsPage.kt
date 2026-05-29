@@ -5,13 +5,13 @@ import com.zugaldia.speedofsound.app.ICON_MICROPHONE
 import com.zugaldia.speedofsound.app.ICON_PASSWORD
 import com.zugaldia.speedofsound.app.ICON_SERVER
 import com.zugaldia.speedofsound.app.ICON_TRASH
-import com.zugaldia.speedofsound.app.MAX_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.app.STYLE_CLASS_BOXED_LIST
 import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ActiveProviderComboRow
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import org.gnome.adw.ActionRow
 import org.gnome.adw.PreferencesGroup

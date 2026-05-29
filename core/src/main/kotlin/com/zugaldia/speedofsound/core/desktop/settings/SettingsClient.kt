@@ -941,17 +941,18 @@ class SettingsClient(val settingsStore: SettingsStore) {
         map { credential ->
             credential.copy(
                 id = credential.id.trim(),
-                name = credential.name.trim(),
-                value = credential.value.trim(),
+                name = credential.name.trim().take(MAX_CREDENTIAL_NAME_LENGTH),
+                value = credential.value.trim().take(MAX_CREDENTIAL_VALUE_LENGTH),
             )
         }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.value.isNotBlank() }
             .distinctBy { it.id }
+            .take(MAX_CREDENTIALS)
 
     private fun List<VoiceModelProviderSetting>.normalizedVoiceModelProviders(): List<VoiceModelProviderSetting> =
         map { provider ->
             provider.copy(
                 id = provider.id.trim(),
-                name = provider.name.trim(),
+                name = provider.name.trim().take(MAX_PROVIDER_CONFIG_NAME_LENGTH),
                 modelId = provider.modelId.trim(),
                 credentialId = provider.credentialId?.trim()?.takeIf { it.isNotBlank() },
                 baseUrl = provider.baseUrl?.trim()?.takeIf { it.isNotBlank() },
@@ -962,18 +963,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
     private fun List<VoiceModelProviderSetting>.normalizedCustomVoiceModelProviders(): List<VoiceModelProviderSetting> =
         normalizedVoiceModelProviders()
             .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+            .take(MAX_VOICE_MODEL_PROVIDERS)
 
     private fun List<TextModelProviderSetting>.normalizedTextModelProviders(): List<TextModelProviderSetting> =
         map { provider ->
             provider.copy(
                 id = provider.id.trim(),
-                name = provider.name.trim(),
+                name = provider.name.trim().take(MAX_PROVIDER_CONFIG_NAME_LENGTH),
                 modelId = provider.modelId.trim(),
                 credentialId = provider.credentialId?.trim()?.takeIf { it.isNotBlank() },
                 baseUrl = provider.baseUrl?.trim()?.takeIf { it.isNotBlank() },
             )
         }.filter { it.id.isNotBlank() && it.name.isNotBlank() && it.modelId.isNotBlank() }
             .distinctBy { it.id }
+            .take(MAX_TEXT_MODEL_PROVIDERS)
 
     private fun readCustomVocabulary(): List<String> {
         val raw = settingsStore.getStringArray(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY)
@@ -1024,6 +1027,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         map { it.trim() }
             .filter { it.isNotBlank() }
             .distinct()
+            .take(MAX_VOCABULARY_WORDS)
 
     private data class LegacyAlarmSchedulerStateLoad(
         val state: AlarmSchedulerState,
