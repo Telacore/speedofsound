@@ -178,7 +178,13 @@ class AddTextModelProviderDialog(
                 val name = nameEntry.text.trim()
                 val baseUrl = baseUrlEntry.getBaseUrl()
                 val modelId = selectedModelId
-                if (validateInput(name, baseUrl, modelId)) {
+                val valid = name.isNotEmpty() &&
+                    name.length <= MAX_PROVIDER_CONFIG_NAME_LENGTH &&
+                    currentProviders.size < MAX_TEXT_MODEL_PROVIDERS &&
+                    currentProviders.none { it.name == name } &&
+                    modelId != null &&
+                    (baseUrl == null || isValidUrl(baseUrl))
+                if (valid) {
                     val config = TextModelProviderSetting(
                         id = generateUniqueId(),
                         name = name,
@@ -286,7 +292,12 @@ class AddTextModelProviderDialog(
         val name = nameEntry.text.trim()
         val baseUrl = baseUrlEntry.getBaseUrl()
         val modelId = selectedModelId
-        val valid = validateInput(name, baseUrl, modelId)
+        val valid = name.isNotEmpty() &&
+            name.length <= MAX_PROVIDER_CONFIG_NAME_LENGTH &&
+            currentProviders.size < MAX_TEXT_MODEL_PROVIDERS &&
+            currentProviders.none { it.name == name } &&
+            modelId != null &&
+            (baseUrl == null || isValidUrl(baseUrl))
         addButton.sensitive = valid
         testButton.sensitive = valid
     }
@@ -373,17 +384,6 @@ class AddTextModelProviderDialog(
         messageLabel.removeCssClass(STYLE_CLASS_WARNING)
         messageLabel.removeCssClass(STYLE_CLASS_ERROR)
         messageLabel.addCssClass(styleClass)
-    }
-
-    @Suppress("ReturnCount")
-    private fun validateInput(name: String, baseUrl: String?, modelId: String?): Boolean {
-        if (name.isEmpty()) { return false }
-        if (name.length > MAX_PROVIDER_CONFIG_NAME_LENGTH) { return false }
-        if (currentProviders.size >= MAX_TEXT_MODEL_PROVIDERS) { return false }
-        if (currentProviders.any { it.name == name }) { return false }
-        if (modelId == null) { return false }
-        if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
-        return true
     }
 
     private fun refreshSnapshots() {
