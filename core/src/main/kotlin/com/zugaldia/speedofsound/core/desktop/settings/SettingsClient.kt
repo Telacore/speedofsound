@@ -133,11 +133,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         loadMaxAlarms()
         loadAlarms()
         loadAlarmSchedulerState()
-        loadCredentials()
-        val availableVoiceProviders = loadVoiceModelProviders()
+        val credentials = loadCredentials()
+        val validCredentialIds = credentials.map { it.id }.toSet()
+        val availableVoiceProviders = loadVoiceModelProviders(validCredentialIds)
         loadSelectedVoiceModelProviderId(availableVoiceProviders)
         loadTextProcessingEnabled()
-        val availableTextProviders = loadTextModelProviders()
+        val availableTextProviders = loadTextModelProviders(validCredentialIds)
         loadSelectedTextModelProviderId(availableTextProviders)
         loadCustomContext()
         loadCustomVocabulary()
@@ -696,8 +697,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
             }
     }
 
-    fun loadVoiceModelProviders(): List<VoiceModelProviderSetting> {
-        val validCredentialIds = loadCredentials().map { it.id }.toSet()
+    fun loadVoiceModelProviders(): List<VoiceModelProviderSetting> =
+        loadVoiceModelProviders(loadCredentials().map { it.id }.toSet())
+
+    private fun loadVoiceModelProviders(validCredentialIds: Set<String>): List<VoiceModelProviderSetting> {
         val customProviders = readNormalizedJsonListSetting<VoiceModelProviderSetting>(
             key = KEY_VOICE_MODEL_PROVIDERS,
             defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
@@ -889,8 +892,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
             KEY_TEXT_PROCESSING_ENABLED
         )
 
-    fun loadTextModelProviders(): List<TextModelProviderSetting> {
-        val validCredentialIds = loadCredentials().map { it.id }.toSet()
+    fun loadTextModelProviders(): List<TextModelProviderSetting> =
+        loadTextModelProviders(loadCredentials().map { it.id }.toSet())
+
+    private fun loadTextModelProviders(validCredentialIds: Set<String>): List<TextModelProviderSetting> {
         return readNormalizedJsonListSetting<TextModelProviderSetting>(
             key = KEY_TEXT_MODEL_PROVIDERS,
             defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,

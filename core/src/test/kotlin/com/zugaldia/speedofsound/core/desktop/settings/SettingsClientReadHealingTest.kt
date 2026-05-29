@@ -254,6 +254,7 @@ class SettingsClientReadHealingTest {
 
         client.loadStartupState()
 
+        assertEquals(1, store.stringReadCount(KEY_CREDENTIALS))
         assertEquals(1, store.stringReadCount(KEY_VOICE_MODEL_PROVIDERS))
         assertEquals(1, store.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
         assertEquals("[]", store.rawString(KEY_VOICE_MODEL_PROVIDERS))
