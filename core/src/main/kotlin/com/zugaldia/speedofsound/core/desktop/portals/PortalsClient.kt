@@ -30,7 +30,7 @@ private const val SHORTCUT_ID = "$APPLICATION_SHORT-trigger"
 private const val SHORTCUT_DESCRIPTION = "Start or stop voice typing"
 
 @Suppress("TooManyFunctions")
-class PortalsClient {
+class PortalsClient : PortalsSessionClient {
     companion object {
         private const val KEY_SYMBOL_HEX_RADIX = 16
     }
@@ -45,10 +45,10 @@ class PortalsClient {
     private fun portalUnavailableError(): IllegalStateException =
         IllegalStateException("Desktop portal is unavailable on this system")
 
-    val isPortalAvailable: Boolean
+    override val isPortalAvailable: Boolean
         get() = portal != null
 
-    val sessionClosedEvents: Flow<SessionClosedEvent>
+    override val sessionClosedEvents: Flow<SessionClosedEvent>
         get() = portal?.remoteDesktop?.observeSessionClosed() ?: emptyFlow()
 
     /**
@@ -56,7 +56,7 @@ class PortalsClient {
      * This should only be called when not running in a sandboxed environment (Flatpak/Snap),
      * as sandboxed apps are registered automatically.
      */
-    suspend fun registerApplication() =
+    override suspend fun registerApplication() =
         (portal?.registry?.register(APPLICATION_ID) ?: Result.failure(portalUnavailableError()))
             .onSuccess { logger.info("Registered application ID: {}", APPLICATION_ID) }
             .onFailure { logger.warn("Failed to register application ID: {} ({})", APPLICATION_ID, it.message) }
@@ -67,7 +67,7 @@ class PortalsClient {
      * @param restoreToken Optional token from a previous session. When provided, the portal will
      * attempt to restore the session without prompting the user for authorization again.
      */
-    suspend fun startRemoteDesktopSession(restoreToken: String?): Result<StartResponse> =
+    override suspend fun startRemoteDesktopSession(restoreToken: String?): Result<StartResponse> =
         portal?.remoteDesktop?.startSession(
             types = setOf(DeviceType.KEYBOARD),
             restoreToken = restoreToken,
@@ -121,7 +121,7 @@ class PortalsClient {
      * This is idempotent — if a session already exists, it returns success without creating a new one.
      * This is expected to fail on older desktop environments that do not support the portal.
      */
-    suspend fun createGlobalShortcutsSession(): Result<CreateSessionResponse> = shortcutsSessionMutex.withLock {
+    override suspend fun createGlobalShortcutsSession(): Result<CreateSessionResponse> = shortcutsSessionMutex.withLock {
         val existingHandle = shortcutsSessionHandle
         if (existingHandle != null) {
             logger.info("Global shortcuts session already exists, skipping creation.")
@@ -138,7 +138,7 @@ class PortalsClient {
      *
      * Filters activations to only the application's shortcut ID and only when activated (not released).
      */
-    fun observeShortcutActivated(): Flow<ShortcutActivation> =
+    override fun observeShortcutActivated(): Flow<ShortcutActivation> =
         (portal?.globalShortcuts?.activations() ?: emptyFlow())
             .filter { it.shortcutId == SHORTCUT_ID && it.activated }
 
@@ -175,7 +175,7 @@ class PortalsClient {
     /**
      * Binds the application's global shortcut to the active session.
      */
-    suspend fun bindGlobalShortcuts(): Result<List<BoundShortcut>> {
+    override suspend fun bindGlobalShortcuts(): Result<List<BoundShortcut>> {
         val handle = shortcutsSessionHandle
             ?: return Result.failure(IllegalStateException("No active global shortcuts session"))
         val shortcut = Shortcut(

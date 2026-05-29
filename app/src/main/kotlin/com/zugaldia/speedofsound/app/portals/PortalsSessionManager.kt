@@ -1,6 +1,6 @@
 package com.zugaldia.speedofsound.app.portals
 
-import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
+import com.zugaldia.speedofsound.core.desktop.portals.PortalsSessionClient
 import com.zugaldia.stargate.sdk.globalshortcuts.ShortcutActivation
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.stargate.sdk.isSandboxed
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory
 private const val REMOTE_DESKTOP_INTERFACE = "org.freedesktop.portal.remotedesktop"
 
 class PortalsSessionManager(
-    private val portalsClient: PortalsClient,
+    private val portalsClient: PortalsSessionClient,
     private val settingsClient: SettingsClient,
     initialSessionDisconnected: Boolean = true,
     initialRemoteDesktopStatus: RemoteDesktopStatus = RemoteDesktopStatus.NeedToken,
@@ -119,15 +119,15 @@ class PortalsSessionManager(
                         }
                     }
 
-                    _remoteDesktopStatus.value = if (isCancelled) {
-                        RemoteDesktopStatus.NeedToken
-                    } else if (isMissingRemoteDesktopInterface) {
-                        RemoteDesktopStatus.NotSupported
-                    } else {
-                        RemoteDesktopStatus.NotSupported
+                    _remoteDesktopStatus.value = when {
+                        isCancelled -> RemoteDesktopStatus.NeedToken
+                        isMissingRemoteDesktopInterface -> RemoteDesktopStatus.NotSupported
+                        else -> RemoteDesktopStatus.NeedToken
                     }
                     _isSessionDisconnected.value = true
-                    settingsClient.setPortalsRestoreToken("")
+                    if (isMissingRemoteDesktopInterface) {
+                        settingsClient.setPortalsRestoreToken("")
+                    }
                 }
             } finally {
                 startSessionJob = null

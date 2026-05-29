@@ -1,6 +1,19 @@
 package com.zugaldia.speedofsound.app.portals
 
+import com.zugaldia.speedofsound.core.desktop.portals.PortalsSessionClient
+import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
+import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
+import com.zugaldia.stargate.sdk.globalshortcuts.BoundShortcut
+import com.zugaldia.stargate.sdk.globalshortcuts.ShortcutActivation
+import com.zugaldia.stargate.sdk.remotedesktop.StartResponse
+import com.zugaldia.stargate.sdk.session.CreateSessionResponse
+import com.zugaldia.stargate.sdk.session.SessionClosedEvent
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -50,4 +63,152 @@ class PortalsSessionManagerTest {
 
         assertFalse(isMissingRemoteDesktopPortalInterface(error))
     }
+
+    @Test
+    fun `startSession transient failure keeps restore token and stays reconnectable`() = runBlocking {
+        val portalsClient = FakePortalsSessionClient(
+            createGlobalShortcutsSessionResult = Result.failure<CreateSessionResponse>(
+                RuntimeException("No such interface 'org.freedesktop.portal.GlobalShortcuts' on object /org/freedesktop/portal/desktop")
+            ),
+            startRemoteDesktopSessionResult = Result.failure<StartResponse>(RuntimeException("Temporary D-Bus timeout")),
+        )
+        val settingsClient = SettingsClient(FakeSettingsStore()).apply {
+            setPortalsRestoreToken("smoke-restore-token")
+        }
+        val manager = PortalsSessionManager(portalsClient, settingsClient)
+
+        manager.initialize(this)
+        awaitPortalsCalls(portalsClient, 1)
+
+        assertEquals(RemoteDesktopStatus.NeedToken, manager.remoteDesktopStatus.value)
+        assertEquals("smoke-restore-token", settingsClient.getPortalsRestoreToken())
+        assertEquals(listOf<String?>("smoke-restore-token"), portalsClient.requestedRestoreTokens)
+
+        manager.attemptReconnect(this)
+        awaitPortalsCalls(portalsClient, 2)
+
+        assertEquals(2, portalsClient.startRemoteDesktopSessionCalls)
+        assertEquals(
+            listOf<String?>("smoke-restore-token", "smoke-restore-token"),
+            portalsClient.requestedRestoreTokens,
+        )
+    }
+
+    @Test
+    fun `startSession missing remote desktop interface clears restore token and disables reconnects`() = runBlocking {
+        val portalsClient = FakePortalsSessionClient(
+            createGlobalShortcutsSessionResult = Result.failure<CreateSessionResponse>(
+                RuntimeException("No such interface 'org.freedesktop.portal.GlobalShortcuts' on object /org/freedesktop/portal/desktop")
+            ),
+            startRemoteDesktopSessionResult = Result.failure<StartResponse>(
+                RuntimeException("No such interface 'org.freedesktop.portal.RemoteDesktop' on object /org/freedesktop/portal/desktop")
+            ),
+        )
+        val settingsClient = SettingsClient(FakeSettingsStore()).apply {
+            setPortalsRestoreToken("smoke-restore-token")
+        }
+        val manager = PortalsSessionManager(portalsClient, settingsClient)
+
+        manager.initialize(this)
+        awaitPortalsCalls(portalsClient, 1)
+
+        assertEquals(RemoteDesktopStatus.NotSupported, manager.remoteDesktopStatus.value)
+        assertEquals("", settingsClient.getPortalsRestoreToken())
+        assertEquals(listOf<String?>("smoke-restore-token"), portalsClient.requestedRestoreTokens)
+
+        val callsAfterFailure = portalsClient.startRemoteDesktopSessionCalls
+        manager.attemptReconnect(this)
+        repeat(20) { yield() }
+
+        assertEquals(callsAfterFailure, portalsClient.startRemoteDesktopSessionCalls)
+    }
+}
+
+private suspend fun awaitPortalsCalls(
+    portalsClient: FakePortalsSessionClient,
+    expectedCalls: Int,
+) {
+    repeat(100) {
+        if (portalsClient.startRemoteDesktopSessionCalls >= expectedCalls) return
+        yield()
+    }
+    error("Timed out waiting for $expectedCalls remote desktop session attempts")
+}
+
+private class FakeSettingsStore : SettingsStore {
+    private val strings = mutableMapOf<String, String>()
+    private val stringArrays = mutableMapOf<String, List<String>>()
+    private val booleans = mutableMapOf<String, Boolean>()
+    private val ints = mutableMapOf<String, Int>()
+
+    override fun isAvailable(): Boolean = true
+
+    override fun getString(key: String, defaultValue: String): String =
+        strings[key] ?: defaultValue
+
+    override fun setString(key: String, value: String): Boolean {
+        strings[key] = value
+        return true
+    }
+
+    override fun getStringArray(key: String, defaultValue: List<String>): List<String> =
+        stringArrays[key] ?: defaultValue
+
+    override fun setStringArray(key: String, value: List<String>): Boolean {
+        stringArrays[key] = value
+        return true
+    }
+
+    override fun getBoolean(key: String, defaultValue: Boolean): Boolean =
+        booleans[key] ?: defaultValue
+
+    override fun setBoolean(key: String, value: Boolean): Boolean {
+        booleans[key] = value
+        return true
+    }
+
+    override fun getInt(key: String, defaultValue: Int): Int =
+        ints[key] ?: defaultValue
+
+    override fun setInt(key: String, value: Int): Boolean {
+        ints[key] = value
+        return true
+    }
+}
+
+private class FakePortalsSessionClient(
+    private val createGlobalShortcutsSessionResult: Result<CreateSessionResponse>,
+    private val startRemoteDesktopSessionResult: Result<StartResponse>,
+) : PortalsSessionClient {
+    var registerApplicationCalls = 0
+    var createGlobalShortcutsSessionCalls = 0
+    var bindGlobalShortcutsCalls = 0
+    var startRemoteDesktopSessionCalls = 0
+    val requestedRestoreTokens = mutableListOf<String?>()
+
+    override val isPortalAvailable: Boolean = true
+    override val sessionClosedEvents: Flow<SessionClosedEvent> = emptyFlow()
+
+    override suspend fun registerApplication(): Result<Unit> {
+        registerApplicationCalls += 1
+        return Result.success(Unit)
+    }
+
+    override suspend fun startRemoteDesktopSession(restoreToken: String?): Result<StartResponse> {
+        startRemoteDesktopSessionCalls += 1
+        requestedRestoreTokens += restoreToken
+        return startRemoteDesktopSessionResult
+    }
+
+    override suspend fun createGlobalShortcutsSession(): Result<CreateSessionResponse> {
+        createGlobalShortcutsSessionCalls += 1
+        return createGlobalShortcutsSessionResult
+    }
+
+    override suspend fun bindGlobalShortcuts(): Result<List<BoundShortcut>> {
+        bindGlobalShortcutsCalls += 1
+        return Result.success(emptyList())
+    }
+
+    override fun observeShortcutActivated(): Flow<ShortcutActivation> = emptyFlow()
 }
