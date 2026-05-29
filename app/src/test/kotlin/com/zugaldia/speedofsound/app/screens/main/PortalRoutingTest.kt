@@ -43,4 +43,37 @@ class PortalRoutingTest {
         assertTrue(shouldAttemptPortalReconnect(TEXT_OUTPUT_METHOD_PORTAL))
         assertFalse(shouldAttemptPortalReconnect(TEXT_OUTPUT_METHOD_CLIPBOARD))
     }
+
+    @Test
+    fun `shouldAutoStartPortalSession returns true when portal is selected and session is not ready`() {
+        assertTrue(
+            shouldAutoStartPortalSession(
+                textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NeedToken,
+                isPortalAvailable = true,
+            )
+        )
+    }
+
+    @Test
+    fun `shouldAutoStartPortalSession returns false when clipboard is selected`() {
+        assertFalse(
+            shouldAutoStartPortalSession(
+                textOutputMethod = TEXT_OUTPUT_METHOD_CLIPBOARD,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NotSupported,
+                isPortalAvailable = true,
+            )
+        )
+    }
+
+    @Test
+    fun `shouldAutoStartPortalSession returns false when session is already ready`() {
+        assertFalse(
+            shouldAutoStartPortalSession(
+                textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.Ready,
+                isPortalAvailable = true,
+            )
+        )
+    }
 }

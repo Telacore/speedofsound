@@ -342,6 +342,15 @@ class MainViewModel(
                     switchToClipboardFallback("Remote desktop portal is not supported on this system.")
                     return@onSuccess
                 }
+                if (shouldAutoStartPortalSession(
+                        settingsClient.getTextOutputMethod(),
+                        activeRemoteDesktopStatus,
+                        portalsClient.isPortalAvailable,
+                    )
+                ) {
+                    startPortalsSession(settingsClient.getPortalsRestoreToken().ifBlank { null })
+                    return@onSuccess
+                }
                 updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
             }
             .onFailure { error ->
