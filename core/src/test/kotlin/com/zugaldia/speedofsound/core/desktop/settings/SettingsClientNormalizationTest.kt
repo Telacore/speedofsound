@@ -200,12 +200,12 @@ class SettingsClientNormalizationTest {
             )
         )
 
-        val expectedVoiceProviderId = client.peekVoiceModelProviders()
+        val expectedVoiceProviderId = client.peekVoiceModelProviders(emptySet())
             .sortedBy { it.name.lowercase() }
             .firstOrNull()
             ?.id
             ?: DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID
-        val expectedTextProviderId = client.peekTextModelProviders()
+        val expectedTextProviderId = client.peekTextModelProviders(emptySet())
             .sortedBy { it.name.lowercase() }
             .firstOrNull()
             ?.id
@@ -631,8 +631,8 @@ class SettingsClientNormalizationTest {
             )
         )
 
-        val expectedVoiceProviderId = client.peekVoiceModelProviders().sortedBy { it.name.lowercase() }.first().id
-        val expectedTextProviderId = client.peekTextModelProviders().sortedBy { it.name.lowercase() }.first().id
+        val expectedVoiceProviderId = client.peekVoiceModelProviders(emptySet()).sortedBy { it.name.lowercase() }.first().id
+        val expectedTextProviderId = client.peekTextModelProviders(emptySet()).sortedBy { it.name.lowercase() }.first().id
 
         assertEquals(expectedVoiceProviderId, client.peekSelectedVoiceModelProviderId())
         assertEquals(expectedTextProviderId, client.peekSelectedTextModelProviderId())

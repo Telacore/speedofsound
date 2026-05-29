@@ -214,7 +214,7 @@ class ImportExportManagerTest {
         assertEquals("de", store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_DEFAULT_LANGUAGE))
         assertEquals(7, settingsClient.loadMaxAlarms())
         assertEquals(emptyList<CredentialSetting>(), settingsClient.peekCredentials())
-        assertEquals(emptyList<VoiceModelProviderSetting>(), settingsClient.peekVoiceModelProviders().filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys })
+        assertEquals(emptyList<VoiceModelProviderSetting>(), settingsClient.peekVoiceModelProviders(emptySet()).filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys })
         assertEquals(null, store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS))
         assertEquals(null, store.rawValue(com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS))
     }
@@ -425,8 +425,8 @@ class ImportExportManagerTest {
         assertTrue(result.filePath.isNotBlank())
         assertEquals(0, store.writeCount)
         assertEquals(emptyList<CredentialSetting>(), settingsClient.peekCredentials())
-        assertEquals(emptyList<VoiceModelProviderSetting>(), settingsClient.peekVoiceModelProviders().filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys })
-        assertEquals(emptyList<TextModelProviderSetting>(), settingsClient.peekTextModelProviders())
+        assertEquals(emptyList<VoiceModelProviderSetting>(), settingsClient.peekVoiceModelProviders(emptySet()).filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys })
+        assertEquals(emptyList<TextModelProviderSetting>(), settingsClient.peekTextModelProviders(emptySet()))
         assertEquals(listOf("alpha", "beta"), settingsClient.peekCustomVocabulary())
     }
 

@@ -744,9 +744,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return getLocalVoiceModelProviders() + customProviders
     }
 
-    fun peekVoiceModelProviders(): List<VoiceModelProviderSetting> =
-        peekVoiceModelProviders(peekCredentials().map { it.id }.toSet())
-
     fun peekVoiceModelProviders(validCredentialIds: Set<String>): List<VoiceModelProviderSetting> {
         val customProviders = peekNormalizedJsonListSetting<VoiceModelProviderSetting>(
             key = KEY_VOICE_MODEL_PROVIDERS,
@@ -758,11 +755,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return getLocalVoiceModelProviders() + customProviders
     }
 
-    fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean {
-        val validCredentialIds = peekCredentials().map { it.id }.toSet()
-        return setVoiceModelProviders(value, validCredentialIds)
-    }
-
     fun loadSelectedVoiceModelProviderId(): String =
         loadSelectedVoiceModelProviderId(loadVoiceModelProviders())
 
@@ -770,7 +762,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekSelectedProviderId(
             key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            availableProviders = peekVoiceModelProviders(),
+            availableProviders = peekVoiceModelProviders(peekCredentials().map { it.id }.toSet()),
         )
 
     /**
@@ -867,7 +859,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekSelectedProviderId(
             key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            availableProviders = peekTextModelProviders(),
+            availableProviders = peekTextModelProviders(peekCredentials().map { it.id }.toSet()),
         )
 
     fun peekSelectedTextModelProviderId(availableProviders: List<TextModelProviderSetting>): String =
@@ -928,9 +920,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
     }
 
-    fun peekTextModelProviders(): List<TextModelProviderSetting> =
-        peekTextModelProviders(peekCredentials().map { it.id }.toSet())
-
     fun peekTextModelProviders(validCredentialIds: Set<String>): List<TextModelProviderSetting> {
         return peekNormalizedJsonListSetting(
             key = KEY_TEXT_MODEL_PROVIDERS,
@@ -938,11 +927,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
             label = "text model providers",
             normalize = { it.normalizedTextModelProviders(validCredentialIds) },
         )
-    }
-
-    fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean {
-        val validCredentialIds = peekCredentials().map { it.id }.toSet()
-        return setTextModelProviders(value, validCredentialIds)
     }
 
     /*

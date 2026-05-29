@@ -81,12 +81,12 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        val expectedVoiceProviderId = client.peekVoiceModelProviders()
+        val expectedVoiceProviderId = client.peekVoiceModelProviders(emptySet())
             .sortedBy { it.name.lowercase() }
             .firstOrNull()
             ?.id
             ?: DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID
-        val expectedTextProviderId = client.peekTextModelProviders()
+        val expectedTextProviderId = client.peekTextModelProviders(emptySet())
             .sortedBy { it.name.lowercase() }
             .firstOrNull()
             ?.id
@@ -115,20 +115,20 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
-        val expectedVoiceProvider = client.peekVoiceModelProviders()
+        val expectedVoiceProvider = client.peekVoiceModelProviders(emptySet())
             .sortedBy { it.name.lowercase() }
             .firstOrNull()
-        val expectedTextProvider = client.peekTextModelProviders()
+        val expectedTextProvider = client.peekTextModelProviders(emptySet())
             .sortedBy { it.name.lowercase() }
             .firstOrNull()
 
         assertEquals(
             expectedVoiceProvider,
-            client.peekVoiceModelProviders().find { it.id == client.peekSelectedVoiceModelProviderId() }
+            client.peekVoiceModelProviders(emptySet()).find { it.id == client.peekSelectedVoiceModelProviderId() }
         )
         assertEquals(
             expectedTextProvider,
-            client.peekTextModelProviders().find { it.id == client.peekSelectedTextModelProviderId() }
+            client.peekTextModelProviders(emptySet()).find { it.id == client.peekSelectedTextModelProviderId() }
         )
         assertEquals(0, store.writeCount)
     }
