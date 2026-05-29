@@ -95,8 +95,100 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
             add(vocabularyListBox)
         }
 
-        vocabularyAddButton.onClicked { addVocabularyWord(vocabularyEntry) }
-        vocabularyEntry.onActivate { addVocabularyWord(vocabularyEntry) }
+        vocabularyAddButton.onClicked {
+            val word = vocabularyEntry.text.trim()
+            if (word.isEmpty()) return@onClicked
+
+            var wordCount = 0
+            var child = vocabularyListBox.firstChild
+            while (child != null) {
+                if (child is ActionRow) wordCount++
+                child = child.nextSibling
+            }
+
+            if (wordCount >= MAX_VOCABULARY_WORDS) {
+                logger.warn("Cannot add word: vocabulary limit of $MAX_VOCABULARY_WORDS reached")
+                return@onClicked
+            }
+
+            val updatedVocabulary = mutableListOf<String>()
+            var vocabularyChild = vocabularyListBox.firstChild
+            while (vocabularyChild != null) {
+                if (vocabularyChild is ActionRow) { updatedVocabulary.add(vocabularyChild.title) }
+                vocabularyChild = vocabularyChild.nextSibling
+            }
+            val vocabularyWithNewWord = updatedVocabulary + word
+            if (saveVocabulary(vocabularyWithNewWord)) {
+                val row = ActionRow().apply { title = word }
+                val deleteButton = Button.fromIconName(ICON_TRASH).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                    onClicked {
+                        val updatedVocabulary = mutableListOf<String>()
+                        var deleteChild = vocabularyListBox.firstChild
+                        while (deleteChild != null) {
+                            if (deleteChild is ActionRow) { updatedVocabulary.add(deleteChild.title) }
+                            deleteChild = deleteChild.nextSibling
+                        }
+                        val filteredVocabulary = updatedVocabulary.filterNot { it == row.title }
+                        if (saveVocabulary(filteredVocabulary)) {
+                            vocabularyListBox.remove(row)
+                        }
+                    }
+                }
+
+                row.addSuffix(deleteButton)
+                vocabularyListBox.append(row)
+                vocabularyEntry.text = ""
+            }
+        }
+        vocabularyEntry.onActivate {
+            val word = vocabularyEntry.text.trim()
+            if (word.isEmpty()) return@onActivate
+
+            var wordCount = 0
+            var child = vocabularyListBox.firstChild
+            while (child != null) {
+                if (child is ActionRow) wordCount++
+                child = child.nextSibling
+            }
+
+            if (wordCount >= MAX_VOCABULARY_WORDS) {
+                logger.warn("Cannot add word: vocabulary limit of $MAX_VOCABULARY_WORDS reached")
+                return@onActivate
+            }
+
+            val updatedVocabulary = mutableListOf<String>()
+            var vocabularyChild = vocabularyListBox.firstChild
+            while (vocabularyChild != null) {
+                if (vocabularyChild is ActionRow) { updatedVocabulary.add(vocabularyChild.title) }
+                vocabularyChild = vocabularyChild.nextSibling
+            }
+            val vocabularyWithNewWord = updatedVocabulary + word
+            if (saveVocabulary(vocabularyWithNewWord)) {
+                val row = ActionRow().apply { title = word }
+                val deleteButton = Button.fromIconName(ICON_TRASH).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                    onClicked {
+                        val updatedVocabulary = mutableListOf<String>()
+                        var deleteChild = vocabularyListBox.firstChild
+                        while (deleteChild != null) {
+                            if (deleteChild is ActionRow) { updatedVocabulary.add(deleteChild.title) }
+                            deleteChild = deleteChild.nextSibling
+                        }
+                        val filteredVocabulary = updatedVocabulary.filterNot { it == row.title }
+                        if (saveVocabulary(filteredVocabulary)) {
+                            vocabularyListBox.remove(row)
+                        }
+                    }
+                }
+
+                row.addSuffix(deleteButton)
+                vocabularyListBox.append(row)
+                vocabularyEntry.text = ""
+            }
+        }
 
         add(instructionsGroup)
         add(vocabularyGroup)
@@ -217,54 +309,6 @@ class PersonalizationPage(private val viewModel: PreferencesViewModel) : Prefere
             return false
         }
         return true
-    }
-
-    private fun addVocabularyWord(entry: Entry) {
-        val word = entry.text.trim()
-        if (word.isEmpty()) return
-
-        var wordCount = 0
-        var child = vocabularyListBox.firstChild
-        while (child != null) {
-            if (child is ActionRow) wordCount++
-            child = child.nextSibling
-        }
-
-        if (wordCount >= MAX_VOCABULARY_WORDS) {
-            logger.warn("Cannot add word: vocabulary limit of $MAX_VOCABULARY_WORDS reached")
-            return
-        }
-
-        val updatedVocabulary = mutableListOf<String>()
-        var child = vocabularyListBox.firstChild
-        while (child != null) {
-            if (child is ActionRow) { updatedVocabulary.add(child.title) }
-            child = child.nextSibling
-        }
-        val vocabularyWithNewWord = updatedVocabulary + word
-        if (saveVocabulary(vocabularyWithNewWord)) {
-            val row = ActionRow().apply { title = word }
-            val deleteButton = Button.fromIconName(ICON_TRASH).apply {
-                addCssClass(STYLE_CLASS_FLAT)
-                valign = Align.CENTER
-                onClicked {
-                    val updatedVocabulary = mutableListOf<String>()
-                    var child = vocabularyListBox.firstChild
-                    while (child != null) {
-                        if (child is ActionRow) { updatedVocabulary.add(child.title) }
-                        child = child.nextSibling
-                    }
-                    val filteredVocabulary = updatedVocabulary.filterNot { it == row.title }
-                    if (saveVocabulary(filteredVocabulary)) {
-                        vocabularyListBox.remove(row)
-                    }
-                }
-            }
-
-            row.addSuffix(deleteButton)
-            vocabularyListBox.append(row)
-            entry.text = ""
-        }
     }
 
 }
