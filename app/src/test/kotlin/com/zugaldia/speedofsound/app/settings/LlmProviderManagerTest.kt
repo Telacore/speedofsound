@@ -42,7 +42,7 @@ class LlmProviderManagerTest {
 
         assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
         assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
-        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId())
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId(settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
         assertEquals("", manager.peekCurrentProviderName(settingsClient))
@@ -70,7 +70,7 @@ class LlmProviderManagerTest {
 
         manager.refreshProviderConfiguration(settingsClient)
 
-        assertEquals("custom-provider", settingsClient.loadSelectedTextModelProviderId())
+        assertEquals("custom-provider", settingsClient.loadSelectedTextModelProviderId(settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
         assertEquals("OpenAI", manager.peekCurrentProviderName(settingsClient))
@@ -122,7 +122,7 @@ class LlmProviderManagerTest {
 
         manager.refreshProviderConfiguration(settingsClient)
 
-        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId())
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId(settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
         assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
         assertEquals("OpenAI", manager.peekCurrentProviderName(settingsClient))
@@ -205,7 +205,7 @@ class LlmProviderManagerTest {
         assertEquals(1, settingsStore.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
         assertEquals(1, settingsStore.stringReadCount(KEY_CREDENTIALS))
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
-        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId())
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId(settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
         assertEquals(1, failingPlugin.enableCount)
         assertEquals(1, failingPlugin.disableCount)
@@ -277,7 +277,7 @@ class LlmProviderManagerTest {
 
         LlmProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
-        assertEquals("text-a", settingsClient.loadSelectedTextModelProviderId())
+        assertEquals("text-a", settingsClient.loadSelectedTextModelProviderId(settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
         assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
         assertEquals(1, activePlugin.enableCount)

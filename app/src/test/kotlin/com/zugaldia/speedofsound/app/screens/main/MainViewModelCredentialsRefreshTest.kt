@@ -260,7 +260,7 @@ class MainViewModelCredentialsRefreshTest {
 
         invokePrivateUnit(viewModel, "refreshCredentials")
 
-        assertEquals("stale-text", settingsClient.loadSelectedTextModelProviderId())
+        assertEquals("stale-text", settingsClient.loadSelectedTextModelProviderId(settingsClient.loadTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertEquals(true, settingsClient.loadTextProcessingEnabled())
     }
 

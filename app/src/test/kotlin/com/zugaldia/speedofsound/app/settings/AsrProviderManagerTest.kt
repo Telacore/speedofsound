@@ -42,7 +42,7 @@ class AsrProviderManagerTest {
 
         AsrProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
-        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId(settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)
@@ -144,7 +144,7 @@ class AsrProviderManagerTest {
 
         manager.refreshProviderConfiguration(settingsClient)
 
-        assertEquals("custom-provider", settingsClient.loadSelectedVoiceModelProviderId())
+        assertEquals("custom-provider", settingsClient.loadSelectedVoiceModelProviderId(settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertEquals("Whisper (Local)", manager.peekCurrentProviderName(settingsClient))
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
         assertEquals(1, activePlugin.enableCount)
@@ -262,7 +262,7 @@ class AsrProviderManagerTest {
 
         AsrProviderManager(registry, settingsClient).activateSelectedProvider(settingsClient)
 
-        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId(settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
         assertEquals(1, inactivePlugin.enableCount)
         assertEquals(1, inactivePlugin.disableCount)
@@ -297,7 +297,7 @@ class AsrProviderManagerTest {
 
         AsrProviderManager(registry, settingsClient).activateSelectedProvider(settingsClient)
 
-        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId(settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
         assertEquals(1, failingPlugin.enableCount)
         assertEquals(1, failingPlugin.disableCount)
@@ -368,7 +368,7 @@ class AsrProviderManagerTest {
 
         AsrProviderManager(registry, settingsClient).refreshProviderConfiguration(settingsClient)
 
-        assertEquals("voice-a", settingsClient.loadSelectedVoiceModelProviderId())
+        assertEquals("voice-a", settingsClient.loadSelectedVoiceModelProviderId(settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertSame(activePlugin, registry.getActive(AppPluginCategory.ASR))
         assertEquals(1, activePlugin.enableCount)
         assertEquals(1, activePlugin.disableCount)

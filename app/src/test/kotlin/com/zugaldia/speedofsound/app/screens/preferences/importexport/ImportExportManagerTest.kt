@@ -267,7 +267,7 @@ class ImportExportManagerTest {
         }
 
         assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, settingsClient.peekSelectedVoiceModelProviderIdExact())
-        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, settingsClient.loadSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, settingsClient.loadSelectedVoiceModelProviderId(settingsClient.loadVoiceModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())))
         assertEquals(
             DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
             store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)

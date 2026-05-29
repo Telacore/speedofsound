@@ -92,8 +92,8 @@ class SettingsClientReadHealingTest {
             ?.id
             ?: DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID
 
-        assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId())
-        assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId())
+        assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId(client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet())))
+        assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId(client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet())))
         assertEquals(
             expectedVoiceProviderId,
             store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
@@ -124,7 +124,7 @@ class SettingsClientReadHealingTest {
 
         assertEquals(
             expectedVoiceProvider,
-            client.peekVoiceModelProviders(emptySet()).find { it.id == client.peekSelectedVoiceModelProviderId() }
+            client.peekVoiceModelProviders(emptySet()).find { it.id == client.peekSelectedVoiceModelProviderId(client.peekVoiceModelProviders(client.peekCredentials().map { it.id }.toSet())) }
         )
         assertEquals(
             expectedTextProvider,
@@ -322,7 +322,7 @@ class SettingsClientReadHealingTest {
         val client = SettingsClient(store)
 
         assertEquals(TEXT_OUTPUT_METHOD_PORTAL, client.peekTextOutputMethod())
-        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.peekSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.peekSelectedVoiceModelProviderId(client.peekVoiceModelProviders(client.peekCredentials().map { it.id }.toSet())))
         assertEquals(
             DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
             client.peekSelectedTextModelProviderId(client.peekTextModelProviders(emptySet()))

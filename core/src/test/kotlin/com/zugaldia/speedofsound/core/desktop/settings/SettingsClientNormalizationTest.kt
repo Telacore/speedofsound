@@ -101,8 +101,8 @@ class SettingsClientNormalizationTest {
             DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
             store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
         )
-        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.loadSelectedVoiceModelProviderId())
-        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.loadSelectedTextModelProviderId())
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, client.loadSelectedVoiceModelProviderId(client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet())))
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, client.loadSelectedTextModelProviderId(client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet())))
 
         assertEquals(
             Json.encodeToString(
@@ -219,8 +219,8 @@ class SettingsClientNormalizationTest {
             expectedTextProviderId,
             store.getString(KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
         )
-        assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId())
-        assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId())
+        assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId(client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet())))
+        assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId(client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet())))
         assertEquals(4, store.writeCount)
     }
 
@@ -245,7 +245,7 @@ class SettingsClientNormalizationTest {
         )
 
         assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, client.peekSelectedVoiceModelProviderIdExact())
-        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, client.loadSelectedVoiceModelProviderId())
+        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, client.loadSelectedVoiceModelProviderId(client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet())))
         assertEquals(
             DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
             store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)
@@ -634,13 +634,13 @@ class SettingsClientNormalizationTest {
         val expectedVoiceProviderId = client.peekVoiceModelProviders(emptySet()).sortedBy { it.name.lowercase() }.first().id
         val expectedTextProviderId = client.peekTextModelProviders(emptySet()).sortedBy { it.name.lowercase() }.first().id
 
-        assertEquals(expectedVoiceProviderId, client.peekSelectedVoiceModelProviderId())
+        assertEquals(expectedVoiceProviderId, client.peekSelectedVoiceModelProviderId(client.peekVoiceModelProviders(client.peekCredentials().map { it.id }.toSet())))
         assertEquals(
             expectedTextProviderId,
             client.peekSelectedTextModelProviderId(client.peekTextModelProviders(emptySet()))
         )
-        assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId())
-        assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId())
+        assertEquals(expectedVoiceProviderId, client.loadSelectedVoiceModelProviderId(client.loadVoiceModelProviders(client.peekCredentials().map { it.id }.toSet())))
+        assertEquals(expectedTextProviderId, client.loadSelectedTextModelProviderId(client.loadTextModelProviders(client.peekCredentials().map { it.id }.toSet())))
         assertEquals(
             expectedVoiceProviderId,
             store.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID)

@@ -169,7 +169,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         loadTypingDelayMs()
     }
 
-    private fun loadSelectedVoiceModelProviderId(availableProviders: List<SelectableProviderSetting>): String {
+    fun loadSelectedVoiceModelProviderId(availableProviders: List<SelectableProviderSetting>): String {
         val exactSelectedProviderId = peekSelectedVoiceModelProviderIdExact()
         if (shouldPreserveExactWhisperSelection(exactSelectedProviderId, availableProviders)) {
             return exactSelectedProviderId
@@ -752,18 +752,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return getLocalVoiceModelProviders() + customProviders
     }
 
-    fun loadSelectedVoiceModelProviderId(): String =
-        loadSelectedVoiceModelProviderId(
-            loadVoiceModelProviders(loadCredentials().map { it.id }.toSet())
-        )
-
-    fun peekSelectedVoiceModelProviderId(): String =
-        peekSelectedProviderId(
-            key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-            availableProviders = peekVoiceModelProviders(peekCredentials().map { it.id }.toSet()),
-        )
-
     /**
      * Reads the stored ASR selection exactly as persisted, without normalizing it against the
      * visible provider list.
@@ -847,15 +835,22 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
-    fun loadSelectedTextModelProviderId(): String =
-        readSelectedProviderId(
-            key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            availableProviders = loadTextModelProviders(loadCredentials().map { it.id }.toSet()),
+    fun peekSelectedVoiceModelProviderId(availableProviders: List<VoiceModelProviderSetting>): String =
+        peekSelectedProviderId(
+            key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            availableProviders = availableProviders,
         )
 
     fun peekSelectedTextModelProviderId(availableProviders: List<TextModelProviderSetting>): String =
         peekSelectedProviderId(
+            key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            availableProviders = availableProviders,
+        )
+
+    fun loadSelectedTextModelProviderId(availableProviders: List<SelectableProviderSetting>): String =
+        readSelectedProviderId(
             key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
             availableProviders = availableProviders,
