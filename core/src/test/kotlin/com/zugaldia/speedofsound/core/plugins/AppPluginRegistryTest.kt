@@ -84,6 +84,26 @@ class AppPluginRegistryTest {
         assertNull(registry.getActive(AppPluginCategory.TEXT_OUTPUT))
     }
 
+    @Test
+    fun `shutdownAll only disables active plugin in matching category`() {
+        val registry = AppPluginRegistry()
+        val sharedTextOutput = RecordingPlugin(id = "shared")
+        val sharedRecorder = RecordingPlugin(id = "shared")
+
+        registry.register(AppPluginCategory.TEXT_OUTPUT, sharedTextOutput)
+        registry.register(AppPluginCategory.RECORDER, sharedRecorder)
+        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, sharedTextOutput.id)
+
+        registry.shutdownAll()
+
+        assertEquals(1, sharedTextOutput.disableCount)
+        assertEquals(1, sharedTextOutput.shutdownCount)
+        assertEquals(0, sharedRecorder.disableCount)
+        assertEquals(1, sharedRecorder.shutdownCount)
+        assertNull(registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+        assertNull(registry.getActive(AppPluginCategory.RECORDER))
+    }
+
     private class RecordingPlugin(
         override val id: String,
         private val failOnInitialize: Boolean = false,

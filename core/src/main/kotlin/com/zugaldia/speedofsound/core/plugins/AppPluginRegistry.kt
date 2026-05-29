@@ -84,26 +84,30 @@ class AppPluginRegistry {
     @Synchronized
     fun shutdownAll() {
         log.info("Shutting down all plugins")
-        plugins.values.flatten().forEach { plugin ->
-            if (activePlugins.values.contains(plugin.id)) {
+        val activePluginsSnapshot = activePlugins.toMap()
+        plugins.forEach { (category, categoryPlugins) ->
+            val activePluginId = activePluginsSnapshot[category]
+            categoryPlugins.forEach { plugin ->
+                if (plugin.id == activePluginId) {
+                    runCatching {
+                        plugin.disable()
+                    }.onFailure { error ->
+                        log.error(
+                            "Failed to disable plugin ${plugin.id} during shutdown: {}",
+                            error.message,
+                            error,
+                        )
+                    }
+                }
                 runCatching {
-                    plugin.disable()
+                    plugin.shutdown()
                 }.onFailure { error ->
                     log.error(
-                        "Failed to disable plugin ${plugin.id} during shutdown: {}",
+                        "Failed to shutdown plugin ${plugin.id}: {}",
                         error.message,
                         error,
                     )
                 }
-            }
-            runCatching {
-                plugin.shutdown()
-            }.onFailure { error ->
-                log.error(
-                    "Failed to shutdown plugin ${plugin.id}: {}",
-                    error.message,
-                    error,
-                )
             }
         }
         activePlugins.clear()
