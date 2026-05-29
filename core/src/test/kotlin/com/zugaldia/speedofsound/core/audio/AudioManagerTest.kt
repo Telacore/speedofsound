@@ -132,6 +132,39 @@ class AudioManagerTest {
     }
 
     @Test
+    fun `writeFileAtomically preserves destination only after successful write`() {
+        val tempFile = Files.createTempFile("test-atomic-audio", ".wav").toFile()
+        try {
+            val bytes = ByteArray(256) { it.toByte() }
+            val success = AudioManager.writeFileAtomically(tempFile) { file ->
+                file.writeBytes(bytes)
+            }
+
+            assertTrue(success)
+            assertEquals(bytes.size.toLong(), tempFile.length())
+            assertTrue(tempFile.readBytes().contentEquals(bytes))
+        } finally {
+            Files.deleteIfExists(tempFile.toPath())
+        }
+    }
+
+    @Test
+    fun `writeFileAtomically removes temp output on failure`() {
+        val tempFile = Files.createTempFile("test-atomic-audio-failure", ".wav").toFile()
+        try {
+            val success = AudioManager.writeFileAtomically(tempFile) { file ->
+                file.writeBytes(byteArrayOf(1, 2, 3))
+                throw IllegalStateException("boom")
+            }
+
+            assertFalse(success)
+            assertFalse(tempFile.exists())
+        } finally {
+            Files.deleteIfExists(tempFile.toPath())
+        }
+    }
+
+    @Test
     fun `saveToInMemoryWav produces non-empty byte array`() {
         val pcmData = generateSyntheticPcm16(sampleCount = 100)
         val audioInfo = AudioInfo.Default

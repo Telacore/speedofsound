@@ -2,9 +2,14 @@ package com.zugaldia.speedofsound.core.audio
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.file.Path
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import javax.sound.sampled.AudioFileFormat
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.AudioSystem
@@ -70,9 +75,11 @@ object AudioManager {
             val audioFormat = audioInfo.toAudioFormat()
             val byteArrayInputStream = ByteArrayInputStream(samples)
             val frameLength = samples.size / (audioInfo.sampleWidth * audioInfo.channels)
-            val audioInputStream = AudioInputStream(byteArrayInputStream, audioFormat, frameLength.toLong())
-            AudioSystem.write(audioInputStream, AudioFileFormat.Type.WAVE, filePath.toFile())
-            true
+            AudioInputStream(byteArrayInputStream, audioFormat, frameLength.toLong()).use { audioInputStream ->
+                writeFileAtomically(filePath.toFile()) { tempFile ->
+                    AudioSystem.write(audioInputStream, AudioFileFormat.Type.WAVE, tempFile)
+                }
+            }
         }.getOrElse { false }
     }
 
@@ -92,5 +99,43 @@ object AudioManager {
         val samples = audioInputStream.readAllBytes()
         audioInputStream.close()
         return Pair(samples, audioInfo)
+    }
+
+    internal fun writeFileAtomically(destination: File, writeAction: (File) -> Unit): Boolean = runCatching {
+        destination.parentFile?.mkdirs()
+        val tempFile = createTempSiblingFile(destination)
+        try {
+            writeAction(tempFile)
+            moveTempFile(tempFile, destination)
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
+        }
+        true
+    }.getOrElse { false }
+
+    private fun createTempSiblingFile(destination: File): File {
+        val parentPath = destination.parentFile?.toPath() ?: Path.of(".")
+        val rawPrefix = destination.name.ifBlank { "audio" }
+        val prefix = if (rawPrefix.length < 3) rawPrefix.padEnd(3, '_') else rawPrefix
+        return Files.createTempFile(parentPath, prefix, ".tmp").toFile()
+    }
+
+    private fun moveTempFile(tempFile: File, destination: File) {
+        try {
+            Files.move(
+                tempFile.toPath(),
+                destination.toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.ATOMIC_MOVE,
+            )
+        } catch (_: AtomicMoveNotSupportedException) {
+            Files.move(
+                tempFile.toPath(),
+                destination.toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
+            )
+        }
     }
 }
