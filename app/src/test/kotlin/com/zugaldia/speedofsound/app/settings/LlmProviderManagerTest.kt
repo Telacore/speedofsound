@@ -127,6 +127,44 @@ class LlmProviderManagerTest {
     }
 
     @Test
+    fun `refreshProviderConfiguration tolerates failing llm disable when selected provider changes`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-a",
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-a",
+                            name = "Alpha",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val activePlugin = ThrowingPlugin(id = "LLM_ACTIVE")
+        val selectedPlugin = RecordingPlugin(id = OpenAiLlm.ID)
+
+        registry.register(AppPluginCategory.LLM, activePlugin)
+        registry.register(AppPluginCategory.LLM, selectedPlugin)
+        registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
+
+        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
+
+        assertEquals("text-a", settingsClient.loadSelectedTextModelProviderId())
+        assertEquals(true, settingsClient.loadTextProcessingEnabled())
+        assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(1, activePlugin.enableCount)
+        assertEquals(1, activePlugin.disableCount)
+        assertEquals(0, selectedPlugin.enableCount)
+        assertEquals(0, selectedPlugin.disableCount)
+    }
+
+    @Test
     fun `refreshProviderConfiguration clears active llm when text processing is disabled`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(

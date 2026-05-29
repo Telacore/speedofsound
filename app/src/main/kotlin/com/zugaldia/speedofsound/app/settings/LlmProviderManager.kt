@@ -95,7 +95,15 @@ class LlmProviderManager(
         applyLlmOptions(pluginId, options)
 
         if (setActive || currentActiveId != pluginId) {
-            registry.setActiveById(AppPluginCategory.LLM, pluginId)
+            runCatching { registry.setActiveById(AppPluginCategory.LLM, pluginId) }
+                .onFailure { error ->
+                    logger.error(
+                        "Failed to activate LLM provider {}: {}",
+                        pluginId,
+                        error.message,
+                        error,
+                    )
+                }
         }
     }
 
