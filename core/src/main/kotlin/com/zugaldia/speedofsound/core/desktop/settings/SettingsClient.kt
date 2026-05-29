@@ -109,7 +109,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
      */
 
     fun getWelcomeScreenShown(): Boolean =
-        settingsStore.getBoolean(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN)
+        readBooleanSetting(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN)
 
     fun setWelcomeScreenShown(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -125,7 +125,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(KEY_PORTALS_RESTORE_TOKEN, getPortalsRestoreToken(), value)
 
     fun getShortcutConfigured(): Boolean =
-        settingsStore.getBoolean(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED)
+        readBooleanSetting(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED)
 
     fun setShortcutConfigured(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -151,7 +151,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(KEY_SECONDARY_LANGUAGE, getSecondaryLanguage(), value, KEY_SECONDARY_LANGUAGE)
 
     fun getBackgroundRecording(): Boolean =
-        settingsStore.getBoolean(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING)
+        readBooleanSetting(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING)
 
     fun setBackgroundRecording(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -162,7 +162,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getAppendSpace(): Boolean =
-        settingsStore.getBoolean(KEY_APPEND_SPACE, DEFAULT_APPEND_SPACE)
+        readBooleanSetting(KEY_APPEND_SPACE, DEFAULT_APPEND_SPACE)
 
     fun setAppendSpace(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -173,7 +173,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getHideInsteadOfMinimize(): Boolean =
-        settingsStore.getBoolean(KEY_HIDE_INSTEAD_OF_MINIMIZE, DEFAULT_HIDE_INSTEAD_OF_MINIMIZE)
+        readBooleanSetting(KEY_HIDE_INSTEAD_OF_MINIMIZE, DEFAULT_HIDE_INSTEAD_OF_MINIMIZE)
 
     fun setHideInsteadOfMinimize(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -184,7 +184,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getStayHiddenOnActivation(): Boolean =
-        settingsStore.getBoolean(KEY_STAY_HIDDEN_ON_ACTIVATION, DEFAULT_STAY_HIDDEN_ON_ACTIVATION)
+        readBooleanSetting(KEY_STAY_HIDDEN_ON_ACTIVATION, DEFAULT_STAY_HIDDEN_ON_ACTIVATION)
 
     fun setStayHiddenOnActivation(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -349,8 +349,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getMaxAlarms(): Int =
-        settingsStore.getInt(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS)
-            .coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)
+        readIntSetting(
+            key = KEY_MAX_ALARMS,
+            defaultValue = DEFAULT_MAX_ALARMS,
+        ) { it.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS) }
 
     fun setMaxAlarms(value: Int): Boolean {
         val normalized = value.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)
@@ -613,7 +615,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
      */
 
     fun getTextProcessingEnabled(): Boolean =
-        settingsStore.getBoolean(KEY_TEXT_PROCESSING_ENABLED, DEFAULT_TEXT_PROCESSING_ENABLED)
+        readBooleanSetting(KEY_TEXT_PROCESSING_ENABLED, DEFAULT_TEXT_PROCESSING_ENABLED)
 
     fun setTextProcessingEnabled(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -679,7 +681,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
      */
 
     fun getSanitizeSpecialChars(): Boolean =
-        settingsStore.getBoolean(KEY_SANITIZE_SPECIAL_CHARS, DEFAULT_SANITIZE_SPECIAL_CHARS)
+        readBooleanSetting(KEY_SANITIZE_SPECIAL_CHARS, DEFAULT_SANITIZE_SPECIAL_CHARS)
 
     fun setSanitizeSpecialChars(value: Boolean): Boolean =
         setBooleanSettingIfChanged(
@@ -690,7 +692,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getPostHideDelayMs(): Int =
-        settingsStore.getInt(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS)
+        readIntSetting(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS)
 
     fun setPostHideDelayMs(value: Int): Boolean =
         setIntSettingIfChanged(
@@ -701,7 +703,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getTypingDelayMs(): Int =
-        settingsStore.getInt(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS)
+        readIntSetting(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS)
 
     fun setTypingDelayMs(value: Int): Boolean =
         setIntSettingIfChanged(
@@ -797,6 +799,44 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 settingsStore.setString(key, Json.encodeToString(emptyList<T>()))
             }
             emptyList()
+        }
+    }
+
+    private fun readBooleanSetting(key: String, defaultValue: Boolean): Boolean {
+        val raw = settingsStore.getString(key, defaultValue.toString())
+        val parsed = when {
+            raw.equals("true", ignoreCase = true) -> true
+            raw.equals("false", ignoreCase = true) -> false
+            else -> null
+        }
+
+        return if (parsed != null) {
+            if (raw != parsed.toString()) {
+                settingsStore.setBoolean(key, parsed)
+            }
+            parsed
+        } else {
+            settingsStore.setBoolean(key, defaultValue)
+            defaultValue
+        }
+    }
+
+    private fun readIntSetting(
+        key: String,
+        defaultValue: Int,
+        normalize: (Int) -> Int = { it },
+    ): Int {
+        val raw = settingsStore.getString(key, defaultValue.toString())
+        val parsed = raw.toIntOrNull()
+        return if (parsed != null) {
+            val normalized = normalize(parsed)
+            if (raw != normalized.toString()) {
+                settingsStore.setInt(key, normalized)
+            }
+            normalized
+        } else {
+            settingsStore.setInt(key, defaultValue)
+            defaultValue
         }
     }
 
