@@ -72,6 +72,33 @@ class LlmProviderManagerTest {
     }
 
     @Test
+    fun `refreshProviderConfiguration shows active llm name when clearing missing provider fails`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "custom-provider",
+                KEY_TEXT_MODEL_PROVIDERS to "",
+                KEY_TEXT_PROCESSING_ENABLED to "true",
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val activePlugin = ThrowingPlugin(id = OpenAiLlm.ID)
+        val manager = LlmProviderManager(registry, settingsClient)
+
+        registry.register(AppPluginCategory.LLM, activePlugin)
+        registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
+
+        manager.refreshProviderConfiguration()
+
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId())
+        assertEquals(false, settingsClient.loadTextProcessingEnabled())
+        assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals("OpenAI", manager.peekCurrentProviderName())
+        assertEquals(1, activePlugin.enableCount)
+        assertEquals(1, activePlugin.disableCount)
+    }
+
+    @Test
     fun `activateSelectedProvider uses the first visible provider when selection is stale`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(

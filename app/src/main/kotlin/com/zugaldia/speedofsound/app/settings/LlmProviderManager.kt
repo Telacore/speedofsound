@@ -4,6 +4,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
+import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
 import com.zugaldia.speedofsound.core.plugins.llm.AnthropicLlm
 import com.zugaldia.speedofsound.core.plugins.llm.AnthropicLlmOptions
 import com.zugaldia.speedofsound.core.plugins.llm.GoogleLlm
@@ -167,13 +168,15 @@ class LlmProviderManager(
 
     /**
      * Gets the name of the currently selected LLM provider.
-     * Returns an empty string if text processing is disabled.
      */
     fun peekCurrentProviderName(): String {
-        if (!settingsClient.peekTextProcessingEnabled()) { return "" }
         val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
         val providers = settingsClient.peekTextModelProviders()
         val selectedProvider = providers.find { it.id == selectedProviderId }
-        return selectedProvider?.name ?: ""
+        if (selectedProvider != null) {
+            return selectedProvider.name
+        }
+        val activeProviderId = registry.getActive(AppPluginCategory.LLM)?.id ?: return ""
+        return LlmProvider.entries.firstOrNull { pluginIdForProvider(it) == activeProviderId }?.displayName ?: ""
     }
 }
