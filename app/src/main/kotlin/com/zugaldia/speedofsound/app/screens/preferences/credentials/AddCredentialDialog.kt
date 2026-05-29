@@ -80,7 +80,8 @@ class AddCredentialDialog(
             onClicked {
                 val name = nameEntry.text.trim()
                 val apiKey = apiKeyEntry.text.trim()
-                if (validateInput(name, apiKey)) {
+                val credentials = viewModel.peekCredentials()
+                if (validateInput(name, apiKey, credentials)) {
                     val credential = CredentialSetting(
                         id = generateUniqueId(),
                         type = CredentialType.API_KEY,
@@ -134,11 +135,11 @@ class AddCredentialDialog(
     private fun updateAddButtonState() {
         val name = nameEntry.text.trim()
         val apiKey = apiKeyEntry.text.trim()
-        addButton.sensitive = validateInput(name, apiKey)
+        addButton.sensitive = validateInput(name, apiKey, viewModel.peekCredentials())
     }
 
     @Suppress("ReturnCount")
-    private fun validateInput(name: String, apiKey: String): Boolean {
+    private fun validateInput(name: String, apiKey: String, credentials: List<CredentialSetting>): Boolean {
         if (name.isEmpty() || apiKey.isEmpty()) {
             return false
         }
@@ -150,11 +151,11 @@ class AddCredentialDialog(
             logger.warn("Credential value too long: ${apiKey.length} > $MAX_CREDENTIAL_VALUE_LENGTH")
             return false
         }
-        if (viewModel.peekCredentials().size >= MAX_CREDENTIALS) {
+        if (credentials.size >= MAX_CREDENTIALS) {
             logger.warn("Credential limit reached: $MAX_CREDENTIALS")
             return false
         }
-        if (viewModel.peekCredentials().any { it.name == name }) {
+        if (credentials.any { it.name == name }) {
             logger.warn("Credential name already exists: $name")
             return false
         }

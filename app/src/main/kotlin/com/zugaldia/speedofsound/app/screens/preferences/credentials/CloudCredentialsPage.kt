@@ -172,8 +172,9 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         val currentCredentials = viewModel.peekCredentials()
         val credentialToDelete = currentCredentials.find { it.id == credentialId }
         if (credentialToDelete != null) {
-            val textProviders = viewModel.peekTextModelProviders()
-            val voiceProviders = viewModel.peekVoiceModelProviders()
+            val currentCredentialIds = currentCredentials.map { it.id }.toSet()
+            val textProviders = viewModel.peekTextModelProviders(currentCredentialIds)
+            val voiceProviders = viewModel.peekVoiceModelProviders(currentCredentialIds)
             val referencingProviders = buildList {
                 addAll(textProviders.filter { it.credentialId == credentialToDelete.id }.map {
                     "Text: ${it.name}"
