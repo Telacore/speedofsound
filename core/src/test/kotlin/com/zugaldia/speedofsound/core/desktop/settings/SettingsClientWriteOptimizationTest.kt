@@ -59,6 +59,27 @@ class SettingsClientWriteOptimizationTest {
         assertEquals("250", store.getString(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS.toString()))
     }
 
+    @Test
+    fun `language and text output setters do not heal malformed values when saving defaults`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_DEFAULT_LANGUAGE to "EN",
+                KEY_SECONDARY_LANGUAGE to "zz",
+                KEY_TEXT_OUTPUT_METHOD to "not-a-method",
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.setDefaultLanguage(DEFAULT_LANGUAGE.iso2)
+        client.setSecondaryLanguage(DEFAULT_SECONDARY_LANGUAGE.iso2)
+        client.setTextOutputMethod(TEXT_OUTPUT_METHOD_PORTAL)
+
+        assertEquals(0, store.writeCount)
+        assertEquals("EN", store.getString(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2))
+        assertEquals("zz", store.getString(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2))
+        assertEquals("not-a-method", store.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD))
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {

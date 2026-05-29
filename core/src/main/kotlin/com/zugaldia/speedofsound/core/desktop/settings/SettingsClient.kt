@@ -176,7 +176,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekLanguageSetting(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2)
 
     fun setDefaultLanguage(value: String): Boolean =
-        setStringSettingIfChanged(KEY_DEFAULT_LANGUAGE, loadDefaultLanguage(), value, KEY_DEFAULT_LANGUAGE)
+        setStringSettingIfChanged(KEY_DEFAULT_LANGUAGE, peekDefaultLanguage(), value, KEY_DEFAULT_LANGUAGE)
 
     fun loadSecondaryLanguage(): String =
         readLanguageSetting(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
@@ -185,7 +185,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekLanguageSetting(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2)
 
     fun setSecondaryLanguage(value: String): Boolean =
-        setStringSettingIfChanged(KEY_SECONDARY_LANGUAGE, loadSecondaryLanguage(), value, KEY_SECONDARY_LANGUAGE)
+        setStringSettingIfChanged(KEY_SECONDARY_LANGUAGE, peekSecondaryLanguage(), value, KEY_SECONDARY_LANGUAGE)
 
     fun loadBackgroundRecording(): Boolean =
         readBooleanSetting(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING)
@@ -250,7 +250,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekTextOutputMethodValue()
 
     fun setTextOutputMethod(value: String): Boolean =
-        setStringSettingIfChanged(KEY_TEXT_OUTPUT_METHOD, loadTextOutputMethod(), value, KEY_TEXT_OUTPUT_METHOD)
+        setStringSettingIfChanged(KEY_TEXT_OUTPUT_METHOD, peekTextOutputMethod(), value, KEY_TEXT_OUTPUT_METHOD)
 
     /*
      * Alarms page
@@ -710,7 +710,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             normalizeSelectedProviderId(
                 value = value,
                 defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
-                availableProviderIds = loadVoiceModelProviders().map { it.id }.toSet(),
+                availableProviderIds = peekVoiceModelProviders().map { it.id }.toSet(),
             ),
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
         )
@@ -773,7 +773,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             normalizeSelectedProviderId(
                 value = value,
                 defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-                availableProviderIds = loadTextModelProviders().map { it.id }.toSet(),
+                availableProviderIds = peekTextModelProviders().map { it.id }.toSet(),
             ),
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
         )
