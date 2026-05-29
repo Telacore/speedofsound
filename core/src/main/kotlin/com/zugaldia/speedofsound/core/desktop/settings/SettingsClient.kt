@@ -139,9 +139,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
         readPortalsRestoreToken()
 
     fun peekPortalsRestoreToken(): String =
-        peekValidatedSetting(
+        validatedSetting(
             key = KEY_PORTALS_RESTORE_TOKEN,
             defaultValue = DEFAULT_PORTALS_RESTORE_TOKEN,
+            heal = false,
             parse = ::normalizePortalsRestoreToken,
         )
 
@@ -1006,36 +1007,28 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
-    private inline fun <T> readValidatedSetting(
+    private inline fun <T> validatedSetting(
         key: String,
         defaultValue: T,
         parse: (String) -> T?,
         normalize: (T) -> T = { it },
-        write: (T) -> Boolean,
+        heal: Boolean,
+        write: ((T) -> Boolean)? = null,
     ): T {
         val raw = settingsStore.getString(key, defaultValue.toString())
         val parsed = parse(raw)
         return if (parsed != null) {
             val normalized = normalize(parsed)
-            if (raw != normalized.toString()) {
-                write(normalized)
+            if (heal && raw != normalized.toString()) {
+                write?.invoke(normalized)
             }
             normalized
         } else {
-            write(defaultValue)
+            if (heal) {
+                write?.invoke(defaultValue)
+            }
             defaultValue
         }
-    }
-
-    private inline fun <T> peekValidatedSetting(
-        key: String,
-        defaultValue: T,
-        parse: (String) -> T?,
-        normalize: (T) -> T = { it },
-    ): T {
-        val raw = settingsStore.getString(key, defaultValue.toString())
-        val parsed = parse(raw) ?: return defaultValue
-        return normalize(parsed)
     }
 
     private fun setStringSettingIfChanged(
@@ -1156,9 +1149,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun readBooleanSetting(key: String, defaultValue: Boolean): Boolean {
-        return readValidatedSetting(
+        return validatedSetting(
             key = key,
             defaultValue = defaultValue,
+            heal = true,
             parse = { raw ->
                 when {
                     raw.equals("true", ignoreCase = true) -> true
@@ -1171,9 +1165,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun peekBooleanSetting(key: String, defaultValue: Boolean): Boolean {
-        return peekValidatedSetting(
+        return validatedSetting(
             key = key,
             defaultValue = defaultValue,
+            heal = false,
             parse = { raw ->
                 when {
                     raw.equals("true", ignoreCase = true) -> true
@@ -1185,9 +1180,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun readTextOutputMethod(): String {
-        return readValidatedSetting(
+        return validatedSetting(
             key = KEY_TEXT_OUTPUT_METHOD,
             defaultValue = DEFAULT_TEXT_OUTPUT_METHOD,
+            heal = true,
             parse = { raw ->
                 val normalized = raw.trim().lowercase()
                 if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
@@ -1201,9 +1197,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun peekTextOutputMethodValue(): String {
-        return peekValidatedSetting(
+        return validatedSetting(
             key = KEY_TEXT_OUTPUT_METHOD,
             defaultValue = DEFAULT_TEXT_OUTPUT_METHOD,
+            heal = false,
             parse = { raw ->
                 val normalized = raw.trim().lowercase()
                 if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
@@ -1216,9 +1213,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun readPortalsRestoreToken(): String {
-        return readValidatedSetting(
+        return validatedSetting(
             key = KEY_PORTALS_RESTORE_TOKEN,
             defaultValue = DEFAULT_PORTALS_RESTORE_TOKEN,
+            heal = true,
             parse = ::normalizePortalsRestoreToken,
             write = { value -> settingsStore.setString(KEY_PORTALS_RESTORE_TOKEN, value) },
         )
@@ -1236,18 +1234,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun readCustomContext(): String {
-        return readValidatedSetting(
+        return validatedSetting(
             key = KEY_CUSTOM_CONTEXT,
             defaultValue = DEFAULT_CUSTOM_CONTEXT,
+            heal = true,
             parse = ::normalizeCustomContext,
             write = { value -> settingsStore.setString(KEY_CUSTOM_CONTEXT, value) },
         )
     }
 
     private fun peekCustomContextValue(): String {
-        return peekValidatedSetting(
+        return validatedSetting(
             key = KEY_CUSTOM_CONTEXT,
             defaultValue = DEFAULT_CUSTOM_CONTEXT,
+            heal = false,
             parse = ::normalizeCustomContext,
         )
     }
@@ -1454,18 +1454,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     private fun readLanguageSetting(key: String, defaultValue: String): String {
-        return readValidatedSetting(
+        return validatedSetting(
             key = key,
             defaultValue = defaultValue,
+            heal = true,
             parse = { raw -> languageFromIso2(raw.trim().lowercase())?.iso2 },
             write = { value -> settingsStore.setString(key, value) },
         )
     }
 
     private fun peekLanguageSetting(key: String, defaultValue: String): String {
-        return peekValidatedSetting(
+        return validatedSetting(
             key = key,
             defaultValue = defaultValue,
+            heal = false,
             parse = { raw -> languageFromIso2(raw.trim().lowercase())?.iso2 },
         )
     }
@@ -1478,9 +1480,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
         defaultValue: Int,
         normalize: (Int) -> Int = { it },
     ): Int {
-        return readValidatedSetting(
+        return validatedSetting(
             key = key,
             defaultValue = defaultValue,
+            heal = true,
             parse = String::toIntOrNull,
             normalize = normalize,
             write = { value -> settingsStore.setInt(key, value) },
@@ -1492,9 +1495,10 @@ class SettingsClient(val settingsStore: SettingsStore) {
         defaultValue: Int,
         normalize: (Int) -> Int = { it },
     ): Int {
-        return peekValidatedSetting(
+        return validatedSetting(
             key = key,
             defaultValue = defaultValue,
+            heal = false,
             parse = String::toIntOrNull,
             normalize = normalize,
         )
