@@ -122,8 +122,14 @@ class SettingsClientReadHealingTest {
             .sortedBy { it.name.lowercase() }
             .firstOrNull()
 
-        assertEquals(expectedVoiceProvider, client.peekSelectedVoiceModelProvider())
-        assertEquals(expectedTextProvider, client.peekSelectedTextModelProvider())
+        assertEquals(
+            expectedVoiceProvider,
+            client.peekVoiceModelProviders().find { it.id == client.peekSelectedVoiceModelProviderId() }
+        )
+        assertEquals(
+            expectedTextProvider,
+            client.peekTextModelProviders().find { it.id == client.peekSelectedTextModelProviderId() }
+        )
         assertEquals(0, store.writeCount)
     }
 
