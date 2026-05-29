@@ -960,11 +960,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekIntSetting(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS)
 
     fun setPostHideDelayMs(value: Int): Boolean =
-        setIntSettingIfChanged(
+        setSettingIfChanged(
             KEY_POST_HIDE_DELAY_MS,
             settingsStore.getString(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS.toString()),
-            value,
-            KEY_POST_HIDE_DELAY_MS
+            value.toString(),
+            KEY_POST_HIDE_DELAY_MS,
+        ) {
+            settingsStore.setInt(KEY_POST_HIDE_DELAY_MS, value)
         )
 
     fun loadTypingDelayMs(): Int =
@@ -974,79 +976,91 @@ class SettingsClient(val settingsStore: SettingsStore) {
         peekIntSetting(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS)
 
     fun setTypingDelayMs(value: Int): Boolean =
-        setIntSettingIfChanged(
+        setSettingIfChanged(
             KEY_TYPING_DELAY_MS,
             settingsStore.getString(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS.toString()),
-            value,
-            KEY_TYPING_DELAY_MS
+            value.toString(),
+            KEY_TYPING_DELAY_MS,
+        ) {
+            settingsStore.setInt(KEY_TYPING_DELAY_MS, value)
         )
 
-    private fun setStringSettingIfChanged(
+    private inline fun setSettingIfChanged(
         key: String,
         currentValue: String,
-        value: String,
+        nextRawValue: String,
         emitChangeKey: String? = null,
+        write: () -> Boolean,
     ): Boolean {
-        if (currentValue == value) {
+        if (currentValue == nextRawValue) {
             return true
         }
-        return settingsStore.setString(key, value).also { success ->
+        return write().also { success ->
             if (success && emitChangeKey != null) {
                 _settingsChanged.tryEmit(emitChangeKey)
             }
         }
     }
+
+    private fun setStringSettingIfChanged(
+        key: String,
+        currentRawValue: String,
+        value: String,
+        emitChangeKey: String? = null,
+    ): Boolean =
+        setSettingIfChanged(
+            key = key,
+            currentValue = currentRawValue,
+            nextRawValue = value,
+            emitChangeKey = emitChangeKey,
+        ) {
+            settingsStore.setString(key, value)
+        }
 
     private fun setBooleanSettingIfChanged(
         key: String,
         currentRawValue: String,
         value: Boolean,
         emitChangeKey: String? = null,
-    ): Boolean {
-        val nextRawValue = value.toString()
-        if (currentRawValue == nextRawValue) {
-            return true
+    ): Boolean =
+        setSettingIfChanged(
+            key = key,
+            currentValue = currentRawValue,
+            nextRawValue = value.toString(),
+            emitChangeKey = emitChangeKey,
+        ) {
+            settingsStore.setBoolean(key, value)
         }
-        return settingsStore.setBoolean(key, value).also { success ->
-            if (success && emitChangeKey != null) {
-                _settingsChanged.tryEmit(emitChangeKey)
-            }
-        }
-    }
 
     private fun setIntSettingIfChanged(
         key: String,
         currentRawValue: String,
         value: Int,
         emitChangeKey: String? = null,
-    ): Boolean {
-        val nextRawValue = value.toString()
-        if (currentRawValue == nextRawValue) {
-            return true
+    ): Boolean =
+        setSettingIfChanged(
+            key = key,
+            currentValue = currentRawValue,
+            nextRawValue = value.toString(),
+            emitChangeKey = emitChangeKey,
+        ) {
+            settingsStore.setInt(key, value)
         }
-        return settingsStore.setInt(key, value).also { success ->
-            if (success && emitChangeKey != null) {
-                _settingsChanged.tryEmit(emitChangeKey)
-            }
-        }
-    }
 
     private fun setStringArraySettingIfChanged(
         key: String,
         currentRawValue: String,
         value: List<String>,
         emitChangeKey: String? = null,
-    ): Boolean {
-        val nextRawValue = value.joinToString("|||")
-        if (currentRawValue == nextRawValue) {
-            return true
+    ): Boolean =
+        setSettingIfChanged(
+            key = key,
+            currentValue = currentRawValue,
+            nextRawValue = value.joinToString("|||"),
+            emitChangeKey = emitChangeKey,
+        ) {
+            settingsStore.setStringArray(key, value)
         }
-        return settingsStore.setStringArray(key, value).also { success ->
-            if (success && emitChangeKey != null) {
-                _settingsChanged.tryEmit(emitChangeKey)
-            }
-        }
-    }
 
     private inline fun <reified T> readNormalizedJsonListSetting(
         key: String,
