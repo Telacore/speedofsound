@@ -100,10 +100,6 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         add(providersGroup)
         refreshSnapshots()
         renderProviders(currentProviders)
-        setupNotifications()
-    }
-
-    private fun setupNotifications() {
         activeProviderComboRow.setupNotifications()
         scope.launch {
             viewModel.settingsChanged
