@@ -33,6 +33,24 @@ class PropertiesStoreTest {
         assertEquals(savesAfterInit + 4, store.saveCount)
     }
 
+    @Test
+    fun `values survive a new store instance on the same directory`() {
+        val baseDir = Files.createTempDirectory("speedofsound-properties-store-roundtrip")
+        val store = PropertiesStore(filename = "settings.properties", baseDir = baseDir)
+
+        store.setString("greeting", "hello")
+        store.setBoolean("enabled", true)
+        store.setInt("limit", 7)
+        store.setStringArray("tags", listOf("a", "b"))
+
+        val reloaded = PropertiesStore(filename = "settings.properties", baseDir = baseDir)
+
+        assertEquals("hello", reloaded.getString("greeting", ""))
+        assertEquals(true, reloaded.getBoolean("enabled", false))
+        assertEquals(7, reloaded.getInt("limit", 0))
+        assertEquals(listOf("a", "b"), reloaded.getStringArray("tags", emptyList()))
+    }
+
     private class CountingPropertiesStore(
         baseDir: Path,
         filename: String = "settings.properties",

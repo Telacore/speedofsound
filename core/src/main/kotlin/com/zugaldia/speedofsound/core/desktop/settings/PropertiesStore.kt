@@ -2,10 +2,14 @@ package com.zugaldia.speedofsound.core.desktop.settings
 
 import com.zugaldia.speedofsound.core.getDataDir
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.Properties
 
 open class PropertiesStore(
@@ -15,6 +19,7 @@ open class PropertiesStore(
     private val logger = LoggerFactory.getLogger(PropertiesStore::class.java)
     private val properties = Properties()
     private val filePath = baseDir.resolve(filename).toFile()
+    private val writeLock = Any()
 
     init {
         load()
@@ -36,8 +41,30 @@ open class PropertiesStore(
 
     protected open fun save(): Boolean = try {
         filePath.parentFile?.mkdirs()
-        FileOutputStream(filePath).use { properties.store(it, null) }
-        true
+        val parentPath = filePath.toPath().parent ?: filePath.parentFile?.toPath()
+        val tempFile = createTempFile(parentPath, filePath)
+        try {
+            FileOutputStream(tempFile).use { properties.store(it, null) }
+            try {
+                Files.move(
+                    tempFile.toPath(),
+                    filePath.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(
+                    tempFile.toPath(),
+                    filePath.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            }
+            true
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
+        }
     } catch (e: IOException) {
         logger.error("Error saving properties to $filePath: ${e.message}")
         false
@@ -80,12 +107,19 @@ open class PropertiesStore(
     }
 
     private fun writeIfChanged(key: String, value: String): Boolean {
-        if (properties.getProperty(key) == value) {
-            return true
-        }
+        synchronized(writeLock) {
+            if (properties.getProperty(key) == value) {
+                return true
+            }
 
-        properties.setProperty(key, value)
-        return save()
+            properties.setProperty(key, value)
+            return save()
+        }
+    }
+
+    private fun createTempFile(parentPath: Path?, targetFile: File): File {
+        val dir = parentPath ?: targetFile.parentFile?.toPath() ?: Path.of(".")
+        return Files.createTempFile(dir, targetFile.name, ".tmp").toFile()
     }
 
     companion object {
