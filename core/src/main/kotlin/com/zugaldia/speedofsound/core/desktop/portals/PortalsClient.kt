@@ -41,12 +41,17 @@ class PortalsClient(
     private val logger = LoggerFactory.getLogger(PortalsClient::class.java)
     private var portal: DesktopPortal? = null
     private var shortcutsSessionHandle: DBusPath? = null
+    private var isClosed = false
     private val shortcutsSessionMutex = Mutex()
 
     private fun portalUnavailableError(): IllegalStateException =
         IllegalStateException("Desktop portal is unavailable on this system")
 
     private fun resolvePortal(): DesktopPortal? {
+        if (isClosed) {
+            return null
+        }
+
         val cachedPortal = portal
         if (cachedPortal != null) {
             return cachedPortal
@@ -63,9 +68,12 @@ class PortalsClient(
     }
 
     override fun close() {
-        val cachedPortal = portal ?: return
+        if (isClosed) return
+        isClosed = true
+        val cachedPortal = portal
         portal = null
         shortcutsSessionHandle = null
+        if (cachedPortal == null) return
         runCatching { portalCloser(cachedPortal) }
             .onFailure { error -> logger.warn("Failed to close Desktop Portal connection: {}", error.message) }
     }

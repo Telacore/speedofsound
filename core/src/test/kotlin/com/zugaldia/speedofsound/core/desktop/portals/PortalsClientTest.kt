@@ -41,8 +41,8 @@ class PortalsClientTest {
 
         assertTrue(client.isPortalAvailable)
         client.close()
-        assertTrue(client.isPortalAvailable)
-        assertEquals(2, attempts)
+        assertFalse(client.isPortalAvailable)
+        assertEquals(1, attempts)
     }
 
     private fun unsafeAllocateDesktopPortal(): DesktopPortal {
