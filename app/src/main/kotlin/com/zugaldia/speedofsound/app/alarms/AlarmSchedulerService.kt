@@ -41,7 +41,7 @@ class AlarmSchedulerService(
     private var schedulerStateReady = false
 
     fun connect() {
-        if (schedulerJob != null) {
+        if (settingsJob != null) {
             return
         }
 
@@ -57,12 +57,7 @@ class AlarmSchedulerService(
                 onSettingsChanged(key)
             }
         }
-        schedulerJob = scope.launch {
-            while (true) {
-                checkAlarms()
-                delay(millisUntilNextMinuteBoundary(LocalDateTime.now(clock)).milliseconds)
-            }
-        }
+        syncSchedulerJobState()
     }
 
     internal fun reloadAlarms() {
@@ -82,6 +77,7 @@ class AlarmSchedulerService(
         if (schedulerStateReady && historyChanged) {
             persistSchedulerState()
         }
+        syncSchedulerJobState()
         logger.info("Loaded {} alarm(s).", alarms.size)
     }
 
@@ -130,15 +126,17 @@ class AlarmSchedulerService(
 
     internal fun checkAlarms() {
         val now = LocalDateTime.now(clock)
+        val activeAlarmsSnapshot = synchronized(stateLock) {
+            activeAlarms.filter { it.enabled }
+        }
+        if (activeAlarmsSnapshot.isEmpty()) {
+            return
+        }
         val previousCheck = synchronized(stateLock) {
             resolveAlarmCheckWindowStart(lastCheckAt, now, initialLookbackSeconds)
         }
         val dueAlarmEvents = synchronized(stateLock) {
-            activeAlarms.flatMap { alarm ->
-                if (!alarm.enabled) {
-                    return@flatMap emptyList()
-                }
-
+            activeAlarmsSnapshot.flatMap { alarm ->
                 findDueOccurrencesSince(previousCheck, now, alarm)
                     .filter { occurrence -> lastTriggeredDates[alarm.id] != occurrence.scheduledAt.toLocalDate() }
                     .map { occurrence ->
@@ -159,6 +157,32 @@ class AlarmSchedulerService(
             lastCheckAt = now
         }
         persistSchedulerState()
+    }
+
+    internal fun isSchedulerRunning(): Boolean = schedulerJob?.isActive == true
+
+    @Synchronized
+    private fun syncSchedulerJobState() {
+        if (!schedulerStateReady) {
+            return
+        }
+
+        val shouldRun = synchronized(stateLock) {
+            activeAlarms.any { it.enabled }
+        }
+        if (shouldRun) {
+            if (schedulerJob?.isActive != true) {
+                schedulerJob = scope.launch {
+                    while (true) {
+                        checkAlarms()
+                        delay(millisUntilNextMinuteBoundary(LocalDateTime.now(clock)).milliseconds)
+                    }
+                }
+            }
+        } else {
+            schedulerJob?.cancel()
+            schedulerJob = null
+        }
     }
 
     private fun persistSchedulerState() {

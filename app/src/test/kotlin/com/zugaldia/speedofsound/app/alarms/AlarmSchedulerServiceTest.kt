@@ -11,6 +11,8 @@ import com.zugaldia.stargate.sdk.DesktopPortal
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -223,6 +225,11 @@ class AlarmSchedulerServiceTest {
         )
         val store = MapSettingsStore()
         val settingsClient = SettingsClient(store)
+        settingsClient.setAlarms(
+            listOf(
+                AlarmSetting(id = "alarm-1", hour = 23, minute = 0),
+            )
+        )
         val service = AlarmSchedulerService(
             settingsClient = settingsClient,
             portalsClient = PortalsClient(portalConnector = {
@@ -245,6 +252,42 @@ class AlarmSchedulerServiceTest {
 
         assertEquals(writesAfterFirstTick, writesAfterSecondTick)
         assertEquals(writesAfterFirstTick + 3, store.stringWriteCount)
+    }
+
+    @Test
+    fun `scheduler loop starts and stops with active alarms`() {
+        val clock = Clock.fixed(Instant.parse("2026-05-29T09:00:00Z"), ZoneOffset.UTC)
+        val store = MapSettingsStore()
+        val settingsClient = SettingsClient(store)
+        val service = AlarmSchedulerService(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+            clock = clock,
+        )
+
+        service.connect()
+
+        assertFalse(service.isSchedulerRunning())
+
+        settingsClient.setAlarms(
+            listOf(
+                AlarmSetting(id = "alarm-1", hour = 9, minute = 30),
+            )
+        )
+        service.onSettingsChanged(KEY_ALARMS)
+        assertTrue(service.isSchedulerRunning())
+
+        settingsClient.setAlarms(
+            listOf(
+                AlarmSetting(id = "alarm-1", hour = 9, minute = 30, enabled = false),
+            )
+        )
+        service.onSettingsChanged(KEY_ALARMS)
+        assertFalse(service.isSchedulerRunning())
+
+        service.close()
     }
 
     @Test
