@@ -456,8 +456,7 @@ class MainViewModel(
     }
 
     private fun selectedLlmPluginId(): String? {
-        val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
-        val selectedProvider = settingsClient.peekTextModelProviders().find { it.id == selectedProviderId }
+        val selectedProvider = settingsClient.peekSelectedTextModelProvider()
         return selectedProvider?.let { pluginIdForProvider(it.provider) }
     }
 

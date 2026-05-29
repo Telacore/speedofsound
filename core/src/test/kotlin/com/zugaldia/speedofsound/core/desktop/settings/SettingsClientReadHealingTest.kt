@@ -106,6 +106,28 @@ class SettingsClientReadHealingTest {
     }
 
     @Test
+    fun `peek selected provider snapshots are normalized without writing`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "missing-voice-provider",
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "missing-text-provider",
+            )
+        )
+        val client = SettingsClient(store)
+
+        val expectedVoiceProvider = client.peekVoiceModelProviders()
+            .sortedBy { it.name.lowercase() }
+            .firstOrNull()
+        val expectedTextProvider = client.peekTextModelProviders()
+            .sortedBy { it.name.lowercase() }
+            .firstOrNull()
+
+        assertEquals(expectedVoiceProvider, client.peekSelectedVoiceModelProvider())
+        assertEquals(expectedTextProvider, client.peekSelectedTextModelProvider())
+        assertEquals(0, store.writeCount)
+    }
+
+    @Test
     fun `malformed provider credential refs are healed on read`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

@@ -51,7 +51,7 @@ class LlmProviderManager(
      */
     private fun applySelectedProviderConfig(setActive: Boolean) {
         val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
-        val selectedProvider = selectedTextProvider()
+        val selectedProvider = settingsClient.peekSelectedTextModelProvider()
         if (selectedProvider == null) {
             logger.warn(
                 "Selected LLM provider {} is missing; disabling text processing",
@@ -172,14 +172,11 @@ class LlmProviderManager(
         if (runtimeTextProcessingEnabled == false) {
             return ""
         }
-        val selectedProvider = selectedTextProvider()
+        val selectedProvider = settingsClient.peekSelectedTextModelProvider()
         if (selectedProvider != null) {
             return selectedProvider.name
         }
         val activeProviderId = registry.getActive(AppPluginCategory.LLM)?.id ?: return ""
         return LlmProvider.entries.firstOrNull { pluginIdForProvider(it) == activeProviderId }?.displayName ?: ""
     }
-
-    private fun selectedTextProvider() =
-        settingsClient.peekTextModelProviders().find { it.id == settingsClient.peekSelectedTextModelProviderId() }
 }

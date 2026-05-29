@@ -747,6 +747,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
             availableProviders = peekVoiceModelProviders(),
         )
 
+    fun peekSelectedVoiceModelProvider(): VoiceModelProviderSetting? =
+        peekSelectedProvider(
+            key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID,
+            availableProviders = peekVoiceModelProviders(),
+        )
+
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
@@ -797,6 +804,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return normalizeSelectedProviderId(raw, defaultValue, availableProviders)
     }
 
+    private fun <T : SelectableProviderSetting> peekSelectedProvider(
+        key: String,
+        defaultValue: String,
+        availableProviders: List<T>,
+    ): T? {
+        val selectedProviderId = peekSelectedProviderId(key, defaultValue, availableProviders)
+        return availableProviders.find { it.id == selectedProviderId }
+    }
+
     private fun normalizeSelectedProviderId(
         value: String,
         defaultValue: String,
@@ -821,6 +837,13 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun peekSelectedTextModelProviderId(): String =
         peekSelectedProviderId(
+            key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
+            availableProviders = peekTextModelProviders(),
+        )
+
+    fun peekSelectedTextModelProvider(): TextModelProviderSetting? =
+        peekSelectedProvider(
             key = KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
             defaultValue = DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
             availableProviders = peekTextModelProviders(),
