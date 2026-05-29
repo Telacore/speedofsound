@@ -19,13 +19,17 @@ fun formatAlarmTime(alarm: AlarmSetting): String =
 fun formatAlarmName(alarm: AlarmSetting): String =
     alarm.name.trim().ifBlank { "Alarm ${formatAlarmTime(alarm)}" }
 
-fun formatAlarmNotificationBody(alarm: AlarmSetting): String {
+fun formatAlarmNotificationBody(alarm: AlarmSetting): String =
+    formatAlarmNotificationBody(alarm, null)
+
+fun formatAlarmNotificationBody(alarm: AlarmSetting, scheduledAt: LocalDateTime?): String {
     val formattedTime = formatAlarmTime(alarm)
     val trimmedName = alarm.name.trim()
+    val whenPart = scheduledAt?.let { " on ${it.dayOfWeek.shortLabel()}" }.orEmpty()
     return if (trimmedName.isBlank()) {
-        "Alarm $formattedTime is due. (${formatAlarmAction(alarm.action)})"
+        "Alarm is due$whenPart at $formattedTime. (${formatAlarmAction(alarm.action)})"
     } else {
-        "$trimmedName is due at $formattedTime. (${formatAlarmAction(alarm.action)})"
+        "$trimmedName is due$whenPart at $formattedTime. (${formatAlarmAction(alarm.action)})"
     }
 }
 
@@ -69,6 +73,11 @@ data class AlarmOccurrence(
     val alarm: AlarmSetting,
     val nextRun: LocalDateTime,
     val dueNow: Boolean,
+)
+
+data class AlarmDueOccurrence(
+    val alarm: AlarmSetting,
+    val scheduledAt: LocalDateTime,
 )
 
 fun nextAlarmOccurrence(now: LocalDateTime, alarms: List<AlarmSetting>): AlarmOccurrence? {
@@ -117,29 +126,7 @@ fun findMostRecentDueOccurrenceSince(
     end: LocalDateTime,
     alarm: AlarmSetting,
 ): LocalDateTime? {
-    val normalizedStart = start.withSecond(0).withNano(0)
-    val normalizedEnd = end.withSecond(0).withNano(0)
-    if (normalizedEnd.isBefore(normalizedStart)) {
-        return null
-    }
-
-    var best: LocalDateTime? = null
-    var date = normalizedStart.toLocalDate().minusDays(1)
-    val lastDate = normalizedEnd.toLocalDate()
-    while (!date.isAfter(lastDate)) {
-        if (alarm.isScheduledOn(date)) {
-            val candidate = date.atTime(alarm.hour, alarm.minute)
-            val windowEnd = candidate.plusMinutes(ALARM_TRIGGER_GRACE_MINUTES)
-            if (!candidate.isAfter(normalizedEnd) && !windowEnd.isBefore(normalizedStart)) {
-                if (best == null || candidate.isAfter(best)) {
-                    best = candidate
-                }
-            }
-        }
-        date = date.plusDays(1)
-    }
-
-    return best
+    return findDueOccurrencesSince(start, end, alarm).lastOrNull()?.scheduledAt
 }
 
 private fun nextAlarmOccurrenceForAlarm(
@@ -169,6 +156,34 @@ private fun nextAlarmOccurrenceForAlarm(
     }
 
     return null
+}
+
+fun findDueOccurrencesSince(
+    start: LocalDateTime,
+    end: LocalDateTime,
+    alarm: AlarmSetting,
+): List<AlarmDueOccurrence> {
+    val normalizedStart = start.withSecond(0).withNano(0)
+    val normalizedEnd = end.withSecond(0).withNano(0)
+    if (normalizedEnd.isBefore(normalizedStart)) {
+        return emptyList()
+    }
+
+    val occurrences = mutableListOf<AlarmDueOccurrence>()
+    var date = normalizedStart.toLocalDate().minusDays(1)
+    val lastDate = normalizedEnd.toLocalDate()
+    while (!date.isAfter(lastDate)) {
+        if (alarm.isScheduledOn(date)) {
+            val candidate = date.atTime(alarm.hour, alarm.minute)
+            val windowEnd = candidate.plusMinutes(ALARM_TRIGGER_GRACE_MINUTES)
+            if (!candidate.isAfter(normalizedEnd) && !windowEnd.isBefore(normalizedStart)) {
+                occurrences.add(AlarmDueOccurrence(alarm = alarm, scheduledAt = candidate))
+            }
+        }
+        date = date.plusDays(1)
+    }
+
+    return occurrences
 }
 
 private fun formatOccurrenceTiming(now: LocalDateTime, occurrence: AlarmOccurrence): String {

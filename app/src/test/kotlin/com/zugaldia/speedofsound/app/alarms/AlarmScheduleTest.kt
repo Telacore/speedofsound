@@ -77,6 +77,17 @@ class AlarmScheduleTest {
     }
 
     @Test
+    fun `alarm notification body includes the scheduled day when provided`() {
+        val alarm = AlarmSetting(id = "alarm-8", name = "Breakfast", hour = 9, minute = 45)
+        val scheduledAt = LocalDateTime.of(2026, 5, 29, 9, 45)
+
+        assertEquals(
+            "Breakfast is due on Fri at 09:45. (Normal)",
+            formatAlarmNotificationBody(alarm, scheduledAt)
+        )
+    }
+
+    @Test
     fun `alarm summary formats repeat days`() {
         val alarm = AlarmSetting(
             id = "alarm-7",
@@ -180,6 +191,22 @@ class AlarmScheduleTest {
         assertEquals(
             LocalDateTime.of(2026, 5, 29, 9, 0),
             findMostRecentDueOccurrenceSince(start, end, alarm)
+        )
+    }
+
+    @Test
+    fun `catch up helper returns every missed occurrence in order`() {
+        val start = LocalDateTime.of(2026, 5, 29, 8, 0)
+        val end = LocalDateTime.of(2026, 5, 31, 10, 0)
+        val alarm = AlarmSetting(id = "alarm-3", name = "Daily", hour = 9, minute = 0)
+
+        assertEquals(
+            listOf(
+                LocalDateTime.of(2026, 5, 29, 9, 0),
+                LocalDateTime.of(2026, 5, 30, 9, 0),
+                LocalDateTime.of(2026, 5, 31, 9, 0),
+            ),
+            findDueOccurrencesSince(start, end, alarm).map { it.scheduledAt }
         )
     }
 

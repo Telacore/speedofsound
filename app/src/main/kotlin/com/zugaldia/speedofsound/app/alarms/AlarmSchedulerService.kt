@@ -96,25 +96,25 @@ class AlarmSchedulerService(
             lastCheckAt ?: now.minusSeconds(checkIntervalSeconds)
         }
         val dueAlarmEvents = synchronized(stateLock) {
-            activeAlarms.mapNotNull { alarm ->
+            activeAlarms.flatMap { alarm ->
                 if (!alarm.enabled) {
-                    return@mapNotNull null
+                    return@flatMap emptyList()
                 }
 
-                val dueOccurrence = findMostRecentDueOccurrenceSince(previousCheck, now, alarm)
-                    ?: return@mapNotNull null
-                val dueDate = dueOccurrence.toLocalDate()
-                if (lastTriggeredDates[alarm.id] == dueDate) {
-                    return@mapNotNull null
-                }
-
-                lastTriggeredDates[alarm.id] = dueDate
-                alarm to dueOccurrence
+                findDueOccurrencesSince(previousCheck, now, alarm)
+                    .filter { occurrence -> lastTriggeredDates[alarm.id] != occurrence.scheduledAt.toLocalDate() }
+                    .map { occurrence ->
+                        lastTriggeredDates[alarm.id] = occurrence.scheduledAt.toLocalDate()
+                        alarm to occurrence.scheduledAt
+                    }
             }
-        }
+        }.sortedWith(
+            compareBy<Pair<AlarmSetting, LocalDateTime>> { it.second }
+                .thenBy { it.first.id }
+        )
 
-        dueAlarmEvents.forEach { (alarm, _) ->
-            fireAlarm(alarm)
+        dueAlarmEvents.forEach { (alarm, dueAt) ->
+            fireAlarm(alarm, dueAt)
         }
 
         synchronized(stateLock) {
@@ -135,9 +135,9 @@ class AlarmSchedulerService(
         }
     }
 
-    private fun fireAlarm(alarm: AlarmSetting) {
-        val body = formatAlarmNotificationBody(alarm)
-        logger.info("Firing alarm {} with action {}", alarm.id, alarm.action)
+    private fun fireAlarm(alarm: AlarmSetting, dueAt: LocalDateTime) {
+        val body = formatAlarmNotificationBody(alarm, dueAt)
+        logger.info("Firing alarm {} at {} with action {}", alarm.id, dueAt, alarm.action)
         if (!shouldNotifyAlarm(alarm.action)) {
             logger.info("Alarm {} is silent; skipping desktop notification.", alarm.id)
             return
