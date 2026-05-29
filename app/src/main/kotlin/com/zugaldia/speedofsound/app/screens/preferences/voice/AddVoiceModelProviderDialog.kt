@@ -38,6 +38,7 @@ import org.gnome.adw.ComboRow
 import org.gnome.adw.Dialog
 import org.gnome.adw.EntryRow
 import org.gnome.adw.PreferencesGroup
+import org.gnome.glib.GLib
 import org.gnome.gtk.Align
 import org.gnome.gtk.Box
 import org.gnome.gtk.Button
@@ -66,6 +67,8 @@ class AddVoiceModelProviderDialog(
     private var selectedProvider: AsrProvider = AsrProvider.OPENAI
     private var selectedModelId: String = DEFAULT_ASR_OPENAI_MODEL_ID
     private var selectedCredentialId: String? = null
+    private var currentCredentials: List<CredentialSetting> = emptyList()
+    private var currentProviders: List<VoiceModelProviderSetting> = emptyList()
     private val dialogScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     init {
@@ -168,6 +171,7 @@ class AddVoiceModelProviderDialog(
         onClosed { dialogScope.cancel() }
 
         // Initialize state
+        refreshSnapshots()
         loadCredentialList()
         refreshDialog()
 
@@ -181,7 +185,7 @@ class AddVoiceModelProviderDialog(
     private fun setupNotifications() {
         nameEntry.onNotify("text") { updateAddButtonState() }
         credentialComboRow.onNotify("selected") {
-            selectedCredentialId = getSelectedCredentialId(viewModel.peekCredentials())
+            selectedCredentialId = getSelectedCredentialId(currentCredentials)
             updateAddButtonState()
         }
         dialogScope.launch {
@@ -189,6 +193,7 @@ class AddVoiceModelProviderDialog(
                 .filter { it == KEY_CREDENTIALS || it == KEY_VOICE_MODEL_PROVIDERS }
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        refreshSnapshots()
                         refreshCredentialList()
                         false
                     }
@@ -209,16 +214,15 @@ class AddVoiceModelProviderDialog(
     }
 
     private fun loadCredentialList(preservedCredentialId: String? = null) {
-        val credentials = viewModel.peekCredentials()
         val options = mutableListOf("None")
-        options.addAll(credentials.map { it.name })
+        options.addAll(currentCredentials.map { it.name })
         credentialComboRow.model = StringList(options.toTypedArray())
         credentialComboRow.selected = preservedCredentialId?.let { credentialId ->
-            credentials.indexOfFirst { it.id == credentialId }
+            currentCredentials.indexOfFirst { it.id == credentialId }
                 .takeIf { it >= 0 }
                 ?.plus(1)
         } ?: 0
-        selectedCredentialId = getSelectedCredentialId(credentials)
+        selectedCredentialId = getSelectedCredentialId(currentCredentials)
     }
 
     private fun getSelectedCredentialId(credentials: List<CredentialSetting>): String? {
@@ -250,10 +254,9 @@ class AddVoiceModelProviderDialog(
     private fun validateInput(name: String, baseUrl: String?, modelId: String?): Boolean {
         if (name.isEmpty()) { return false }
         if (name.length > MAX_PROVIDER_CONFIG_NAME_LENGTH) { return false }
-        val providers = viewModel.peekVoiceModelProviders()
-        val customProviderCount = providers.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+        val customProviderCount = currentProviders.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
         if (customProviderCount >= MAX_VOICE_MODEL_PROVIDERS) { return false }
-        if (providers.any { it.name == name }) { return false }
+        if (currentProviders.any { it.name == name }) { return false }
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
         return true
@@ -280,5 +283,10 @@ class AddVoiceModelProviderDialog(
     private fun closeDialog() {
         dialogScope.cancel()
         close()
+    }
+
+    private fun refreshSnapshots() {
+        currentCredentials = viewModel.peekCredentials()
+        currentProviders = viewModel.peekVoiceModelProviders()
     }
 }

@@ -78,6 +78,8 @@ class AddTextModelProviderDialog(
     private var selectedModelId: String = DEFAULT_LLM_ANTHROPIC_MODEL_ID
     private var selectedCredentialId: String? = null
     private var fetchedModels: List<TextModel>? = null
+    private var currentCredentials: List<CredentialSetting> = emptyList()
+    private var currentProviders: List<TextModelProviderSetting> = emptyList()
 
     private val dialogScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
@@ -205,7 +207,9 @@ class AddTextModelProviderDialog(
         onClosed { dialogScope.cancel() }
 
         // Initialize state
+        refreshSnapshots()
         loadCredentialList()
+        renderProviders(currentProviders, viewModel.peekTextProcessingEnabled())
         refreshDialog()
 
         // Set up notifications after all widgets are initialized
@@ -218,7 +222,7 @@ class AddTextModelProviderDialog(
     private fun setupNotifications() {
         nameEntry.onNotify("text") { updateAddButtonState() }
         credentialComboRow.onNotify("selected") {
-            selectedCredentialId = getSelectedCredentialId(viewModel.peekCredentials())
+            selectedCredentialId = getSelectedCredentialId(currentCredentials)
             updateAddButtonState()
         }
         dialogScope.launch {
@@ -226,6 +230,7 @@ class AddTextModelProviderDialog(
                 .filter { it == KEY_CREDENTIALS || it == KEY_TEXT_MODEL_PROVIDERS }
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        refreshSnapshots()
                         refreshCredentialList()
                         false
                     }
@@ -247,16 +252,15 @@ class AddTextModelProviderDialog(
     }
 
     private fun loadCredentialList(preservedCredentialId: String? = null) {
-        val credentials = viewModel.peekCredentials()
         val options = mutableListOf("None")
-        options.addAll(credentials.map { it.name })
+        options.addAll(currentCredentials.map { it.name })
         credentialComboRow.model = StringList(options.toTypedArray())
         credentialComboRow.selected = preservedCredentialId?.let { credentialId ->
-            credentials.indexOfFirst { it.id == credentialId }
+            currentCredentials.indexOfFirst { it.id == credentialId }
                 .takeIf { it >= 0 }
                 ?.plus(1)
         } ?: 0
-        selectedCredentialId = getSelectedCredentialId(credentials)
+        selectedCredentialId = getSelectedCredentialId(currentCredentials)
     }
 
     private fun getSelectedCredentialId(credentials: List<CredentialSetting>): String? {
@@ -325,8 +329,7 @@ class AddTextModelProviderDialog(
     }
 
     private fun createTemporaryPlugin(): LlmPlugin<*> {
-        val credentials = viewModel.peekCredentials()
-        val apiKey = getSelectedCredentialApiKey(credentials)
+        val apiKey = getSelectedCredentialApiKey(currentCredentials)
         val baseUrl = baseUrlEntry.getBaseUrl()
         val modelId = selectedModelId
         val disableThinking = disableThinkingRow.active
@@ -372,9 +375,8 @@ class AddTextModelProviderDialog(
     private fun validateInput(name: String, baseUrl: String?, modelId: String?): Boolean {
         if (name.isEmpty()) { return false }
         if (name.length > MAX_PROVIDER_CONFIG_NAME_LENGTH) { return false }
-        val providers = viewModel.peekTextModelProviders()
-        if (providers.size >= MAX_TEXT_MODEL_PROVIDERS) { return false }
-        if (providers.any { it.name == name }) { return false }
+        if (currentProviders.size >= MAX_TEXT_MODEL_PROVIDERS) { return false }
+        if (currentProviders.any { it.name == name }) { return false }
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
         return true
@@ -402,5 +404,10 @@ class AddTextModelProviderDialog(
     private fun closeDialog() {
         dialogScope.cancel()
         close()
+    }
+
+    private fun refreshSnapshots() {
+        currentCredentials = viewModel.peekCredentials()
+        currentProviders = viewModel.peekTextModelProviders()
     }
 }
