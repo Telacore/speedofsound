@@ -11,9 +11,9 @@ class ModelPathResolverTest {
     fun `resolveSafeChildPath returns a normalized child path`() {
         val baseDir = createTempDirectory("sos-model-path-resolver")
         try {
-            val resolved = resolveSafeChildPath(baseDir, "models/model.onnx")
+            val resolved = resolveSafeChildPath(baseDir, "model.onnx")
 
-            assertEquals(baseDir.resolve("models").resolve("model.onnx").normalize(), resolved)
+            assertEquals(baseDir.resolve("model.onnx").normalize(), resolved)
         } finally {
             baseDir.toFile().deleteRecursively()
         }
@@ -23,7 +23,7 @@ class ModelPathResolverTest {
     fun `resolveSafeChildPath rejects invalid child names`() {
         val baseDir = createTempDirectory("sos-model-path-resolver")
         try {
-            listOf("", ".", "..", "../outside", "/outside").forEach { childName ->
+            listOf("", ".", "..", "../outside", "/outside", "subdir/model.onnx").forEach { childName ->
                 val exception = assertFailsWith<IllegalArgumentException> {
                     resolveSafeChildPath(baseDir, childName)
                 }

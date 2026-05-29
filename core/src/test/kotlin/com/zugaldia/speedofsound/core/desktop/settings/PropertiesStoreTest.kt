@@ -57,7 +57,7 @@ class PropertiesStoreTest {
     fun `constructor rejects invalid filenames`() {
         val baseDir = Files.createTempDirectory("speedofsound-properties-store-path")
         try {
-            listOf("", ".", "..", "../outside.properties", "/outside.properties").forEach { filename ->
+            listOf("", ".", "..", "../outside.properties", "/outside.properties", "subdir/settings.properties").forEach { filename ->
                 val exception = assertFailsWith<IllegalArgumentException> {
                     PropertiesStore(filename = filename, baseDir = baseDir)
                 }
