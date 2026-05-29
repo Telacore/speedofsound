@@ -290,7 +290,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             voiceProviders = voiceProviders,
             selectedVoiceProviderIdExact = viewModel.peekSelectedVoiceModelProviderIdExact(),
             textProviders = textProviders,
-            selectedTextProviderId = viewModel.peekSelectedTextModelProviderId(),
+            selectedTextProviderId = viewModel.peekSelectedTextModelProviderId(credentialIds),
             textProcessingEnabled = viewModel.peekTextProcessingEnabled(),
             customVocabulary = viewModel.peekCustomVocabulary(),
             alarmSchedulerState = viewModel.peekAlarmSchedulerState(),

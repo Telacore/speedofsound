@@ -60,7 +60,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         }
 
         activeProviderComboRow = ActiveProviderComboRow(
-            getSelectedProviderId = { viewModel.peekSelectedTextModelProviderId() },
+            getSelectedProviderId = { viewModel.peekSelectedTextModelProviderId(currentCredentialIds()) },
             setSelectedProviderId = { value, providers ->
                 viewModel.setSelectedTextModelProviderId(value, providers)
             },

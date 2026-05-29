@@ -139,10 +139,8 @@ class PreferencesViewModel(
     ): Boolean =
         settingsClient.setTextModelProviders(value, validCredentialIds, availableProviders)
 
-    fun peekSelectedTextModelProviderId(): String =
-        settingsClient.peekSelectedTextModelProviderId(
-            settingsClient.peekTextModelProviders(settingsClient.peekCredentials().map { it.id }.toSet())
-        )
+    fun peekSelectedTextModelProviderId(validCredentialIds: Set<String>): String =
+        settingsClient.peekSelectedTextModelProviderId(settingsClient.peekTextModelProviders(validCredentialIds))
     fun setSelectedTextModelProviderId(
         value: String,
         availableProviders: List<TextModelProviderSetting>,
