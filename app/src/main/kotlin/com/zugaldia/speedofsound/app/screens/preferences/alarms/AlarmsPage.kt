@@ -109,12 +109,13 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
     }
 
     private fun loadAlarms() {
-        viewModel.getAlarms()
+        val currentAlarms = viewModel.peekAlarms()
+        currentAlarms
             .sortedWith(compareBy<AlarmSetting> { it.hour }.thenBy { it.minute }.thenBy { it.id })
             .forEach { alarm -> addAlarmToUI(alarm) }
-        updatePlaceholderVisibility()
+        updatePlaceholderVisibility(currentAlarms)
         maxAlarmsRow.value = viewModel.getMaxAlarms().toDouble()
-        updateAddButtonState()
+        updateAddButtonState(currentAlarms)
     }
 
     private fun showAlarmEditor(existingAlarm: AlarmSetting? = null) {
@@ -123,7 +124,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
     }
 
     private fun upsertAlarm(alarm: AlarmSetting) {
-        val currentAlarms = viewModel.getAlarms().toMutableList()
+        val currentAlarms = viewModel.peekAlarms().toMutableList()
         val index = currentAlarms.indexOfFirst { it.id == alarm.id }
         if (index >= 0) {
             currentAlarms[index] = alarm
@@ -135,7 +136,7 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
     }
 
     private fun deleteAlarm(alarmId: String) {
-        val updatedAlarms = viewModel.getAlarms().filterNot { it.id == alarmId }
+        val updatedAlarms = viewModel.peekAlarms().filterNot { it.id == alarmId }
         viewModel.setAlarms(updatedAlarms)
         refresh()
     }
@@ -173,13 +174,13 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         deleteButton.onClicked { deleteAlarm(alarm.id) }
     }
 
-    private fun updatePlaceholderVisibility() {
-        val hasAlarms = viewModel.getAlarms().isNotEmpty()
+    private fun updatePlaceholderVisibility(currentAlarms: List<AlarmSetting>) {
+        val hasAlarms = currentAlarms.isNotEmpty()
         alarmsListBox.visible = hasAlarms
         placeholderBox.visible = !hasAlarms
     }
 
-    private fun updateAddButtonState() {
-        addButton.sensitive = viewModel.getAlarms().size < viewModel.getMaxAlarms()
+    private fun updateAddButtonState(currentAlarms: List<AlarmSetting>) {
+        addButton.sensitive = currentAlarms.size < viewModel.getMaxAlarms()
     }
 }
