@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.core.io
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import java.io.File
 import java.nio.file.Files
@@ -71,5 +72,22 @@ class AtomicFileWriterTest {
         assertTrue(result.isFailure)
         assertTrue(destination.exists())
         assertTrue(destination.isDirectory)
+    }
+
+    @Test
+    fun `write fails when parent directory is a symlink`() {
+        val targetDir = tempDir.resolve("symlink-target")
+        targetDir.mkdirs()
+        val linkDir = tempDir.resolve("symlink-parent")
+        Files.createSymbolicLink(linkDir.toPath(), targetDir.toPath())
+
+        val destination = linkDir.resolve("settings.json")
+        val result = AtomicFileWriter.write(destination) { tempFile ->
+            tempFile.writeText("new")
+        }
+
+        assertTrue(result.isFailure)
+        assertFalse(targetDir.resolve("settings.json").exists())
+        assertFalse(destination.exists())
     }
 }

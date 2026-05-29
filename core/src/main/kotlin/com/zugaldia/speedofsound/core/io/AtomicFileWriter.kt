@@ -39,6 +39,7 @@ object AtomicFileWriter {
                 throw IOException("Could not create parent directory: ${parent.absolutePath}")
             }
         }
+        ensurePathDoesNotTraverseSymlinks(parent)
     }
 
     private fun ensureDestinationIsWritable(destination: File) {
@@ -61,6 +62,18 @@ object AtomicFileWriter {
                 destination.toPath(),
                 StandardCopyOption.REPLACE_EXISTING,
             )
+        }
+    }
+
+    private fun ensurePathDoesNotTraverseSymlinks(path: File) {
+        val normalizedPath = path.toPath().toAbsolutePath().normalize()
+        val realPath = try {
+            path.toPath().toRealPath()
+        } catch (e: IOException) {
+            throw IOException("Could not resolve real path: ${path.absolutePath}", e)
+        }
+        if (realPath != normalizedPath) {
+            throw IOException("Path traverses a symbolic link: ${path.absolutePath}")
         }
     }
 }
