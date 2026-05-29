@@ -16,6 +16,11 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 
 /**
  * Handles downloading files from URLs with progress reporting.
@@ -89,37 +94,76 @@ class ModelDownloader : Closeable {
                 val channel = response.bodyAsChannel()
                 var bytesDownloaded = 0L
                 var lastEmittedPercentage = 0
-                destination.outputStream().use { output ->
-                    val buffer = ByteArray(BUFFER_SIZE)
-                    while (!channel.isClosedForRead) {
-                        val bytesRead = channel.readAvailable(buffer, 0, BUFFER_SIZE)
-                        if (bytesRead > 0) {
-                            output.write(buffer, 0, bytesRead)
-                            bytesDownloaded += bytesRead
-                            val percentage =
-                                totalBytes?.let { (bytesDownloaded.toFloat() / it * PERCENTAGE_MULTIPLIER) }
-                            val shouldEmit = percentage?.toInt()?.let { currentPercentage ->
-                                currentPercentage >= lastEmittedPercentage + PROGRESS_EMISSION_THRESHOLD ||
-                                        currentPercentage >= PERCENTAGE_MULTIPLIER
-                            } ?: true
-                            if (shouldEmit) {
-                                _progressFlow.emit(
-                                    DownloadProgress(
-                                        bytesDownloaded = bytesDownloaded,
-                                        totalBytes = totalBytes,
-                                        percentage = percentage
+                writeFileAtomically(destination) { tempFile ->
+                    FileOutputStream(tempFile).use { output ->
+                        val buffer = ByteArray(BUFFER_SIZE)
+                        while (!channel.isClosedForRead) {
+                            val bytesRead = channel.readAvailable(buffer, 0, BUFFER_SIZE)
+                            if (bytesRead > 0) {
+                                output.write(buffer, 0, bytesRead)
+                                bytesDownloaded += bytesRead
+                                val percentage =
+                                    totalBytes?.let { (bytesDownloaded.toFloat() / it * PERCENTAGE_MULTIPLIER) }
+                                val shouldEmit = percentage?.toInt()?.let { currentPercentage ->
+                                    currentPercentage >= lastEmittedPercentage + PROGRESS_EMISSION_THRESHOLD ||
+                                            currentPercentage >= PERCENTAGE_MULTIPLIER
+                                } ?: true
+                                if (shouldEmit) {
+                                    _progressFlow.emit(
+                                        DownloadProgress(
+                                            bytesDownloaded = bytesDownloaded,
+                                            totalBytes = totalBytes,
+                                            percentage = percentage
+                                        )
                                     )
-                                )
-                                lastEmittedPercentage = percentage?.toInt() ?: -1
+                                    lastEmittedPercentage = percentage?.toInt() ?: -1
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        }
+    }
 
     override fun close() {
         client.close()
+    }
+}
+
+internal fun writeFileAtomically(destination: File, writeAction: (File) -> Unit): Result<Unit> = runCatching {
+    destination.parentFile?.mkdirs()
+    val tempFile = createTempSiblingFile(destination)
+    try {
+        writeAction(tempFile)
+        moveTempFile(tempFile, destination)
+    } finally {
+        if (tempFile.exists()) {
+            tempFile.delete()
+        }
+    }
+}
+
+private fun createTempSiblingFile(destination: File): File {
+    val parentPath = destination.parentFile?.toPath() ?: Path.of(".")
+    val rawPrefix = destination.name.ifBlank { "download" }
+    val prefix = if (rawPrefix.length < 3) rawPrefix.padEnd(3, '_') else rawPrefix
+    return Files.createTempFile(parentPath, prefix, ".tmp").toFile()
+}
+
+private fun moveTempFile(tempFile: File, destination: File) {
+    try {
+        Files.move(
+            tempFile.toPath(),
+            destination.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.ATOMIC_MOVE,
+        )
+    } catch (_: AtomicMoveNotSupportedException) {
+        Files.move(
+            tempFile.toPath(),
+            destination.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+        )
     }
 }
