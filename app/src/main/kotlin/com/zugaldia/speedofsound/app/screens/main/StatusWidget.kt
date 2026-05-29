@@ -18,6 +18,8 @@ class StatusWidget(
     private val llmModelSeparator: Label
     private val llmModelLabel: Label
     private val languageLabel: Label
+    private val alarmSeparator: Label
+    private val alarmLabel: Label
 
     companion object {
         private const val MAX_MODEL_LABEL_LENGTH = 15
@@ -52,6 +54,18 @@ class StatusWidget(
             })
         }
         append(languageLabel)
+
+        alarmSeparator = createStatusLabel(SEPARATOR_CHARACTER, isDimmed = true).apply {
+            visible = false
+        }
+        append(alarmSeparator)
+
+        alarmLabel = createStatusLabel("", isDimmed = true).apply {
+            visible = false
+            maxWidthChars = 30
+            ellipsize = EllipsizeMode.END
+        }
+        append(alarmLabel)
     }
 
     fun setAsrModel(model: String) {
@@ -66,6 +80,12 @@ class StatusWidget(
 
     fun setLanguage(language: String) {
         languageLabel.label = language
+    }
+
+    fun setAlarmSummary(summary: String) {
+        alarmSeparator.visible = summary.isNotBlank()
+        alarmLabel.visible = summary.isNotBlank()
+        alarmLabel.label = summary
     }
 
     private fun createModelLabel(): Label {

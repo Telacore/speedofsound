@@ -59,4 +59,29 @@ class AlarmScheduleTest {
         assertEquals("Alarm 09:45 is due. (Normal)", formatAlarmNotificationBody(unnamedAlarm))
         assertEquals("Breakfast is due at 09:45. (Normal)", formatAlarmNotificationBody(namedAlarm))
     }
+
+    @Test
+    fun `alarm overview highlights the next active alarm`() {
+        val now = LocalDateTime.of(2026, 5, 29, 9, 0)
+        val alarms = listOf(
+            AlarmSetting(id = "alarm-1", name = "Morning", hour = 7, minute = 30),
+            AlarmSetting(id = "alarm-2", name = "Lunch", hour = 12, minute = 0),
+            AlarmSetting(id = "alarm-3", name = "Disabled", hour = 18, minute = 0, enabled = false),
+        )
+
+        assertEquals(
+            "2 active alarms · next Lunch at 12:00",
+            formatAlarmOverview(now, alarms)
+        )
+    }
+
+    @Test
+    fun `alarm overview falls back when all alarms are disabled`() {
+        val now = LocalDateTime.of(2026, 5, 29, 9, 0)
+        val alarms = listOf(
+            AlarmSetting(id = "alarm-1", name = "Morning", hour = 7, minute = 30, enabled = false),
+        )
+
+        assertEquals("All alarms disabled", formatAlarmOverview(now, alarms))
+    }
 }

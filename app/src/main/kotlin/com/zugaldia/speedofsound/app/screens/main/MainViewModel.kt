@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.app.screens.main
 
 import com.zugaldia.speedofsound.app.APPEND_SPACE_TEXT
+import com.zugaldia.speedofsound.app.alarms.formatAlarmOverview
 import com.zugaldia.speedofsound.app.isGStreamerDisabled
 import com.zugaldia.speedofsound.app.plugins.recorder.GStreamerRecorder
 import com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput
@@ -14,9 +15,11 @@ import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_LANGUAGE
 import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SECONDARY_LANGUAGE
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CUSTOM_CONTEXT
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CUSTOM_VOCABULARY
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_DEFAULT_LANGUAGE
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_MAX_ALARMS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SECONDARY_LANGUAGE
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
@@ -50,6 +53,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import org.gnome.glib.GLib
 import org.slf4j.LoggerFactory
+import java.time.LocalDateTime
 import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("TooManyFunctions")
@@ -129,6 +133,7 @@ class MainViewModel(
         // Initialize status UI labels
         onPrimaryLanguageSelected(forceUpdate = true)
         updateModelLabels()
+        updateAlarmSummary()
 
         // Phase 2 (async, IO thread): Enable plugins (heavy: model extraction + ONNX load).
         state.updateStage(AppStage.LOADING)
@@ -292,6 +297,7 @@ class MainViewModel(
             KEY_TEXT_PROCESSING_ENABLED -> refreshTextProcessingSetting()
             KEY_CUSTOM_CONTEXT -> refreshCustomContextSetting()
             KEY_CUSTOM_VOCABULARY -> refreshCustomVocabularySetting()
+            KEY_ALARMS, KEY_MAX_ALARMS -> refreshAlarmSummary()
             KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, KEY_VOICE_MODEL_PROVIDERS -> refreshAsrSetting(key)
             KEY_SELECTED_TEXT_MODEL_PROVIDER_ID, KEY_TEXT_MODEL_PROVIDERS -> refreshLlmSetting(key)
             KEY_CREDENTIALS -> refreshCredentials()
@@ -344,6 +350,12 @@ class MainViewModel(
     private fun refreshCustomVocabularySetting() {
         director.updateOptions(
             director.getOptions().copy(customVocabulary = settingsClient.getCustomVocabulary())
+        )
+    }
+
+    private fun refreshAlarmSummary() {
+        state.updateAlarmSummary(
+            formatAlarmOverview(LocalDateTime.now(), settingsClient.getAlarms())
         )
     }
 

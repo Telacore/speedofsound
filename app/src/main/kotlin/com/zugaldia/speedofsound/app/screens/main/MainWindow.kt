@@ -6,6 +6,7 @@ import com.zugaldia.speedofsound.app.DEFAULT_WINDOW_HEIGHT
 import com.zugaldia.speedofsound.app.DEFAULT_WINDOW_WIDTH
 import com.zugaldia.speedofsound.app.ICON_MENU
 import com.zugaldia.speedofsound.app.SIGNAL_ASR_MODEL_CHANGED
+import com.zugaldia.speedofsound.app.SIGNAL_ALARM_SUMMARY_CHANGED
 import com.zugaldia.speedofsound.app.SIGNAL_LANGUAGE_CHANGED
 import com.zugaldia.speedofsound.app.SIGNAL_LLM_MODEL_CHANGED
 import com.zugaldia.speedofsound.app.SIGNAL_PIPELINE_COMPLETED
@@ -182,6 +183,13 @@ class MainWindow(
         viewModel.state.connect(SIGNAL_LLM_MODEL_CHANGED, MainState.LlmModelChanged { modelName: String ->
             statusWidget.setLlmModel(modelName)
         })
+
+        viewModel.state.connect(
+            SIGNAL_ALARM_SUMMARY_CHANGED,
+            MainState.AlarmSummaryChanged { summary: String ->
+                statusWidget.setAlarmSummary(summary)
+            }
+        )
     }
 
     private fun keyPressed(keyVal: Int, state: Set<ModifierType>): Boolean {

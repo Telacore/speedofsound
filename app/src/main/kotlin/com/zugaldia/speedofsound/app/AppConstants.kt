@@ -88,6 +88,7 @@ const val SIGNAL_PIPELINE_COMPLETED = "pipeline-completed"
 const val SIGNAL_LANGUAGE_CHANGED = "language-changed"
 const val SIGNAL_ASR_MODEL_CHANGED = "asr-model-changed"
 const val SIGNAL_LLM_MODEL_CHANGED = "llm-model-changed"
+const val SIGNAL_ALARM_SUMMARY_CHANGED = "alarm-summary-changed"
 
 // Icon names (all bundled)
 const val ICON_AUTO_ADJUST = "sos-image-auto-adjust-symbolic"

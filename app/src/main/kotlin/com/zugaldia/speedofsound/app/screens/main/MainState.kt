@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.app.screens.main
 
 import com.zugaldia.speedofsound.app.SIGNAL_ASR_MODEL_CHANGED
 import com.zugaldia.speedofsound.app.SIGNAL_LANGUAGE_CHANGED
+import com.zugaldia.speedofsound.app.SIGNAL_ALARM_SUMMARY_CHANGED
 import com.zugaldia.speedofsound.app.SIGNAL_LLM_MODEL_CHANGED
 import com.zugaldia.speedofsound.app.SIGNAL_PIPELINE_COMPLETED
 import com.zugaldia.speedofsound.app.SIGNAL_RECORDING_LEVEL
@@ -30,6 +31,7 @@ class MainState : GObject() {
     private var currentLanguage: Language = DEFAULT_LANGUAGE
     private var currentAsrModel: String = ""
     private var currentLlmModel: String = ""
+    private var currentAlarmSummary: String = ""
 
     fun currentStage(): AppStage = AppStage.entries[stageOrdinal]
 
@@ -79,6 +81,13 @@ class MainState : GObject() {
         emit(SIGNAL_LLM_MODEL_CHANGED, value)
     }
 
+    fun currentAlarmSummary(): String = currentAlarmSummary
+
+    fun updateAlarmSummary(value: String) {
+        currentAlarmSummary = value
+        emit(SIGNAL_ALARM_SUMMARY_CHANGED, value)
+    }
+
     @Signal(name = SIGNAL_STAGE_CHANGED)
     fun interface StageChanged {
         fun run(stageOrdinal: Int)
@@ -112,6 +121,11 @@ class MainState : GObject() {
     @Signal(name = SIGNAL_LLM_MODEL_CHANGED)
     fun interface LlmModelChanged {
         fun run(modelName: String)
+    }
+
+    @Signal(name = SIGNAL_ALARM_SUMMARY_CHANGED)
+    fun interface AlarmSummaryChanged {
+        fun run(summary: String)
     }
 
     companion object {
