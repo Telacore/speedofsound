@@ -181,10 +181,9 @@ class ImportExportManagerTest {
     }
 
     @Test
-    fun `import does not heal existing alarms before merging`() {
+    fun `import heals malformed alarms during merge`() {
         val rawJson = "{not-json"
         val store = MapSettingsStore(
-            intWriteSuccess = false,
             initialValues = mutableMapOf(
                 KEY_ALARMS to rawJson,
             )
@@ -203,11 +202,10 @@ class ImportExportManagerTest {
         val result = manager.importSettings().getOrThrow()
 
         assertTrue(result.filePath.isNotBlank())
-        assertEquals(rawJson, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
+        assertEquals(DEFAULT_ALARMS, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
     }
 
     private class MapSettingsStore(
-        private val intWriteSuccess: Boolean = true,
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
         private val values = initialValues
@@ -244,7 +242,7 @@ class ImportExportManagerTest {
 
         override fun setInt(key: String, value: Int): Boolean {
             values[key] = value.toString()
-            return intWriteSuccess
+            return true
         }
     }
 }
