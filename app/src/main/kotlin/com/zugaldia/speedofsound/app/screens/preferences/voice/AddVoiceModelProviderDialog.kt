@@ -22,7 +22,6 @@ import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
 import com.zugaldia.speedofsound.core.isValidUrl
 import com.zugaldia.speedofsound.core.models.voice.VoiceModel
-import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_OPENAI_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.asr.getModelsForProvider
