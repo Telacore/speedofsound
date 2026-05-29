@@ -195,7 +195,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getTextOutputMethod(): String =
-        settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
+        readTextOutputMethod()
 
     fun setTextOutputMethod(value: String): Boolean =
         setStringSettingIfChanged(KEY_TEXT_OUTPUT_METHOD, getTextOutputMethod(), value, KEY_TEXT_OUTPUT_METHOD)
@@ -818,6 +818,20 @@ class SettingsClient(val settingsStore: SettingsStore) {
         } else {
             settingsStore.setBoolean(key, defaultValue)
             defaultValue
+        }
+    }
+
+    private fun readTextOutputMethod(): String {
+        val raw = settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
+        val normalized = raw.trim().lowercase()
+        return if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+            if (raw != normalized) {
+                settingsStore.setString(KEY_TEXT_OUTPUT_METHOD, normalized)
+            }
+            normalized
+        } else {
+            settingsStore.setString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
+            DEFAULT_TEXT_OUTPUT_METHOD
         }
     }
 

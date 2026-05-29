@@ -8,6 +8,7 @@ class SettingsClientReadHealingTest {
     fun `malformed bool and int settings are healed on read`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
+                KEY_TEXT_OUTPUT_METHOD to "  CLIPBOARD  ",
                 KEY_WELCOME_SCREEN_SHOWN to "maybe",
                 KEY_SHORTCUT_CONFIGURED to "TRUE",
                 KEY_BACKGROUND_RECORDING to "not-a-bool",
@@ -18,6 +19,7 @@ class SettingsClientReadHealingTest {
         )
         val client = SettingsClient(store)
 
+        assertEquals(TEXT_OUTPUT_METHOD_CLIPBOARD, client.getTextOutputMethod())
         assertEquals(DEFAULT_WELCOME_SCREEN_SHOWN, client.getWelcomeScreenShown())
         assertEquals(true, client.getShortcutConfigured())
         assertEquals(DEFAULT_BACKGROUND_RECORDING, client.getBackgroundRecording())
@@ -25,13 +27,28 @@ class SettingsClientReadHealingTest {
         assertEquals(3, client.getTypingDelayMs())
         assertEquals(MAX_MAX_ALARMS, client.getMaxAlarms())
 
+        assertEquals(TEXT_OUTPUT_METHOD_CLIPBOARD, store.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD))
         assertEquals("false", store.getString(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN.toString()))
         assertEquals("true", store.getString(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED.toString()))
         assertEquals(DEFAULT_BACKGROUND_RECORDING.toString(), store.getString(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING.toString()))
         assertEquals(DEFAULT_POST_HIDE_DELAY_MS.toString(), store.getString(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS.toString()))
         assertEquals("3", store.getString(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS.toString()))
         assertEquals(MAX_MAX_ALARMS.toString(), store.getString(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS.toString()))
-        assertEquals(6, store.writeCount)
+        assertEquals(7, store.writeCount)
+    }
+
+    @Test
+    fun `malformed text output method is healed on read`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_TEXT_OUTPUT_METHOD to "not-a-method"
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(TEXT_OUTPUT_METHOD_PORTAL, client.getTextOutputMethod())
+        assertEquals(TEXT_OUTPUT_METHOD_PORTAL, store.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD))
+        assertEquals(1, store.writeCount)
     }
 
     private class MapSettingsStore(
