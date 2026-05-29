@@ -129,6 +129,37 @@ class ImportExportManagerTest {
     }
 
     @Test
+    fun `import leaves malformed existing collections untouched when merge adds nothing`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS to "{bad",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS to "{bad",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS to "{bad",
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_CUSTOM_VOCABULARY to " alpha ||| |||beta|||alpha ",
+            )
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(Json.encodeToString(SettingsExport(version = 6)))
+
+        val result = manager.importSettings().getOrThrow()
+
+        assertTrue(result.filePath.isNotBlank())
+        assertEquals(0, store.writeCount)
+        assertEquals(emptyList<CredentialSetting>(), settingsClient.peekCredentials())
+        assertEquals(emptyList<VoiceModelProviderSetting>(), settingsClient.peekVoiceModelProviders().filter { it.id !in com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS.keys })
+        assertEquals(emptyList<TextModelProviderSetting>(), settingsClient.peekTextModelProviders())
+        assertEquals(listOf("alpha", "beta"), settingsClient.peekCustomVocabulary())
+    }
+
+    @Test
     fun `export does not migrate legacy alarm scheduler state`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

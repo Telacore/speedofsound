@@ -102,16 +102,16 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         viewModel.setTypingDelayMs(exportData.typingDelayMs)
         viewModel.setCustomContext(exportData.customContext)
 
-        val existingCredentials = viewModel.getCredentials()
+        val existingCredentials = viewModel.peekCredentials()
         val existingCredentialIds = existingCredentials.map { it.id }.toSet()
         val newCredentials = exportData.credentials.filter { it.id !in existingCredentialIds }
         if (newCredentials.isNotEmpty()) {
             viewModel.setCredentials(existingCredentials + newCredentials)
         }
-        val importedCredentialIds = viewModel.getCredentials().map { it.id }.toSet()
+        val importedCredentialIds = viewModel.peekCredentials().map { it.id }.toSet()
         val credentialsAdded = importedCredentialIds.count { it !in existingCredentialIds }
 
-        val existingVoiceProviders = viewModel.getVoiceModelProviders()
+        val existingVoiceProviders = viewModel.peekVoiceModelProviders()
         val existingVoiceIds = existingVoiceProviders.map { it.id }.toSet()
         val existingCustomVoiceIds = existingVoiceProviders
             .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
@@ -121,28 +121,28 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         if (newVoiceProviders.isNotEmpty()) {
             viewModel.setVoiceModelProviders(existingVoiceProviders + newVoiceProviders)
         }
-        val importedVoiceIds = viewModel.getVoiceModelProviders()
+        val importedVoiceIds = viewModel.peekVoiceModelProviders()
             .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
             .map { it.id }
             .toSet()
         val voiceProvidersAdded = importedVoiceIds.count { it !in existingCustomVoiceIds }
 
-        val existingTextProviders = viewModel.getTextModelProviders()
+        val existingTextProviders = viewModel.peekTextModelProviders()
         val existingTextIds = existingTextProviders.map { it.id }.toSet()
         val newTextProviders = exportData.textModelProviders.filter { it.id !in existingTextIds }
         if (newTextProviders.isNotEmpty()) {
             viewModel.setTextModelProviders(existingTextProviders + newTextProviders)
         }
-        val importedTextIds = viewModel.getTextModelProviders().map { it.id }.toSet()
+        val importedTextIds = viewModel.peekTextModelProviders().map { it.id }.toSet()
         val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
 
-        val existingVocabulary = viewModel.getCustomVocabulary()
+        val existingVocabulary = viewModel.peekCustomVocabulary()
         val existingVocabSet = existingVocabulary.toSet()
         val newVocabWords = exportData.customVocabulary.filter { it !in existingVocabSet }
         if (newVocabWords.isNotEmpty()) {
             viewModel.setCustomVocabulary(existingVocabulary + newVocabWords)
         }
-        val importedVocabulary = viewModel.getCustomVocabulary()
+        val importedVocabulary = viewModel.peekCustomVocabulary()
         val vocabularyWordsAdded = importedVocabulary.count { it !in existingVocabSet }
 
         logger.info("Imported settings from: ${inputFile.absolutePath}")
