@@ -147,7 +147,13 @@ class AddVoiceModelProviderDialog(
                 val name = nameEntry.text.trim()
                 val baseUrl = baseUrlEntry.getBaseUrl()
                 val modelId = selectedModelId
-                if (validateInput(name, baseUrl, modelId)) {
+                val valid = name.isNotEmpty() &&
+                    name.length <= MAX_PROVIDER_CONFIG_NAME_LENGTH &&
+                    currentProviders.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys } < MAX_VOICE_MODEL_PROVIDERS &&
+                    currentProviders.none { it.name == name } &&
+                    modelId != null &&
+                    (baseUrl == null || isValidUrl(baseUrl))
+                if (valid) {
                     val config = VoiceModelProviderSetting(
                         id = generateUniqueId(),
                         name = name,
@@ -260,19 +266,12 @@ class AddVoiceModelProviderDialog(
         val name = nameEntry.text.trim()
         val baseUrl = baseUrlEntry.getBaseUrl()
         val modelId = selectedModelId
-        addButton.sensitive = validateInput(name, baseUrl, modelId)
-    }
-
-    @Suppress("ReturnCount")
-    private fun validateInput(name: String, baseUrl: String?, modelId: String?): Boolean {
-        if (name.isEmpty()) { return false }
-        if (name.length > MAX_PROVIDER_CONFIG_NAME_LENGTH) { return false }
-        val customProviderCount = currentProviders.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
-        if (customProviderCount >= MAX_VOICE_MODEL_PROVIDERS) { return false }
-        if (currentProviders.any { it.name == name }) { return false }
-        if (modelId == null) { return false }
-        if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
-        return true
+        addButton.sensitive = name.isNotEmpty() &&
+            name.length <= MAX_PROVIDER_CONFIG_NAME_LENGTH &&
+            currentProviders.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys } < MAX_VOICE_MODEL_PROVIDERS &&
+            currentProviders.none { it.name == name } &&
+            modelId != null &&
+            (baseUrl == null || isValidUrl(baseUrl))
     }
 
     private fun refreshSnapshots() {
