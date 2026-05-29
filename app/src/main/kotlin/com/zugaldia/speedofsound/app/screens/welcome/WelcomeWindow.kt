@@ -117,7 +117,7 @@ class WelcomeWindow(
     }
 
     private fun buildImageWidget(resourcePath: String): Picture? {
-        val bytes = javaClass.getResourceAsStream(resourcePath)?.readBytes()
+        val bytes = javaClass.getResourceAsStream(resourcePath)?.use { it.readBytes() }
         if (bytes == null) {
             logger.warn("Could not load image resource: $resourcePath")
             return null
