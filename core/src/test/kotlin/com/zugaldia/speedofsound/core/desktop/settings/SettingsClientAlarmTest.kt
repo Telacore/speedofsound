@@ -38,6 +38,19 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `setMaxAlarms avoids rewriting an unchanged limit`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_MAX_ALARMS to "5"
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(true, client.setMaxAlarms(5))
+        assertEquals(0, store.intWriteCount)
+    }
+
+    @Test
     fun `setMaxAlarms clears malformed alarm json`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -539,6 +552,7 @@ class SettingsClientAlarmTest {
     ) : SettingsStore {
         private val values = initialValues
         var stringWriteCount: Int = 0
+        var intWriteCount: Int = 0
 
         override fun isAvailable(): Boolean = true
 
@@ -573,6 +587,7 @@ class SettingsClientAlarmTest {
 
         override fun setInt(key: String, value: Int): Boolean {
             values[key] = value.toString()
+            intWriteCount += 1
             return true
         }
     }

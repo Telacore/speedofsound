@@ -306,13 +306,19 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getInt(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS)
             .coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)
 
-    fun setMaxAlarms(value: Int): Boolean =
-        settingsStore.setInt(KEY_MAX_ALARMS, value.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)).also { success ->
-            if (!success) return@also
+    fun setMaxAlarms(value: Int): Boolean {
+        val normalized = value.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)
+        val current = settingsStore.getInt(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS)
+        if (current == normalized) {
+            return true
+        }
 
+        return settingsStore.setInt(KEY_MAX_ALARMS, normalized).also { success ->
+            if (!success) return@also
             _settingsChanged.tryEmit(KEY_MAX_ALARMS)
             normalizeStoredAlarmsToCurrentLimit()
         }
+    }
 
     private fun normalizeAlarms(value: List<AlarmSetting>): List<AlarmSetting> {
         val sortedUniqueAlarms = value.asSequence()
