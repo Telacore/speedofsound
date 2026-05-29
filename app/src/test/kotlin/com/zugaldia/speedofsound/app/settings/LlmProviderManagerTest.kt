@@ -163,6 +163,39 @@ class LlmProviderManagerTest {
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
     }
 
+    @Test
+    fun `refreshProviderConfiguration tolerates failing llm disable when text processing is disabled`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_TEXT_MODEL_PROVIDER_ID to "text-a",
+                KEY_TEXT_PROCESSING_ENABLED to "false",
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-a",
+                            name = "Alpha",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val activePlugin = ThrowingPlugin(id = "LLM_ACTIVE")
+
+        registry.register(AppPluginCategory.LLM, activePlugin)
+        registry.setActiveById(AppPluginCategory.LLM, activePlugin.id)
+
+        LlmProviderManager(registry, settingsClient).refreshProviderConfiguration()
+
+        assertEquals(false, settingsClient.loadTextProcessingEnabled())
+        assertEquals(activePlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(1, activePlugin.enableCount)
+        assertEquals(1, activePlugin.disableCount)
+    }
+
     private class RecordingPlugin(
         override val id: String,
     ) : AppPlugin<EmptyOptions>(EmptyOptions) {
@@ -177,6 +210,24 @@ class LlmProviderManagerTest {
 
         override fun disable() {
             disableCount += 1
+        }
+    }
+
+    private class ThrowingPlugin(
+        override val id: String,
+    ) : AppPlugin<EmptyOptions>(EmptyOptions) {
+        var enableCount: Int = 0
+            private set
+        var disableCount: Int = 0
+            private set
+
+        override fun enable() {
+            enableCount += 1
+        }
+
+        override fun disable() {
+            disableCount += 1
+            throw IllegalStateException("disable failed")
         }
     }
 

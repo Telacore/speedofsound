@@ -60,7 +60,15 @@ class LlmProviderManager(
             if (settingsClient.peekTextProcessingEnabled()) {
                 settingsClient.setTextProcessingEnabled(false)
             }
-            registry.clearActive(AppPluginCategory.LLM)
+            runCatching { registry.clearActive(AppPluginCategory.LLM) }
+                .onFailure { error ->
+                    logger.error(
+                        "Failed to clear active LLM while disabling missing provider {}: {}",
+                        selectedProviderId.ifBlank { "<empty>" },
+                        error.message,
+                        error,
+                    )
+                }
             if (selectedProviderId.isNotEmpty()) {
                 settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
             }
@@ -71,7 +79,14 @@ class LlmProviderManager(
         val textProcessingEnabled = settingsClient.peekTextProcessingEnabled()
         if (!textProcessingEnabled && !setActive) {
             if (currentActiveId != null) {
-                registry.clearActive(AppPluginCategory.LLM)
+                runCatching { registry.clearActive(AppPluginCategory.LLM) }
+                    .onFailure { error ->
+                        logger.error(
+                            "Failed to clear active LLM while disabling text processing: {}",
+                            error.message,
+                            error,
+                        )
+                    }
             }
             return
         }
