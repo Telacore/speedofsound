@@ -280,7 +280,9 @@ class AlarmSchedulerServiceTest {
 
         assertFalse(service.isSchedulerRunning())
         assertEquals(
-            AlarmSchedulerState(),
+            AlarmSchedulerState(
+                lastTriggeredDates = mapOf("alarm-1" to "2026-05-28"),
+            ),
             service.snapshotSchedulerState()
         )
 
@@ -300,7 +302,9 @@ class AlarmSchedulerServiceTest {
         service.onSettingsChanged(KEY_ALARMS)
         assertFalse(service.isSchedulerRunning())
         assertEquals(
-            AlarmSchedulerState(),
+            AlarmSchedulerState(
+                lastTriggeredDates = mapOf("alarm-1" to "2026-05-28"),
+            ),
             service.snapshotSchedulerState()
         )
 
