@@ -47,6 +47,7 @@ class PortalsClient(
     private fun portalUnavailableError(): IllegalStateException =
         IllegalStateException("Desktop portal is unavailable on this system")
 
+    @Synchronized
     private fun resolvePortal(): DesktopPortal? {
         if (isClosed) {
             return null
@@ -67,6 +68,7 @@ class PortalsClient(
             .getOrNull()
     }
 
+    @Synchronized
     override fun close() {
         if (isClosed) return
         isClosed = true
