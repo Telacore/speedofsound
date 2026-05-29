@@ -221,7 +221,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(
             KEY_DEFAULT_LANGUAGE,
             settingsStore.getString(KEY_DEFAULT_LANGUAGE, DEFAULT_LANGUAGE.iso2),
-            languageFromIso2(value.trim().lowercase())?.iso2 ?: DEFAULT_LANGUAGE.iso2,
+            normalizeLanguageIso2(value, DEFAULT_LANGUAGE.iso2),
             KEY_DEFAULT_LANGUAGE
         )
 
@@ -235,7 +235,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(
             KEY_SECONDARY_LANGUAGE,
             settingsStore.getString(KEY_SECONDARY_LANGUAGE, DEFAULT_SECONDARY_LANGUAGE.iso2),
-            languageFromIso2(value.trim().lowercase())?.iso2 ?: DEFAULT_SECONDARY_LANGUAGE.iso2,
+            normalizeLanguageIso2(value, DEFAULT_SECONDARY_LANGUAGE.iso2),
             KEY_SECONDARY_LANGUAGE
         )
 
@@ -303,23 +303,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
             key = KEY_TEXT_OUTPUT_METHOD,
             defaultValue = DEFAULT_TEXT_OUTPUT_METHOD,
             heal = false,
-            parse = { raw ->
-                val normalized = raw.trim().lowercase()
-                if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
-                    normalized
-                } else {
-                    null
-                }
-            },
+            parse = ::parseTextOutputMethod,
         )
 
     fun setTextOutputMethod(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_TEXT_OUTPUT_METHOD,
             settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD),
-            value.trim().lowercase().takeIf {
-                it == TEXT_OUTPUT_METHOD_PORTAL || it == TEXT_OUTPUT_METHOD_CLIPBOARD
-            } ?: DEFAULT_TEXT_OUTPUT_METHOD,
+            normalizeTextOutputMethod(value),
             KEY_TEXT_OUTPUT_METHOD
         )
 
@@ -1208,17 +1199,22 @@ class SettingsClient(val settingsStore: SettingsStore) {
             key = KEY_TEXT_OUTPUT_METHOD,
             defaultValue = DEFAULT_TEXT_OUTPUT_METHOD,
             heal = true,
-            parse = { raw ->
-                val normalized = raw.trim().lowercase()
-                if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
-                    normalized
-                } else {
-                    null
-                }
-            },
+            parse = ::parseTextOutputMethod,
             write = { value -> settingsStore.setString(KEY_TEXT_OUTPUT_METHOD, value) },
         )
     }
+
+    private fun parseTextOutputMethod(value: String): String? {
+        val normalized = value.trim().lowercase()
+        return if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+            normalized
+        } else {
+            null
+        }
+    }
+
+    private fun normalizeTextOutputMethod(value: String): String =
+        parseTextOutputMethod(value) ?: DEFAULT_TEXT_OUTPUT_METHOD
 
     private fun readPortalsRestoreToken(): String {
         return validatedSetting(
@@ -1443,7 +1439,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             key = key,
             defaultValue = defaultValue,
             heal = true,
-            parse = { raw -> languageFromIso2(raw.trim().lowercase())?.iso2 },
+            parse = ::parseLanguageIso2,
             write = { value -> settingsStore.setString(key, value) },
         )
     }
@@ -1453,9 +1449,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
             key = key,
             defaultValue = defaultValue,
             heal = false,
-            parse = { raw -> languageFromIso2(raw.trim().lowercase())?.iso2 },
+            parse = ::parseLanguageIso2,
         )
     }
+
+    private fun parseLanguageIso2(value: String): String? =
+        languageFromIso2(value.trim().lowercase())?.iso2
+
+    private fun normalizeLanguageIso2(value: String, defaultValue: String): String =
+        parseLanguageIso2(value) ?: defaultValue
 
     private fun readIntSetting(
         key: String,
