@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
  */
 class ActiveProviderComboRow<T>(
     private val getSelectedProviderId: () -> String,
-    private val setSelectedProviderId: (String) -> Unit,
+    private val setSelectedProviderId: (String) -> Boolean,
     private val rowSubtitle: String
 ) : ComboRow() where T : SelectableProviderSetting {
     private val logger = LoggerFactory.getLogger(ActiveProviderComboRow::class.java)
@@ -53,7 +53,9 @@ class ActiveProviderComboRow<T>(
                 selected = selectedIndex
             } else if (providers.isNotEmpty()) {
                 selected = 0 // Select the first provider
-                setSelectedProviderId(providers[0].id)
+                if (!setSelectedProviderId(providers[0].id)) {
+                    logger.warn("Failed to persist fallback provider selection to ${providers[0].id}")
+                }
             }
         } finally {
             isUpdating = false
@@ -70,7 +72,19 @@ class ActiveProviderComboRow<T>(
             if (selectedIndex in providers.indices) {
                 val selectedProvider = providers[selectedIndex]
                 logger.info("Selected model provider changed to ${selectedProvider.name}")
-                setSelectedProviderId(selectedProvider.id)
+                if (!setSelectedProviderId(selectedProvider.id)) {
+                    logger.warn("Failed to persist provider selection to ${selectedProvider.id}, restoring previous selection")
+                    val restoredProviderId = getSelectedProviderId()
+                    val restoredIndex = providers.indexOfFirst { it.id == restoredProviderId }
+                    isUpdating = true
+                    try {
+                        if (restoredIndex >= 0) {
+                            selected = restoredIndex
+                        }
+                    } finally {
+                        isUpdating = false
+                    }
+                }
             }
         }
     }
