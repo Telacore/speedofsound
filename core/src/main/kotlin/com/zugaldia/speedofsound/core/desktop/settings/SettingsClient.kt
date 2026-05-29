@@ -112,7 +112,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getBoolean(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN)
 
     fun setWelcomeScreenShown(value: Boolean): Boolean =
-        setBooleanSettingIfChanged(KEY_WELCOME_SCREEN_SHOWN, getWelcomeScreenShown(), value)
+        setBooleanSettingIfChanged(
+            KEY_WELCOME_SCREEN_SHOWN,
+            settingsStore.getString(KEY_WELCOME_SCREEN_SHOWN, DEFAULT_WELCOME_SCREEN_SHOWN.toString()),
+            value
+        )
 
     fun getPortalsRestoreToken(): String =
         settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN)
@@ -124,7 +128,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getBoolean(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED)
 
     fun setShortcutConfigured(value: Boolean): Boolean =
-        setBooleanSettingIfChanged(KEY_SHORTCUT_CONFIGURED, getShortcutConfigured(), value)
+        setBooleanSettingIfChanged(
+            KEY_SHORTCUT_CONFIGURED,
+            settingsStore.getString(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED.toString()),
+            value
+        )
 
     /*
      * General page
@@ -146,25 +154,45 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getBoolean(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING)
 
     fun setBackgroundRecording(value: Boolean): Boolean =
-        setBooleanSettingIfChanged(KEY_BACKGROUND_RECORDING, getBackgroundRecording(), value, KEY_BACKGROUND_RECORDING)
+        setBooleanSettingIfChanged(
+            KEY_BACKGROUND_RECORDING,
+            settingsStore.getString(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING.toString()),
+            value,
+            KEY_BACKGROUND_RECORDING
+        )
 
     fun getAppendSpace(): Boolean =
         settingsStore.getBoolean(KEY_APPEND_SPACE, DEFAULT_APPEND_SPACE)
 
     fun setAppendSpace(value: Boolean): Boolean =
-        setBooleanSettingIfChanged(KEY_APPEND_SPACE, getAppendSpace(), value, KEY_APPEND_SPACE)
+        setBooleanSettingIfChanged(
+            KEY_APPEND_SPACE,
+            settingsStore.getString(KEY_APPEND_SPACE, DEFAULT_APPEND_SPACE.toString()),
+            value,
+            KEY_APPEND_SPACE
+        )
 
     fun getHideInsteadOfMinimize(): Boolean =
         settingsStore.getBoolean(KEY_HIDE_INSTEAD_OF_MINIMIZE, DEFAULT_HIDE_INSTEAD_OF_MINIMIZE)
 
     fun setHideInsteadOfMinimize(value: Boolean): Boolean =
-        setBooleanSettingIfChanged(KEY_HIDE_INSTEAD_OF_MINIMIZE, getHideInsteadOfMinimize(), value, KEY_HIDE_INSTEAD_OF_MINIMIZE)
+        setBooleanSettingIfChanged(
+            KEY_HIDE_INSTEAD_OF_MINIMIZE,
+            settingsStore.getString(KEY_HIDE_INSTEAD_OF_MINIMIZE, DEFAULT_HIDE_INSTEAD_OF_MINIMIZE.toString()),
+            value,
+            KEY_HIDE_INSTEAD_OF_MINIMIZE
+        )
 
     fun getStayHiddenOnActivation(): Boolean =
         settingsStore.getBoolean(KEY_STAY_HIDDEN_ON_ACTIVATION, DEFAULT_STAY_HIDDEN_ON_ACTIVATION)
 
     fun setStayHiddenOnActivation(value: Boolean): Boolean =
-        setBooleanSettingIfChanged(KEY_STAY_HIDDEN_ON_ACTIVATION, getStayHiddenOnActivation(), value, KEY_STAY_HIDDEN_ON_ACTIVATION)
+        setBooleanSettingIfChanged(
+            KEY_STAY_HIDDEN_ON_ACTIVATION,
+            settingsStore.getString(KEY_STAY_HIDDEN_ON_ACTIVATION, DEFAULT_STAY_HIDDEN_ON_ACTIVATION.toString()),
+            value,
+            KEY_STAY_HIDDEN_ON_ACTIVATION
+        )
 
     fun getTextOutputMethod(): String =
         settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD)
@@ -308,8 +336,8 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     fun setMaxAlarms(value: Int): Boolean {
         val normalized = value.coerceIn(MIN_MAX_ALARMS, MAX_MAX_ALARMS)
-        val current = settingsStore.getInt(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS)
-        if (current == normalized) {
+        val currentRaw = settingsStore.getString(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS.toString())
+        if (currentRaw == normalized.toString()) {
             normalizeStoredAlarmsToCurrentLimit()
             return true
         }
@@ -570,7 +598,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getBoolean(KEY_TEXT_PROCESSING_ENABLED, DEFAULT_TEXT_PROCESSING_ENABLED)
 
     fun setTextProcessingEnabled(value: Boolean): Boolean =
-        setBooleanSettingIfChanged(KEY_TEXT_PROCESSING_ENABLED, getTextProcessingEnabled(), value, KEY_TEXT_PROCESSING_ENABLED)
+        setBooleanSettingIfChanged(
+            KEY_TEXT_PROCESSING_ENABLED,
+            settingsStore.getString(KEY_TEXT_PROCESSING_ENABLED, DEFAULT_TEXT_PROCESSING_ENABLED.toString()),
+            value,
+            KEY_TEXT_PROCESSING_ENABLED
+        )
 
     fun getTextModelProviders(): List<TextModelProviderSetting> {
         val json = settingsStore.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)
@@ -621,7 +654,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getStringArray(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY)
 
     fun setCustomVocabulary(value: List<String>): Boolean =
-        setStringArraySettingIfChanged(KEY_CUSTOM_VOCABULARY, getCustomVocabulary(), value, KEY_CUSTOM_VOCABULARY)
+        setStringArraySettingIfChanged(
+            KEY_CUSTOM_VOCABULARY,
+            settingsStore.getString(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY.joinToString("|||")),
+            value,
+            KEY_CUSTOM_VOCABULARY
+        )
 
     /*
      * Advanced page
@@ -631,19 +669,34 @@ class SettingsClient(val settingsStore: SettingsStore) {
         settingsStore.getBoolean(KEY_SANITIZE_SPECIAL_CHARS, DEFAULT_SANITIZE_SPECIAL_CHARS)
 
     fun setSanitizeSpecialChars(value: Boolean): Boolean =
-        setBooleanSettingIfChanged(KEY_SANITIZE_SPECIAL_CHARS, getSanitizeSpecialChars(), value, KEY_SANITIZE_SPECIAL_CHARS)
+        setBooleanSettingIfChanged(
+            KEY_SANITIZE_SPECIAL_CHARS,
+            settingsStore.getString(KEY_SANITIZE_SPECIAL_CHARS, DEFAULT_SANITIZE_SPECIAL_CHARS.toString()),
+            value,
+            KEY_SANITIZE_SPECIAL_CHARS
+        )
 
     fun getPostHideDelayMs(): Int =
         settingsStore.getInt(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS)
 
     fun setPostHideDelayMs(value: Int): Boolean =
-        setIntSettingIfChanged(KEY_POST_HIDE_DELAY_MS, getPostHideDelayMs(), value, KEY_POST_HIDE_DELAY_MS)
+        setIntSettingIfChanged(
+            KEY_POST_HIDE_DELAY_MS,
+            settingsStore.getString(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS.toString()),
+            value,
+            KEY_POST_HIDE_DELAY_MS
+        )
 
     fun getTypingDelayMs(): Int =
         settingsStore.getInt(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS)
 
     fun setTypingDelayMs(value: Int): Boolean =
-        setIntSettingIfChanged(KEY_TYPING_DELAY_MS, getTypingDelayMs(), value, KEY_TYPING_DELAY_MS)
+        setIntSettingIfChanged(
+            KEY_TYPING_DELAY_MS,
+            settingsStore.getString(KEY_TYPING_DELAY_MS, DEFAULT_TYPING_DELAY_MS.toString()),
+            value,
+            KEY_TYPING_DELAY_MS
+        )
 
     private fun setStringSettingIfChanged(
         key: String,
@@ -663,11 +716,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     private fun setBooleanSettingIfChanged(
         key: String,
-        currentValue: Boolean,
+        currentRawValue: String,
         value: Boolean,
         emitChangeKey: String? = null,
     ): Boolean {
-        if (currentValue == value) {
+        val nextRawValue = value.toString()
+        if (currentRawValue == nextRawValue) {
             return true
         }
         return settingsStore.setBoolean(key, value).also { success ->
@@ -679,11 +733,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     private fun setIntSettingIfChanged(
         key: String,
-        currentValue: Int,
+        currentRawValue: String,
         value: Int,
         emitChangeKey: String? = null,
     ): Boolean {
-        if (currentValue == value) {
+        val nextRawValue = value.toString()
+        if (currentRawValue == nextRawValue) {
             return true
         }
         return settingsStore.setInt(key, value).also { success ->
@@ -695,11 +750,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     private fun setStringArraySettingIfChanged(
         key: String,
-        currentValue: List<String>,
+        currentRawValue: String,
         value: List<String>,
         emitChangeKey: String? = null,
     ): Boolean {
-        if (currentValue == value) {
+        val nextRawValue = value.joinToString("|||")
+        if (currentRawValue == nextRawValue) {
             return true
         }
         return settingsStore.setStringArray(key, value).also { success ->

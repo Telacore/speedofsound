@@ -24,6 +24,24 @@ class SettingsClientWriteOptimizationTest {
         assertEquals(0, store.writeCount)
     }
 
+    @Test
+    fun `malformed boolean and int settings are healed when defaults match`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_BACKGROUND_RECORDING to "maybe",
+                KEY_POST_HIDE_DELAY_MS to "250ms",
+            )
+        )
+        val client = SettingsClient(store)
+
+        client.setBackgroundRecording(false)
+        client.setPostHideDelayMs(250)
+
+        assertEquals(2, store.writeCount)
+        assertEquals("false", store.getString(KEY_BACKGROUND_RECORDING, DEFAULT_BACKGROUND_RECORDING.toString()))
+        assertEquals("250", store.getString(KEY_POST_HIDE_DELAY_MS, DEFAULT_POST_HIDE_DELAY_MS.toString()))
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {

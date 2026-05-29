@@ -67,6 +67,23 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `setMaxAlarms heals malformed limit values when the limit is unchanged`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_MAX_ALARMS to "not-a-number",
+                KEY_ALARMS to "{not-json",
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(true, client.setMaxAlarms(5))
+        assertEquals(1, store.intWriteCount)
+        assertEquals(1, store.stringWriteCount)
+        assertEquals("5", store.getString(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS.toString()))
+        assertEquals(DEFAULT_ALARMS, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
+    }
+
+    @Test
     fun `setMaxAlarms clears malformed alarm json`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
