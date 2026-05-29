@@ -353,6 +353,10 @@ class MainViewModel(
     }
 
     private fun refreshTextOutputMethodSetting() {
+        if (registry.isShutdown()) {
+            logger.warn("Ignoring text output method change because the plugin registry has already been shut down")
+            return
+        }
         runCatching { activateSelectedTextOutput() }
             .onSuccess {
                 if (shouldForceClipboardFallback(settingsClient.getTextOutputMethod(), portalsClient.isPortalAvailable)) {

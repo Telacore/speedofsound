@@ -84,6 +84,9 @@ class AppPluginRegistry {
         return getPluginById(category, activeId)
     }
 
+    @Synchronized
+    fun isShutdown(): Boolean = isShutdown
+
     /**
      * Shuts down all registered plugins. Called when the application is shutting down.
      * Only disables plugins that are currently active.

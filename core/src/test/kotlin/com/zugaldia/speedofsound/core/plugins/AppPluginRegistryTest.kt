@@ -82,6 +82,7 @@ class AppPluginRegistryTest {
         assertEquals(0, healthy.disableCount)
         assertEquals(1, healthy.shutdownCount)
         assertNull(registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+        assertEquals(true, registry.isShutdown())
 
         registry.shutdownAll()
 
@@ -109,6 +110,7 @@ class AppPluginRegistryTest {
         assertEquals(1, sharedRecorder.shutdownCount)
         assertNull(registry.getActive(AppPluginCategory.TEXT_OUTPUT))
         assertNull(registry.getActive(AppPluginCategory.RECORDER))
+        assertEquals(true, registry.isShutdown())
     }
 
     @Test
