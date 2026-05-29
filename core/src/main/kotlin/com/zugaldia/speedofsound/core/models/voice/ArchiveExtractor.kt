@@ -63,6 +63,7 @@ class ArchiveExtractor {
     }
 
     private fun ensureDestinationDirectory(destinationDir: File) {
+        val existedBefore = destinationDir.exists()
         when {
             destinationDir.exists() && !destinationDir.isDirectory -> {
                 throw IllegalArgumentException("Destination path is not a directory: ${destinationDir.absolutePath}")
@@ -70,6 +71,14 @@ class ArchiveExtractor {
             !destinationDir.exists() && !destinationDir.mkdirs() -> {
                 throw IllegalStateException("Could not create destination directory: ${destinationDir.absolutePath}")
             }
+        }
+        try {
+            ensurePathDoesNotTraverseSymlinks(destinationDir)
+        } catch (e: Exception) {
+            if (!existedBefore) {
+                destinationDir.deleteRecursively()
+            }
+            throw e
         }
     }
 
@@ -82,5 +91,17 @@ class ArchiveExtractor {
             throw IllegalArgumentException("Archive entry escapes destination directory: $entryName")
         }
         return resolved
+    }
+
+    private fun ensurePathDoesNotTraverseSymlinks(path: File) {
+        val normalizedPath = path.toPath().toAbsolutePath().normalize()
+        val realPath = try {
+            path.toPath().toRealPath()
+        } catch (e: java.io.IOException) {
+            throw IllegalStateException("Could not resolve real path: ${path.absolutePath}", e)
+        }
+        if (realPath != normalizedPath) {
+            throw IllegalArgumentException("Destination path traverses a symbolic link: ${path.absolutePath}")
+        }
     }
 }

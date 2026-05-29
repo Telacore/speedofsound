@@ -12,6 +12,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.Files
 
 class ArchiveExtractorTest {
     @Test
@@ -124,6 +125,30 @@ class ArchiveExtractorTest {
             assertFailsWith<IllegalArgumentException> {
                 result.getOrThrow()
             }
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `extractTarBz2 rejects symlinked destination directories`() {
+        val tempDir = createTempDirectory("sos-archive-dest-symlink")
+        try {
+            val realDestinationDir = tempDir.resolve("real-dest").toFile()
+            realDestinationDir.mkdirs()
+            val destinationDir = tempDir.resolve("dest").toFile()
+            Files.createSymbolicLink(destinationDir.toPath(), realDestinationDir.toPath())
+            val archiveFile = tempDir.resolve("archive.tar.bz2").toFile()
+            createTarBz2Archive(
+                archiveFile,
+                mapOf("model/model.onnx" to byteArrayOf(1, 2, 3))
+            )
+
+            val extractor = ArchiveExtractor()
+            val result = extractor.extractTarBz2(archiveFile, destinationDir)
+
+            assertTrue(result.isFailure)
+            assertFalse(realDestinationDir.resolve("model/model.onnx").exists())
         } finally {
             tempDir.toFile().deleteRecursively()
         }
