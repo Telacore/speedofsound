@@ -437,32 +437,27 @@ class MainViewModel(
             logger.warn("Ignoring text output method change because the plugin registry has already been shut down")
             return
         }
-        runCatching { activateSelectedTextOutput() }
-            .onSuccess {
-                if (shouldForceClipboardFallback(settingsClient.peekTextOutputMethod(), portalsClient.isPortalAvailable)) {
-                    switchToClipboardFallback(
-                        reason = "Remote desktop portal is not supported on this system.",
-                        policy = ClipboardFallbackPolicy.PERSIST_PREFERENCE,
-                    )
-                    return@onSuccess
-                }
-                if (shouldAutoStartPortalSession(
-                        settingsClient.peekTextOutputMethod(),
-                        activeRemoteDesktopStatus,
-                        portalsClient.isPortalAvailable,
-                    )
-                ) {
-                    startPortalsSession(settingsClient.peekPortalsRestoreToken().ifBlank { null })
-                    return@onSuccess
-                }
-                updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
-            }
-            .onFailure { error ->
-                logger.error("Failed to switch text output method: {}", error.message)
-                portalsClient.showNotification(
-                    "Failed to switch text output method: ${error.message ?: "Unknown error"}"
-                )
-            }
+        if (!activateSelectedTextOutput()) {
+            updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
+            return
+        }
+        if (shouldForceClipboardFallback(settingsClient.peekTextOutputMethod(), portalsClient.isPortalAvailable)) {
+            switchToClipboardFallback(
+                reason = "Remote desktop portal is not supported on this system.",
+                policy = ClipboardFallbackPolicy.PERSIST_PREFERENCE,
+            )
+            return
+        }
+        if (shouldAutoStartPortalSession(
+                settingsClient.peekTextOutputMethod(),
+                activeRemoteDesktopStatus,
+                portalsClient.isPortalAvailable,
+            )
+        ) {
+            startPortalsSession(settingsClient.peekPortalsRestoreToken().ifBlank { null })
+            return
+        }
+        updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
     }
 
     private fun refreshLlmSetting(key: String) {

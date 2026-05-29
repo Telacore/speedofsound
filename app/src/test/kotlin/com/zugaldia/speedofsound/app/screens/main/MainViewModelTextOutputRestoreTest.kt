@@ -4,6 +4,7 @@ import com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput
 import com.zugaldia.speedofsound.app.plugins.textoutput.PortalTextOutput
 import com.zugaldia.speedofsound.core.desktop.portals.PortalsClient
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_OUTPUT_METHOD
+import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
 import com.zugaldia.speedofsound.core.plugins.AppPlugin
@@ -86,6 +87,32 @@ class MainViewModelTextOutputRestoreTest {
         assertSame(activeClipboard, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
     }
 
+    @Test
+    fun `refreshTextOutputMethodSetting keeps portal preference when activation fails`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_TEXT_OUTPUT_METHOD to TEXT_OUTPUT_METHOD_PORTAL,
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val portalsClient = PortalsClient(portalConnector = { Result.failure<DesktopPortal>(IllegalStateException("no portal")) })
+        val viewModel = MainViewModel(settingsClient, portalsClient)
+        viewModel.state.updateStage(AppStage.IDLE)
+
+        val registry = getPrivateField<AppPluginRegistry>(viewModel, "registry")
+        val activeClipboard = RecordingTextOutputPlugin(ClipboardTextOutput.ID)
+        val failingPortal = ThrowingEnableTextOutputPlugin(PortalTextOutput.ID)
+
+        registry.register(AppPluginCategory.TEXT_OUTPUT, activeClipboard)
+        registry.register(AppPluginCategory.TEXT_OUTPUT, failingPortal)
+        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, activeClipboard.id)
+
+        invokePrivateUnit(viewModel, "refreshTextOutputMethodSetting")
+
+        assertEquals(TEXT_OUTPUT_METHOD_PORTAL, settingsClient.loadTextOutputMethod())
+        assertSame(activeClipboard, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+    }
+
     private inline fun <reified T> getPrivateField(instance: Any, fieldName: String): T {
         val field = instance.javaClass.getDeclaredField(fieldName)
         field.isAccessible = true
@@ -104,6 +131,12 @@ class MainViewModelTextOutputRestoreTest {
         val method = instance.javaClass.getDeclaredMethod(fieldName)
         method.isAccessible = true
         return method.invoke(instance) as Boolean
+    }
+
+    private fun invokePrivateUnit(instance: Any, fieldName: String) {
+        val method = instance.javaClass.getDeclaredMethod(fieldName)
+        method.isAccessible = true
+        method.invoke(instance)
     }
 
     private class RecordingTextOutputPlugin(
@@ -140,6 +173,26 @@ class MainViewModelTextOutputRestoreTest {
         override fun disable() {
             disableCount += 1
             throw IllegalStateException("disable failed")
+        }
+
+        override suspend fun outputText(request: TextOutputRequest): Result<Unit> = Result.success(Unit)
+    }
+
+    private class ThrowingEnableTextOutputPlugin(
+        override val id: String,
+    ) : TextOutputPlugin<EmptyOptions>(EmptyOptions) {
+        var enableCount: Int = 0
+            private set
+        var disableCount: Int = 0
+            private set
+
+        override fun enable() {
+            enableCount += 1
+            throw IllegalStateException("enable failed")
+        }
+
+        override fun disable() {
+            disableCount += 1
         }
 
         override suspend fun outputText(request: TextOutputRequest): Result<Unit> = Result.success(Unit)
