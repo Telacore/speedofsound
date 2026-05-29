@@ -39,6 +39,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     private val providersListBox: ListBox
     private val addProviderButton: Button
     private var currentCredentials: List<CredentialSetting> = emptyList()
+    private var currentCredentialIds: Set<String> = emptySet()
     private var currentProviders: List<VoiceModelProviderSetting> = emptyList()
 
     init {
@@ -64,7 +65,13 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
 
         addProviderButton = Button.withLabel("Add Provider").apply {
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
-            onClicked { showAddProviderDialog() }
+            onClicked {
+                val dialog = AddVoiceModelProviderDialog(viewModel) { provider ->
+                    onProviderAdded(provider)
+                }
+
+                dialog.present(this@VoiceModelsPage)
+            }
         }
 
         providersListBox = ListBox().apply {
@@ -169,7 +176,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     private fun onProviderDeleted(providerId: String): Boolean {
         val updatedProviders = currentProviders.filter { it.id != providerId }
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds(), updatedProviders)) {
+        if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
             logger.warn("Failed to persist voice provider deletion '$providerId'")
             refreshProviders()
             return false
@@ -189,18 +196,10 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
      * Dialog logic
      */
 
-    private fun showAddProviderDialog() {
-        val dialog = AddVoiceModelProviderDialog(viewModel) { provider ->
-            onProviderAdded(provider)
-        }
-
-        dialog.present(this)
-    }
-
     private fun onProviderAdded(provider: VoiceModelProviderSetting): Boolean {
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds(), updatedProviders)) {
+        if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
             logger.warn("Failed to persist voice provider '${provider.name}'")
             refreshProviders()
             return false
@@ -211,8 +210,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
 
     private fun refreshSnapshots() {
         currentCredentials = viewModel.peekCredentials()
-        currentProviders = viewModel.peekVoiceModelProviders(currentCredentials.map { it.id }.toSet())
+        currentCredentialIds = currentCredentials.map { it.id }.toSet()
+        currentProviders = viewModel.peekVoiceModelProviders(currentCredentialIds)
     }
-
-    private fun currentCredentialIds(): Set<String> = currentCredentials.map { it.id }.toSet()
 }
