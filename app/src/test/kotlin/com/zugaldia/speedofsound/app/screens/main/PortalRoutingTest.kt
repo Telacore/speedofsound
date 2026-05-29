@@ -142,6 +142,7 @@ class PortalRoutingTest {
             com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.Ready,
             resolveRemoteDesktopUiStatus(
                 textOutputMethod = TEXT_OUTPUT_METHOD_CLIPBOARD,
+                activeTextOutputId = PortalTextOutput.ID,
                 remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NeedToken,
             )
         )
@@ -153,6 +154,19 @@ class PortalRoutingTest {
             com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NotSupported,
             resolveRemoteDesktopUiStatus(
                 textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                activeTextOutputId = PortalTextOutput.ID,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NotSupported,
+            )
+        )
+    }
+
+    @Test
+    fun `resolveRemoteDesktopUiStatus maps runtime clipboard fallback to ready`() {
+        assertEquals(
+            com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.Ready,
+            resolveRemoteDesktopUiStatus(
+                textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                activeTextOutputId = com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput.ID,
                 remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NotSupported,
             )
         )

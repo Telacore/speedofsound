@@ -24,8 +24,11 @@ internal fun shouldAutoStartPortalSession(
 
 internal fun resolveRemoteDesktopUiStatus(
     textOutputMethod: String,
+    activeTextOutputId: String?,
     remoteDesktopStatus: RemoteDesktopStatus,
 ): RemoteDesktopStatus = if (textOutputMethod == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+    RemoteDesktopStatus.Ready
+} else if (activeTextOutputId == ClipboardTextOutput.ID) {
     RemoteDesktopStatus.Ready
 } else {
     remoteDesktopStatus

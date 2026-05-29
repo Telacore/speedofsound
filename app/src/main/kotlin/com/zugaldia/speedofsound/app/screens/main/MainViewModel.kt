@@ -479,7 +479,11 @@ class MainViewModel(
     }
 
     private fun updateRemoteDesktopStatusUi(status: RemoteDesktopStatus) {
-        val uiStatus = resolveRemoteDesktopUiStatus(settingsClient.getTextOutputMethod(), status)
+        val uiStatus = resolveRemoteDesktopUiStatus(
+            settingsClient.getTextOutputMethod(),
+            (registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? TextOutputPlugin<*>)?.id,
+            status,
+        )
         state.updateRemoteDesktopStatus(uiStatus)
     }
 
