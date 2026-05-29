@@ -121,6 +121,9 @@ class LlmProviderManager(
         if (!settingsClient.setTextProcessingEnabled(false)) {
             logger.warn("Could not persist text processing disable after LLM activation left no active provider")
         }
+        if (selectedProviderId.isNotBlank()) {
+            settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
+        }
     }
 
     private fun applyLlmOptions(pluginId: String, options: LlmPluginOptions) {

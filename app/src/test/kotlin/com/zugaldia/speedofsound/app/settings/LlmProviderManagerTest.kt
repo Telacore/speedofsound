@@ -116,6 +116,7 @@ class LlmProviderManagerTest {
         LlmProviderManager(registry, settingsClient).activateSelectedProvider()
 
         assertEquals(false, settingsClient.loadTextProcessingEnabled())
+        assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.loadSelectedTextModelProviderId())
         assertEquals(null, registry.getActive(AppPluginCategory.LLM))
         assertEquals(1, failingPlugin.enableCount)
         assertEquals(1, failingPlugin.disableCount)
