@@ -448,9 +448,16 @@ class MainViewModel(
             return
         }
         if (!activateSelectedTextOutput()) {
+            val clipboardFallbackPolicy = if (
+                shouldForceClipboardFallback(settingsClient.peekTextOutputMethod(), portalsClient.isPortalAvailable)
+            ) {
+                ClipboardFallbackPolicy.PERSIST_PREFERENCE
+            } else {
+                ClipboardFallbackPolicy.RUNTIME_ONLY
+            }
             switchToClipboardFallback(
                 reason = "Failed to activate selected text output.",
-                policy = ClipboardFallbackPolicy.RUNTIME_ONLY,
+                policy = clipboardFallbackPolicy,
             )
             updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
             return
