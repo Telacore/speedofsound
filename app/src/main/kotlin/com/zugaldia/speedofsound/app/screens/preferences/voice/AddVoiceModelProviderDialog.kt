@@ -197,7 +197,13 @@ class AddVoiceModelProviderDialog(
 
         // Initialize state
         refreshSnapshots()
-        loadCredentialList()
+        run {
+            val options = mutableListOf("None")
+            options.addAll(currentCredentials.map { it.name })
+            credentialComboRow.model = StringList(options.toTypedArray())
+            credentialComboRow.selected = 0
+            selectedCredentialId = null
+        }
         baseUrlEntry.clear()
         messageLabel.label = ""
         messageLabel.removeCssClass(STYLE_CLASS_ACCENT)
@@ -228,27 +234,25 @@ class AddVoiceModelProviderDialog(
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                         refreshSnapshots()
-                        loadCredentialList(selectedCredentialId)
+                        run {
+                            val options = mutableListOf("None")
+                            options.addAll(currentCredentials.map { it.name })
+                            credentialComboRow.model = StringList(options.toTypedArray())
+                            credentialComboRow.selected = selectedCredentialId?.let { credentialId ->
+                                currentCredentials.indexOfFirst { it.id == credentialId }
+                                    .takeIf { it >= 0 }
+                                    ?.plus(1)
+                            } ?: 0
+                            selectedCredentialId = if (credentialComboRow.selected > 0 && credentialComboRow.selected <= currentCredentials.size) {
+                                currentCredentials[credentialComboRow.selected - 1].id
+                            } else {
+                                null
+                            }
+                        }
                         updateAddButtonState()
                         false
                     }
                 }
-        }
-    }
-
-    private fun loadCredentialList(preservedCredentialId: String? = null) {
-        val options = mutableListOf("None")
-        options.addAll(currentCredentials.map { it.name })
-        credentialComboRow.model = StringList(options.toTypedArray())
-        credentialComboRow.selected = preservedCredentialId?.let { credentialId ->
-            currentCredentials.indexOfFirst { it.id == credentialId }
-                .takeIf { it >= 0 }
-                ?.plus(1)
-        } ?: 0
-        selectedCredentialId = if (credentialComboRow.selected > 0 && credentialComboRow.selected <= currentCredentials.size) {
-            currentCredentials[credentialComboRow.selected - 1].id
-        } else {
-            null // Index 0 is "None"
         }
     }
 
