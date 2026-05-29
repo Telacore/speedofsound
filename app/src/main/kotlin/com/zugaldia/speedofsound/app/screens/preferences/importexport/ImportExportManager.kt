@@ -280,6 +280,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         )
 
     private fun restoreImportSnapshot(snapshot: ImportSnapshot) {
+        val credentialIds = snapshot.credentials.map { it.id }.toSet()
         restoreWrite("default language") { viewModel.setDefaultLanguage(snapshot.defaultLanguage) }
         restoreWrite("secondary language") { viewModel.setSecondaryLanguage(snapshot.secondaryLanguage) }
         restoreWrite("background recording") { viewModel.setBackgroundRecording(snapshot.backgroundRecording) }
@@ -297,7 +298,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         restoreWrite("voice model providers") {
             viewModel.setVoiceModelProviders(
                 snapshot.voiceProviders,
-                snapshot.credentials.map { it.id }.toSet(),
+                credentialIds,
                 snapshot.voiceProviders,
             )
         }
@@ -310,7 +311,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         restoreWrite("text model providers") {
             viewModel.setTextModelProviders(
                 snapshot.textProviders,
-                snapshot.credentials.map { it.id }.toSet(),
+                credentialIds,
                 snapshot.textProviders,
             )
         }

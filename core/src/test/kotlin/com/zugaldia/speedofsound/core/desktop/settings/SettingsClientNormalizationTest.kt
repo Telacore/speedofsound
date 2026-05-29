@@ -3,12 +3,6 @@ package com.zugaldia.speedofsound.core.desktop.settings
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
-import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID
-import com.zugaldia.speedofsound.core.desktop.settings.DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID
-import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
-import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
-import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
-import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
