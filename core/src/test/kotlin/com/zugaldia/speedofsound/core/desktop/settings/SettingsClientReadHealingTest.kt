@@ -92,6 +92,20 @@ class SettingsClientReadHealingTest {
     }
 
     @Test
+    fun `malformed portals restore token is healed on read`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_PORTALS_RESTORE_TOKEN to "  smoke-token  "
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals("smoke-token", client.getPortalsRestoreToken())
+        assertEquals("smoke-token", store.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN))
+        assertEquals(1, store.writeCount)
+    }
+
+    @Test
     fun `malformed custom vocabulary is healed on read`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(

@@ -119,10 +119,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getPortalsRestoreToken(): String =
-        settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN)
+        readPortalsRestoreToken()
 
     fun setPortalsRestoreToken(value: String): Boolean =
-        setStringSettingIfChanged(KEY_PORTALS_RESTORE_TOKEN, getPortalsRestoreToken(), value)
+        setStringSettingIfChanged(
+            KEY_PORTALS_RESTORE_TOKEN,
+            settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN),
+            normalizePortalsRestoreToken(value),
+            KEY_PORTALS_RESTORE_TOKEN
+        )
 
     fun getShortcutConfigured(): Boolean =
         readBooleanSetting(KEY_SHORTCUT_CONFIGURED, DEFAULT_SHORTCUT_CONFIGURED)
@@ -898,6 +903,19 @@ class SettingsClient(val settingsStore: SettingsStore) {
             DEFAULT_TEXT_OUTPUT_METHOD
         }
     }
+
+    private fun readPortalsRestoreToken(): String {
+        val raw = settingsStore.getString(KEY_PORTALS_RESTORE_TOKEN, DEFAULT_PORTALS_RESTORE_TOKEN)
+        val normalized = normalizePortalsRestoreToken(raw)
+        return if (raw != normalized) {
+            settingsStore.setString(KEY_PORTALS_RESTORE_TOKEN, normalized)
+            normalized
+        } else {
+            raw
+        }
+    }
+
+    private fun normalizePortalsRestoreToken(value: String): String = value.trim()
 
     private fun List<CredentialSetting>.normalizedCredentials(): List<CredentialSetting> =
         map { credential ->

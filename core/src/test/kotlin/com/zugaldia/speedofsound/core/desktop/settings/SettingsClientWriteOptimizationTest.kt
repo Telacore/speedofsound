@@ -11,6 +11,7 @@ class SettingsClientWriteOptimizationTest {
                 KEY_TEXT_OUTPUT_METHOD to TEXT_OUTPUT_METHOD_CLIPBOARD,
                 KEY_BACKGROUND_RECORDING to "true",
                 KEY_POST_HIDE_DELAY_MS to "250",
+                KEY_PORTALS_RESTORE_TOKEN to "smoke-token",
                 KEY_CUSTOM_VOCABULARY to "alpha|||beta",
             )
         )
@@ -19,6 +20,7 @@ class SettingsClientWriteOptimizationTest {
         client.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
         client.setBackgroundRecording(true)
         client.setPostHideDelayMs(250)
+        client.setPortalsRestoreToken("  smoke-token  ")
         client.setCustomVocabulary(listOf(" alpha ", "beta", "", "alpha"))
 
         assertEquals(0, store.writeCount)
