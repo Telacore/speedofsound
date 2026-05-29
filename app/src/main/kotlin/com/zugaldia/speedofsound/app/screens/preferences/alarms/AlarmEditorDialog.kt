@@ -65,8 +65,8 @@ class AlarmEditorDialog(
         val group = PreferencesGroup().apply {
             title = if (existingAlarm == null) "New Alarm" else "Alarm"
             description = "Alarms repeat every day at the chosen time. " +
-                "Silent, Attention, and Urgent only adjust desktop notification urgency; " +
-                "true hardware vibration is not guaranteed on desktop Linux."
+                "Silent skips the desktop notification entirely. Attention and Urgent " +
+                "increase notification urgency; true hardware vibration is not guaranteed on desktop Linux."
             add(hourRow)
             add(minuteRow)
             add(actionRow)

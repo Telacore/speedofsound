@@ -31,6 +31,9 @@ fun alarmNotificationPriority(action: AlarmAction): NotificationPriority = when 
     AlarmAction.URGENT -> NotificationPriority.URGENT
 }
 
+fun shouldNotifyAlarm(action: AlarmAction): Boolean =
+    action != AlarmAction.SILENT
+
 fun isAlarmDue(now: LocalDateTime, alarm: AlarmSetting): Boolean {
     val alarmStart = now.toLocalDate().atTime(alarm.hour, alarm.minute)
     val alarmEnd = alarmStart.plusMinutes(1)

@@ -31,6 +31,12 @@ class AlarmScheduleTest {
     }
 
     @Test
+    fun `silent alarms do not notify`() {
+        assertFalse(shouldNotifyAlarm(AlarmAction.SILENT))
+        assertTrue(shouldNotifyAlarm(AlarmAction.NORMAL))
+    }
+
+    @Test
     fun `alarm time formatting is zero padded`() {
         val alarm = AlarmSetting(id = "alarm-2", hour = 5, minute = 7)
         assertEquals("05:07", formatAlarmTime(alarm))

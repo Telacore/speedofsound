@@ -64,7 +64,8 @@ class AlarmsPage(private val viewModel: PreferencesViewModel) : PreferencesPage(
         val alarmsGroup = PreferencesGroup().apply {
             title = "Alarms"
             description = "Define repeating daily alarms. The action controls notification urgency; " +
-                "desktop vibration is not guaranteed, so the best-effort middle ground is attention-level notifications."
+                "Silent alarms do not show a desktop notification. Hardware vibration is not guaranteed, " +
+                "so attention-level notifications are the best desktop approximation."
             add(addButton)
             add(alarmsListBox)
             add(placeholderBox)
