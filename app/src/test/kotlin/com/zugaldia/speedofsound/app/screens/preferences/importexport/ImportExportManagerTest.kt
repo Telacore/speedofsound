@@ -226,6 +226,28 @@ class ImportExportManagerTest {
         }
     }
 
+    @Test
+    fun `import rejects malformed export json`() {
+        exportFile.writeText("{bad")
+
+        val settingsClient = SettingsClient(MapSettingsStore())
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        val result = manager.importSettings()
+
+        val exception = assertFailsWith<IllegalStateException> {
+            result.getOrThrow()
+        }
+
+        assertTrue(exception.message?.contains("Malformed export file") == true)
+    }
+
     private class MapSettingsStore(
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
