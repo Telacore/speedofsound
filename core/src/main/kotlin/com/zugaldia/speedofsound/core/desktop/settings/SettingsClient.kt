@@ -1103,6 +1103,35 @@ class SettingsClient(val settingsStore: SettingsStore) {
         defaultValue: String,
         label: String,
         normalize: (List<T>) -> List<T>,
+    ): List<T> =
+        normalizedJsonListSetting(
+            key = key,
+            defaultValue = defaultValue,
+            label = label,
+            normalize = normalize,
+            heal = true,
+        )
+
+    private inline fun <reified T> peekNormalizedJsonListSetting(
+        key: String,
+        defaultValue: String,
+        label: String,
+        normalize: (List<T>) -> List<T>,
+    ): List<T> =
+        normalizedJsonListSetting(
+            key = key,
+            defaultValue = defaultValue,
+            label = label,
+            normalize = normalize,
+            heal = false,
+        )
+
+    private inline fun <reified T> normalizedJsonListSetting(
+        key: String,
+        defaultValue: String,
+        label: String,
+        normalize: (List<T>) -> List<T>,
+        heal: Boolean,
     ): List<T> {
         val json = settingsStore.getString(key, defaultValue)
         if (json.isEmpty() || json == defaultValue) {
@@ -1113,34 +1142,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
             Json.decodeFromString<List<T>>(json)
         }.map { parsed ->
             val normalized = normalize(parsed)
-            if (parsed != normalized) {
+            if (heal && parsed != normalized) {
                 settingsStore.setString(key, Json.encodeToString(normalized))
             }
             normalized
         }.getOrElse { error ->
             logger.error("Failed to decode {} from JSON", label, error)
-            settingsStore.setString(key, Json.encodeToString(emptyList<T>()))
-            emptyList()
-        }
-    }
-
-    private inline fun <reified T> peekNormalizedJsonListSetting(
-        key: String,
-        defaultValue: String,
-        label: String,
-        normalize: (List<T>) -> List<T>,
-    ): List<T> {
-        val json = settingsStore.getString(key, defaultValue)
-        if (json.isEmpty() || json == defaultValue) {
-            return emptyList()
-        }
-
-        return runCatching {
-            Json.decodeFromString<List<T>>(json)
-        }.map { parsed ->
-            normalize(parsed)
-        }.getOrElse { error ->
-            logger.error("Failed to decode {} from JSON", label, error)
+            if (heal) {
+                settingsStore.setString(key, Json.encodeToString(emptyList<T>()))
+            }
             emptyList()
         }
     }
