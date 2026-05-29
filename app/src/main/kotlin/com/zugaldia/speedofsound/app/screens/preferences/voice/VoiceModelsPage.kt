@@ -123,7 +123,8 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         providersListBox.removeAll()
         providers.sortedBy { it.name.lowercase() }.forEach { provider -> addProviderToUI(provider) }
         activeProviderComboRow.updateProviders(providers)
-        updateAddProviderButtonState(providers)
+        val customProviderCount = providers.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+        addProviderButton.sensitive = customProviderCount < MAX_VOICE_MODEL_PROVIDERS
     }
 
     private fun addProviderToUI(providerSetting: VoiceModelProviderSetting) {
@@ -183,13 +184,6 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         }
         renderProviders(updatedProviders)
         return true
-    }
-
-    private fun updateAddProviderButtonState(providers: List<VoiceModelProviderSetting> = currentProviders) {
-        // Subtract 1 to account for the default provider when checking the limit
-        val customProviderCount = providers.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
-        val atLimit = customProviderCount >= MAX_VOICE_MODEL_PROVIDERS
-        addProviderButton.sensitive = !atLimit
     }
 
     /*
