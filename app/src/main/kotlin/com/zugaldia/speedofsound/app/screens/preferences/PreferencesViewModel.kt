@@ -96,9 +96,6 @@ class PreferencesViewModel(
     fun peekVoiceModelProviders(): List<VoiceModelProviderSetting> = settingsClient.peekVoiceModelProviders()
     fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean =
         settingsClient.setVoiceModelProviders(value)
-
-    fun peekSelectedVoiceModelProviderId(): String =
-        settingsClient.peekSelectedVoiceModelProviderId()
     fun peekSelectedVoiceModelProviderIdExact(): String =
         settingsClient.peekSelectedVoiceModelProviderIdExact()
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
