@@ -638,6 +638,26 @@ class ImportExportManagerTest {
     }
 
     @Test
+    fun `import reuses credential snapshot when capturing state`() {
+        val store = MapSettingsStore()
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(Json.encodeToString(SettingsExport(version = 6)))
+
+        val result = manager.importSettings().getOrThrow()
+
+        assertTrue(result.filePath.isNotBlank())
+        assertEquals(2, store.stringReadCount(com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS))
+    }
+
+    @Test
     fun `import heals malformed alarms during merge`() {
         val rawJson = "{not-json"
         val store = MapSettingsStore(

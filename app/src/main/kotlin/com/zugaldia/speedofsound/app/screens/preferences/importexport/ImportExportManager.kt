@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.app.screens.preferences.importexport
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.APPLICATION_SHORT
 import com.zugaldia.speedofsound.core.io.AtomicFileWriter
+import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
@@ -256,6 +257,12 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
     }
 
     private fun captureImportSnapshot(): ImportSnapshot =
+        captureImportSnapshot(viewModel.peekCredentials())
+
+    private fun captureImportSnapshot(credentials: List<CredentialSetting>): ImportSnapshot {
+        val credentialIds = credentials.map { it.id }.toSet()
+        val voiceProviders = viewModel.peekVoiceModelProviders(credentialIds)
+        val textProviders = viewModel.peekTextModelProviders(credentialIds)
         ImportSnapshot(
             defaultLanguage = viewModel.peekDefaultLanguage(),
             secondaryLanguage = viewModel.peekSecondaryLanguage(),
@@ -269,15 +276,16 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             postHideDelayMs = viewModel.peekPostHideDelayMs(),
             typingDelayMs = viewModel.peekTypingDelayMs(),
             customContext = viewModel.peekCustomContext(),
-            credentials = viewModel.peekCredentials(),
-            voiceProviders = viewModel.peekVoiceModelProviders(),
+            credentials = credentials,
+            voiceProviders = voiceProviders,
             selectedVoiceProviderIdExact = viewModel.peekSelectedVoiceModelProviderIdExact(),
-            textProviders = viewModel.peekTextModelProviders(),
+            textProviders = textProviders,
             selectedTextProviderId = viewModel.peekSelectedTextModelProviderId(),
             textProcessingEnabled = viewModel.peekTextProcessingEnabled(),
             customVocabulary = viewModel.peekCustomVocabulary(),
             alarmSchedulerState = viewModel.peekAlarmSchedulerState(),
         )
+    }
 
     private fun restoreImportSnapshot(snapshot: ImportSnapshot) {
         val credentialIds = snapshot.credentials.map { it.id }.toSet()
