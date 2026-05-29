@@ -40,6 +40,7 @@ import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.director.DefaultDirector
 import com.zugaldia.speedofsound.core.plugins.director.DirectorEvent
+import com.zugaldia.speedofsound.core.plugins.llm.pluginIdForProvider
 import com.zugaldia.speedofsound.core.plugins.recorder.RecorderOptions
 import com.zugaldia.speedofsound.core.plugins.director.PipelineStage
 import com.zugaldia.speedofsound.core.plugins.recorder.JvmRecorder
@@ -364,7 +365,7 @@ class MainViewModel(
             val activeProviderId = registry.getActive(AppPluginCategory.LLM)?.id
             val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
             val selectedProvider = settingsClient.peekTextModelProviders().find { it.id == selectedProviderId }
-            val selectedPluginId = selectedProvider?.let { com.zugaldia.speedofsound.core.plugins.llm.pluginIdForProvider(it.provider) }
+            val selectedPluginId = selectedProvider?.let { pluginIdForProvider(it.provider) }
             if (activeProviderId == null || activeProviderId != selectedPluginId) {
                 runCatching { llmProviderManager.activateSelectedProvider() }
                     .onFailure { error ->
@@ -452,6 +453,12 @@ class MainViewModel(
                 }
                 updateModelLabels()
             }
+    }
+
+    private fun selectedLlmPluginId(): String? {
+        val selectedProviderId = settingsClient.peekSelectedTextModelProviderId()
+        val selectedProvider = settingsClient.peekTextModelProviders().find { it.id == selectedProviderId }
+        return selectedProvider?.let { pluginIdForProvider(it.provider) }
     }
 
     private fun refreshTextOutputMethodSetting() {
