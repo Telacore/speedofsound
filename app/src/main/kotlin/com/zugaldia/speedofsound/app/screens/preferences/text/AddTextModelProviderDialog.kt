@@ -325,7 +325,9 @@ class AddTextModelProviderDialog(
     }
 
     private fun createTemporaryPlugin(): LlmPlugin<*> {
-        val apiKey = getSelectedCredentialApiKey(currentCredentials)
+        val apiKey = selectedCredentialId?.let { credId ->
+            currentCredentials.find { it.id == credId }?.value
+        }
         val baseUrl = baseUrlEntry.getBaseUrl()
         val modelId = selectedModelId
         val disableThinking = disableThinkingRow.active
@@ -337,10 +339,6 @@ class AddTextModelProviderDialog(
             LlmProvider.OPENAI -> OpenAiLlm(OpenAiLlmOptions(
                 apiKey = apiKey, baseUrl = baseUrl, modelId = modelId, disableThinking = disableThinking))
         }
-    }
-
-    private fun getSelectedCredentialApiKey(credentials: List<CredentialSetting>): String? = selectedCredentialId?.let { credId ->
-        credentials.find { it.id == credId }?.value
     }
 
     private fun onModelsFetched(models: List<TextModel>) {
