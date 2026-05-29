@@ -20,6 +20,15 @@ internal fun shouldAutoStartPortalSession(
     isPortalAvailable &&
     remoteDesktopStatus != RemoteDesktopStatus.Ready
 
+internal fun resolveRemoteDesktopUiStatus(
+    textOutputMethod: String,
+    remoteDesktopStatus: RemoteDesktopStatus,
+): RemoteDesktopStatus = if (textOutputMethod == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+    RemoteDesktopStatus.Ready
+} else {
+    remoteDesktopStatus
+}
+
 internal enum class ClipboardFallbackPolicy {
     PERSIST_PREFERENCE,
     RUNTIME_ONLY,

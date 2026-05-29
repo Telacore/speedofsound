@@ -5,6 +5,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 class PortalRoutingTest {
 
@@ -85,5 +86,27 @@ class PortalRoutingTest {
     @Test
     fun `shouldPersistClipboardFallback returns false for runtime fallback`() {
         assertFalse(shouldPersistClipboardFallback(ClipboardFallbackPolicy.RUNTIME_ONLY))
+    }
+
+    @Test
+    fun `resolveRemoteDesktopUiStatus maps clipboard mode to ready`() {
+        assertEquals(
+            com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.Ready,
+            resolveRemoteDesktopUiStatus(
+                textOutputMethod = TEXT_OUTPUT_METHOD_CLIPBOARD,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NeedToken,
+            )
+        )
+    }
+
+    @Test
+    fun `resolveRemoteDesktopUiStatus preserves portal status in portal mode`() {
+        assertEquals(
+            com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NotSupported,
+            resolveRemoteDesktopUiStatus(
+                textOutputMethod = TEXT_OUTPUT_METHOD_PORTAL,
+                remoteDesktopStatus = com.zugaldia.speedofsound.app.portals.RemoteDesktopStatus.NotSupported,
+            )
+        )
     }
 }

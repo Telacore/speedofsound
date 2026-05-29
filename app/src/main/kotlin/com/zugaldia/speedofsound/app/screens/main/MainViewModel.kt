@@ -138,6 +138,7 @@ class MainViewModel(
                 asrProviderManager.activateSelectedProvider()
                 llmProviderManager.activateSelectedProvider()
                 activateSelectedTextOutput()
+                updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
                 registry.setActiveById(AppPluginCategory.DIRECTOR, DefaultDirector.ID)
                 if (shouldForceClipboardFallback(settingsClient.getTextOutputMethod(), portalsClient.isPortalAvailable)) {
                     switchToClipboardFallback(
@@ -463,11 +464,7 @@ class MainViewModel(
     }
 
     private fun updateRemoteDesktopStatusUi(status: RemoteDesktopStatus) {
-        val uiStatus = if (settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_CLIPBOARD) {
-            RemoteDesktopStatus.Ready
-        } else {
-            status
-        }
+        val uiStatus = resolveRemoteDesktopUiStatus(settingsClient.getTextOutputMethod(), status)
         state.updateRemoteDesktopStatus(uiStatus)
     }
 
