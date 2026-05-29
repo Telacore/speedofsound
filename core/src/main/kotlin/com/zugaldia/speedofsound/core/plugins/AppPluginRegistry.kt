@@ -38,42 +38,73 @@ class AppPluginRegistry {
         val plugin = getPluginById(category, pluginId)
             ?: error("Plugin with ID $pluginId not found in category $category")
         val previousActiveId = activePlugins[category]
-
-        // Enable the new plugin
-        log.info("Setting plugin ${plugin.id} as active for category $category")
-        plugin.enable()
-
-        previousActiveId
+        val previousActive = previousActiveId
             ?.takeIf { it != plugin.id }
-            ?.let { currentActiveId ->
-                val currentActive = getPluginById(category, currentActiveId)
-                if (currentActive != null) {
-                    runCatching {
-                        log.info("Disabling currently active plugin ${currentActive.id}")
-                        currentActive.disable()
-                    }.onFailure { disableError ->
-                        log.error(
-                            "Failed to disable currently active plugin ${currentActive.id}: {}",
-                            disableError.message,
-                            disableError,
-                        )
-                        runCatching {
-                            plugin.disable()
-                        }.onFailure { rollbackError ->
-                            log.error(
-                                "Failed to roll back newly enabled plugin ${plugin.id}: {}",
-                                rollbackError.message,
-                                rollbackError,
-                            )
-                        }
-                        throw IllegalStateException(
-                            "Failed to disable currently active plugin ${currentActive.id} " +
-                                "while switching to ${plugin.id}",
-                            disableError,
-                        )
-                    }
-                }
+            ?.let { currentActiveId -> getPluginById(category, currentActiveId) }
+
+        if (previousActive != null) {
+            runCatching {
+                log.info("Disabling currently active plugin ${previousActive.id}")
+                previousActive.disable()
+            }.onFailure { disableError ->
+                log.error(
+                    "Failed to disable currently active plugin ${previousActive.id}: {}",
+                    disableError.message,
+                    disableError,
+                )
+                throw IllegalStateException(
+                    "Failed to disable currently active plugin ${previousActive.id} " +
+                        "while switching to ${plugin.id}",
+                    disableError,
+                )
             }
+        }
+
+        log.info("Setting plugin ${plugin.id} as active for category $category")
+        try {
+            plugin.enable()
+        } catch (enableError: Throwable) {
+            log.error(
+                "Failed to enable plugin ${plugin.id} for category $category: {}",
+                enableError.message,
+                enableError,
+            )
+            runCatching {
+                plugin.disable()
+            }.onFailure { rollbackError ->
+                log.error(
+                    "Failed to roll back newly enabled plugin ${plugin.id}: {}",
+                    rollbackError.message,
+                    rollbackError,
+                )
+            }
+
+            if (previousActive != null) {
+                runCatching {
+                    log.info("Restoring previously active plugin ${previousActive.id}")
+                    previousActive.enable()
+                }.onFailure { rollbackError ->
+                    log.error(
+                        "Failed to restore previously active plugin ${previousActive.id}: {}",
+                        rollbackError.message,
+                        rollbackError,
+                    )
+                    activePlugins.remove(category)
+                    throw IllegalStateException(
+                        "Failed to enable plugin ${plugin.id} and restore previously active plugin ${previousActive.id}",
+                        enableError,
+                    )
+                }
+                activePlugins[category] = previousActive.id
+            } else {
+                activePlugins.remove(category)
+            }
+
+            throw IllegalStateException(
+                "Failed to enable plugin ${plugin.id} for category $category",
+                enableError,
+            )
+        }
         activePlugins[category] = plugin.id
     }
 

@@ -23,10 +23,10 @@ class AppPluginRegistryTest {
         }
 
         assertSame(first, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
-        assertEquals(1, first.enableCount)
-        assertEquals(0, first.disableCount)
+        assertEquals(2, first.enableCount)
+        assertEquals(1, first.disableCount)
         assertEquals(1, second.enableCount)
-        assertEquals(0, second.disableCount)
+        assertEquals(1, second.disableCount)
     }
 
     @Test
@@ -79,8 +79,8 @@ class AppPluginRegistryTest {
         assertSame(first, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
         assertEquals(1, first.enableCount)
         assertEquals(1, first.disableCount)
-        assertEquals(1, second.enableCount)
-        assertEquals(1, second.disableCount)
+        assertEquals(0, second.enableCount)
+        assertEquals(0, second.disableCount)
     }
 
     @Test
