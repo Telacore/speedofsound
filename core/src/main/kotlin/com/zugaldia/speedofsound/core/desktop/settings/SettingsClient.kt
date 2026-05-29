@@ -310,7 +310,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
         setStringSettingIfChanged(
             KEY_TEXT_OUTPUT_METHOD,
             settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD),
-            normalizeTextOutputMethod(value),
+            parseTextOutputMethod(value) ?: DEFAULT_TEXT_OUTPUT_METHOD,
             KEY_TEXT_OUTPUT_METHOD
         )
 
@@ -1212,9 +1212,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
             null
         }
     }
-
-    private fun normalizeTextOutputMethod(value: String): String =
-        parseTextOutputMethod(value) ?: DEFAULT_TEXT_OUTPUT_METHOD
 
     private fun readPortalsRestoreToken(): String {
         return validatedSetting(
