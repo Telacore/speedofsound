@@ -79,7 +79,17 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         check(inputFile.exists()) { "Export file not found: ${inputFile.absolutePath}" }
         check(inputFile.isFile) { "Export file is not a regular file: ${inputFile.absolutePath}" }
 
-        val exportData = decodeExportData(inputFile)
+        val rawJson = try {
+            inputFile.readText()
+        } catch (e: Exception) {
+            throw IllegalStateException("Could not read export file: ${inputFile.absolutePath}", e)
+        }
+
+        val exportData = try {
+            prettyJson.decodeFromString<SettingsExport>(rawJson)
+        } catch (e: Exception) {
+            throw IllegalStateException("Malformed export file: ${inputFile.absolutePath}", e)
+        }
         if (exportData.version !in 1..6) {
             throw IllegalStateException("Unsupported export version: ${exportData.version}")
         }
@@ -209,20 +219,6 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             logger.warn("Import failed, restoring previous settings snapshot", error)
             restoreImportSnapshot(snapshot)
             throw error
-        }
-    }
-
-    private fun decodeExportData(inputFile: java.io.File): SettingsExport {
-        val rawJson = try {
-            inputFile.readText()
-        } catch (e: Exception) {
-            throw IllegalStateException("Could not read export file: ${inputFile.absolutePath}", e)
-        }
-
-        return try {
-            prettyJson.decodeFromString<SettingsExport>(rawJson)
-        } catch (e: Exception) {
-            throw IllegalStateException("Malformed export file: ${inputFile.absolutePath}", e)
         }
     }
 
