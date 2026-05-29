@@ -81,7 +81,27 @@ class AddCredentialDialog(
             onClicked {
                 val name = nameEntry.text.trim()
                 val apiKey = apiKeyEntry.text.trim()
-                if (validateInput(name, apiKey, currentCredentials)) {
+                val valid = when {
+                    name.isEmpty() || apiKey.isEmpty() -> false
+                    name.length > MAX_CREDENTIAL_NAME_LENGTH -> {
+                        logger.warn("Credential name too long: ${name.length} > $MAX_CREDENTIAL_NAME_LENGTH")
+                        false
+                    }
+                    apiKey.length > MAX_CREDENTIAL_VALUE_LENGTH -> {
+                        logger.warn("Credential value too long: ${apiKey.length} > $MAX_CREDENTIAL_VALUE_LENGTH")
+                        false
+                    }
+                    currentCredentials.size >= MAX_CREDENTIALS -> {
+                        logger.warn("Credential limit reached: $MAX_CREDENTIALS")
+                        false
+                    }
+                    currentCredentials.any { it.name == name } -> {
+                        logger.warn("Credential name already exists: $name")
+                        false
+                    }
+                    else -> true
+                }
+                if (valid) {
                     val credential = CredentialSetting(
                         id = generateUniqueId(),
                         type = CredentialType.API_KEY,
@@ -116,12 +136,50 @@ class AddCredentialDialog(
         nameEntry.onNotify("text") {
             val name = nameEntry.text.trim()
             val apiKey = apiKeyEntry.text.trim()
-            addButton.sensitive = validateInput(name, apiKey, currentCredentials)
+            addButton.sensitive = when {
+                name.isEmpty() || apiKey.isEmpty() -> false
+                name.length > MAX_CREDENTIAL_NAME_LENGTH -> {
+                    logger.warn("Credential name too long: ${name.length} > $MAX_CREDENTIAL_NAME_LENGTH")
+                    false
+                }
+                apiKey.length > MAX_CREDENTIAL_VALUE_LENGTH -> {
+                    logger.warn("Credential value too long: ${apiKey.length} > $MAX_CREDENTIAL_VALUE_LENGTH")
+                    false
+                }
+                currentCredentials.size >= MAX_CREDENTIALS -> {
+                    logger.warn("Credential limit reached: $MAX_CREDENTIALS")
+                    false
+                }
+                currentCredentials.any { it.name == name } -> {
+                    logger.warn("Credential name already exists: $name")
+                    false
+                }
+                else -> true
+            }
         }
         apiKeyEntry.onNotify("text") {
             val name = nameEntry.text.trim()
             val apiKey = apiKeyEntry.text.trim()
-            addButton.sensitive = validateInput(name, apiKey, currentCredentials)
+            addButton.sensitive = when {
+                name.isEmpty() || apiKey.isEmpty() -> false
+                name.length > MAX_CREDENTIAL_NAME_LENGTH -> {
+                    logger.warn("Credential name too long: ${name.length} > $MAX_CREDENTIAL_NAME_LENGTH")
+                    false
+                }
+                apiKey.length > MAX_CREDENTIAL_VALUE_LENGTH -> {
+                    logger.warn("Credential value too long: ${apiKey.length} > $MAX_CREDENTIAL_VALUE_LENGTH")
+                    false
+                }
+                currentCredentials.size >= MAX_CREDENTIALS -> {
+                    logger.warn("Credential limit reached: $MAX_CREDENTIALS")
+                    false
+                }
+                currentCredentials.any { it.name == name } -> {
+                    logger.warn("Credential name already exists: $name")
+                    false
+                }
+                else -> true
+            }
         }
         currentCredentials = viewModel.peekCredentials()
         dialogScope.launch {
@@ -132,37 +190,31 @@ class AddCredentialDialog(
                         currentCredentials = viewModel.peekCredentials()
                         val name = nameEntry.text.trim()
                         val apiKey = apiKeyEntry.text.trim()
-                        addButton.sensitive = validateInput(name, apiKey, currentCredentials)
+                        addButton.sensitive = when {
+                            name.isEmpty() || apiKey.isEmpty() -> false
+                            name.length > MAX_CREDENTIAL_NAME_LENGTH -> {
+                                logger.warn("Credential name too long: ${name.length} > $MAX_CREDENTIAL_NAME_LENGTH")
+                                false
+                            }
+                            apiKey.length > MAX_CREDENTIAL_VALUE_LENGTH -> {
+                                logger.warn("Credential value too long: ${apiKey.length} > $MAX_CREDENTIAL_VALUE_LENGTH")
+                                false
+                            }
+                            currentCredentials.size >= MAX_CREDENTIALS -> {
+                                logger.warn("Credential limit reached: $MAX_CREDENTIALS")
+                                false
+                            }
+                            currentCredentials.any { it.name == name } -> {
+                                logger.warn("Credential name already exists: $name")
+                                false
+                            }
+                            else -> true
+                        }
                         false
                     }
                 }
         }
         onClosed { dialogScope.cancel() }
-    }
-
-    @Suppress("ReturnCount")
-    private fun validateInput(name: String, apiKey: String, credentials: List<CredentialSetting>): Boolean {
-        if (name.isEmpty() || apiKey.isEmpty()) {
-            return false
-        }
-        if (name.length > MAX_CREDENTIAL_NAME_LENGTH) {
-            logger.warn("Credential name too long: ${name.length} > $MAX_CREDENTIAL_NAME_LENGTH")
-            return false
-        }
-        if (apiKey.length > MAX_CREDENTIAL_VALUE_LENGTH) {
-            logger.warn("Credential value too long: ${apiKey.length} > $MAX_CREDENTIAL_VALUE_LENGTH")
-            return false
-        }
-        if (credentials.size >= MAX_CREDENTIALS) {
-            logger.warn("Credential limit reached: $MAX_CREDENTIALS")
-            return false
-        }
-        if (credentials.any { it.name == name }) {
-            logger.warn("Credential name already exists: $name")
-            return false
-        }
-
-        return true
     }
 
 }
