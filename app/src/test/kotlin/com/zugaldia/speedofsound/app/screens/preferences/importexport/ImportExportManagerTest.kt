@@ -180,7 +180,34 @@ class ImportExportManagerTest {
         assertEquals(rawJson, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
     }
 
+    @Test
+    fun `import does not heal existing alarms before merging`() {
+        val rawJson = "{not-json"
+        val store = MapSettingsStore(
+            intWriteSuccess = false,
+            initialValues = mutableMapOf(
+                KEY_ALARMS to rawJson,
+            )
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(Json.encodeToString(SettingsExport(version = 6)))
+
+        val result = manager.importSettings().getOrThrow()
+
+        assertTrue(result.filePath.isNotBlank())
+        assertEquals(rawJson, store.getString(KEY_ALARMS, DEFAULT_ALARMS))
+    }
+
     private class MapSettingsStore(
+        private val intWriteSuccess: Boolean = true,
         initialValues: MutableMap<String, String> = mutableMapOf(),
     ) : SettingsStore {
         private val values = initialValues
@@ -217,7 +244,7 @@ class ImportExportManagerTest {
 
         override fun setInt(key: String, value: Int): Boolean {
             values[key] = value.toString()
-            return true
+            return intWriteSuccess
         }
     }
 }

@@ -86,7 +86,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             )
         }
 
-        val existingAlarms = viewModel.getAlarms()
+        val existingAlarms = viewModel.peekAlarms()
         val existingAlarmIds = existingAlarms.map { it.id }.toSet()
         val newAlarms = exportData.alarms.filter { it.id !in existingAlarmIds }
         if (newAlarms.isNotEmpty()) {
