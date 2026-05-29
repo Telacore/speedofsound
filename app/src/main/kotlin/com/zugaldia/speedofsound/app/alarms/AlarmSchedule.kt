@@ -112,6 +112,36 @@ fun isAlarmDue(now: LocalDateTime, alarm: AlarmSetting): Boolean {
     return !now.isBefore(alarmStart) && !now.isAfter(alarmEnd)
 }
 
+fun findMostRecentDueOccurrenceSince(
+    start: LocalDateTime,
+    end: LocalDateTime,
+    alarm: AlarmSetting,
+): LocalDateTime? {
+    val normalizedStart = start.withSecond(0).withNano(0)
+    val normalizedEnd = end.withSecond(0).withNano(0)
+    if (normalizedEnd.isBefore(normalizedStart)) {
+        return null
+    }
+
+    var best: LocalDateTime? = null
+    var date = normalizedStart.toLocalDate().minusDays(1)
+    val lastDate = normalizedEnd.toLocalDate()
+    while (!date.isAfter(lastDate)) {
+        if (alarm.isScheduledOn(date)) {
+            val candidate = date.atTime(alarm.hour, alarm.minute)
+            val windowEnd = candidate.plusMinutes(ALARM_TRIGGER_GRACE_MINUTES)
+            if (!candidate.isAfter(normalizedEnd) && !windowEnd.isBefore(normalizedStart)) {
+                if (best == null || candidate.isAfter(best)) {
+                    best = candidate
+                }
+            }
+        }
+        date = date.plusDays(1)
+    }
+
+    return best
+}
+
 private fun nextAlarmOccurrenceForAlarm(
     reference: LocalDateTime,
     now: LocalDateTime,

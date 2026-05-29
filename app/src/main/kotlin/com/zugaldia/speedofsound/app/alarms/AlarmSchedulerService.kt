@@ -33,6 +33,8 @@ class AlarmSchedulerService(
     private var schedulerJob: Job? = null
     private var activeAlarms: List<AlarmSetting> = emptyList()
     private val lastTriggeredDates = mutableMapOf<String, LocalDate>()
+    private var lastCheckAt: LocalDateTime? = null
+    private var triggerHistoryLoaded = false
 
     fun connect() {
         if (schedulerJob != null) {
@@ -40,6 +42,10 @@ class AlarmSchedulerService(
         }
 
         reloadAlarms()
+        reloadTriggerHistory()
+        triggerHistoryLoaded = true
+        val now = LocalDateTime.now(clock)
+        lastCheckAt = settingsClient.getAlarmLastCheckAt()?.takeIf { !it.isAfter(now) }
         settingsJob = scope.launch {
             settingsClient.settingsChanged.collect { key ->
                 if (key == KEY_ALARMS) {
@@ -62,29 +68,64 @@ class AlarmSchedulerService(
                 .thenBy { it.action.ordinal }
                 .thenBy { it.id }
         )
+        val activeIds = alarms.map { it.id }.toSet()
         synchronized(stateLock) {
             activeAlarms = alarms
-            lastTriggeredDates.keys.retainAll(alarms.map { it.id }.toSet())
+            lastTriggeredDates.keys.retainAll(activeIds)
+        }
+        if (triggerHistoryLoaded && !settingsClient.setAlarmLastTriggeredDates(lastTriggeredDates.toMap())) {
+            logger.warn("Failed to persist trimmed alarm trigger history.")
         }
         logger.info("Loaded {} alarm(s).", alarms.size)
     }
 
+    private fun reloadTriggerHistory() {
+        synchronized(stateLock) {
+            lastTriggeredDates.clear()
+            lastTriggeredDates.putAll(settingsClient.getAlarmLastTriggeredDates())
+            lastTriggeredDates.keys.retainAll(activeAlarms.map { it.id }.toSet())
+        }
+        if (!settingsClient.setAlarmLastTriggeredDates(lastTriggeredDates.toMap())) {
+            logger.warn("Failed to persist loaded alarm trigger history.")
+        }
+    }
+
     private fun checkAlarms() {
         val now = LocalDateTime.now(clock)
-        val today = now.toLocalDate()
-        val dueAlarms = synchronized(stateLock) {
-            activeAlarms.filter { alarm ->
-                alarm.enabled &&
-                    lastTriggeredDates[alarm.id] != today &&
-                    isAlarmDue(now, alarm)
-            }.also { alarms ->
-                alarms.forEach { alarm ->
-                    lastTriggeredDates[alarm.id] = today
+        val previousCheck = synchronized(stateLock) {
+            lastCheckAt ?: now.minusSeconds(checkIntervalSeconds)
+        }
+        val dueAlarmEvents = synchronized(stateLock) {
+            activeAlarms.mapNotNull { alarm ->
+                if (!alarm.enabled) {
+                    return@mapNotNull null
                 }
+
+                val dueOccurrence = findMostRecentDueOccurrenceSince(previousCheck, now, alarm)
+                    ?: return@mapNotNull null
+                val dueDate = dueOccurrence.toLocalDate()
+                if (lastTriggeredDates[alarm.id] == dueDate) {
+                    return@mapNotNull null
+                }
+
+                lastTriggeredDates[alarm.id] = dueDate
+                alarm to dueOccurrence
             }
         }
 
-        dueAlarms.forEach { fireAlarm(it) }
+        dueAlarmEvents.forEach { (alarm, dueOccurrence) ->
+            if (!settingsClient.setAlarmLastTriggeredDate(alarm.id, dueOccurrence.toLocalDate())) {
+                logger.warn("Failed to persist last-triggered date for alarm {}", alarm.id)
+            }
+            fireAlarm(alarm)
+        }
+
+        synchronized(stateLock) {
+            lastCheckAt = now
+        }
+        if (!settingsClient.setAlarmLastCheckAt(now)) {
+            logger.warn("Failed to persist last-check timestamp for alarm scheduler.")
+        }
     }
 
     private fun fireAlarm(alarm: AlarmSetting) {

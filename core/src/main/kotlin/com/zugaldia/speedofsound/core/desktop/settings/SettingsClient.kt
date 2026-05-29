@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Suppress("TooManyFunctions")
 class SettingsClient(val settingsStore: SettingsStore) {
@@ -219,6 +221,54 @@ class SettingsClient(val settingsStore: SettingsStore) {
             if (success) _settingsChanged.tryEmit(KEY_ALARMS)
         }
     }
+
+    fun getAlarmLastTriggeredDates(): Map<String, LocalDate> {
+        val json = settingsStore.getString(KEY_ALARM_LAST_TRIGGERED_DATES, DEFAULT_ALARM_LAST_TRIGGERED_DATES)
+        return if (json.isBlank() || json == DEFAULT_ALARM_LAST_TRIGGERED_DATES) {
+            emptyMap()
+        } else {
+            runCatching {
+                Json.decodeFromString<Map<String, String>>(json).mapNotNull { (alarmId, dateValue) ->
+                    runCatching { LocalDate.parse(dateValue) }
+                        .getOrNull()
+                        ?.let { parsedDate -> alarmId to parsedDate }
+                }.toMap()
+            }.getOrElse { error ->
+                logger.error("Failed to decode alarm trigger dates from JSON", error)
+                emptyMap()
+            }
+        }
+    }
+
+    fun setAlarmLastTriggeredDates(value: Map<String, LocalDate>): Boolean {
+        val json = Json.encodeToString(
+            value.mapValues { (_, date) -> date.toString() }
+        )
+        return settingsStore.setString(KEY_ALARM_LAST_TRIGGERED_DATES, json)
+    }
+
+    fun setAlarmLastTriggeredDate(alarmId: String, date: LocalDate): Boolean {
+        val updated = getAlarmLastTriggeredDates().toMutableMap().apply {
+            this[alarmId] = date
+        }
+        return setAlarmLastTriggeredDates(updated)
+    }
+
+    fun getAlarmLastCheckAt(): LocalDateTime? {
+        val value = settingsStore.getString(KEY_ALARM_LAST_CHECK_AT, DEFAULT_ALARM_LAST_CHECK_AT)
+        return if (value.isBlank()) {
+            null
+        } else {
+            runCatching { LocalDateTime.parse(value) }
+                .getOrElse { error ->
+                    logger.error("Failed to decode alarm last check timestamp", error)
+                    null
+                }
+        }
+    }
+
+    fun setAlarmLastCheckAt(value: LocalDateTime): Boolean =
+        settingsStore.setString(KEY_ALARM_LAST_CHECK_AT, value.toString())
 
     fun getMaxAlarms(): Int =
         settingsStore.getInt(KEY_MAX_ALARMS, DEFAULT_MAX_ALARMS)

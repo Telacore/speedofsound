@@ -3,6 +3,8 @@ package com.zugaldia.speedofsound.core.desktop.settings
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 class SettingsClientAlarmTest {
 
@@ -139,6 +141,54 @@ class SettingsClientAlarmTest {
             AlarmRepeatDay.values().toList(),
             fallbackAlarm.repeatDays
         )
+    }
+
+    @Test
+    fun `alarm trigger dates round trip through the store`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        client.setAlarmLastTriggeredDate("alarm-1", LocalDate.of(2026, 5, 29))
+
+        assertEquals(
+            mapOf("alarm-1" to LocalDate.of(2026, 5, 29)),
+            client.getAlarmLastTriggeredDates()
+        )
+    }
+
+    @Test
+    fun `alarm trigger dates fall back to empty on malformed json`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARM_LAST_TRIGGERED_DATES to "{not-json"
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(emptyMap(), client.getAlarmLastTriggeredDates())
+    }
+
+    @Test
+    fun `alarm last check timestamp round trips through the store`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+        val timestamp = LocalDateTime.of(2026, 5, 29, 9, 15, 30)
+
+        client.setAlarmLastCheckAt(timestamp)
+
+        assertEquals(timestamp, client.getAlarmLastCheckAt())
+    }
+
+    @Test
+    fun `alarm last check timestamp falls back to null on malformed json`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARM_LAST_CHECK_AT to "{not-json"
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(null, client.getAlarmLastCheckAt())
     }
 
     @Test

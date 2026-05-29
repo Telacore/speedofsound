@@ -172,6 +172,30 @@ class AlarmScheduleTest {
     }
 
     @Test
+    fun `catch up helper finds the most recent missed occurrence in a range`() {
+        val start = LocalDateTime.of(2026, 5, 29, 8, 0)
+        val end = LocalDateTime.of(2026, 5, 29, 10, 0)
+        val alarm = AlarmSetting(id = "alarm-1", name = "Morning", hour = 9, minute = 0)
+
+        assertEquals(
+            LocalDateTime.of(2026, 5, 29, 9, 0),
+            findMostRecentDueOccurrenceSince(start, end, alarm)
+        )
+    }
+
+    @Test
+    fun `catch up helper spans midnight`() {
+        val start = LocalDateTime.of(2026, 5, 29, 23, 59)
+        val end = LocalDateTime.of(2026, 5, 30, 0, 2)
+        val alarm = AlarmSetting(id = "alarm-2", name = "Night", hour = 23, minute = 58)
+
+        assertEquals(
+            LocalDateTime.of(2026, 5, 29, 23, 58),
+            findMostRecentDueOccurrenceSince(start, end, alarm)
+        )
+    }
+
+    @Test
     fun `alarm summary refresh delay rolls to the next minute`() {
         val now = LocalDateTime.of(2026, 5, 29, 9, 0, 30)
 
