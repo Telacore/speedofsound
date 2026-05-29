@@ -46,7 +46,7 @@ class AlarmSchedulerService(
         reloadAlarms()
         reloadTriggerHistory()
         val now = LocalDateTime.now(clock)
-        lastCheckAt = settingsClient.getAlarmLastCheckAt()?.takeIf { !it.isAfter(now) }
+        lastCheckAt = settingsClient.peekAlarmLastCheckAt()?.takeIf { !it.isAfter(now) }
         schedulerStateReady = true
         persistSchedulerState()
         settingsJob = scope.launch {
@@ -65,7 +65,7 @@ class AlarmSchedulerService(
     }
 
     private fun reloadAlarms() {
-        val alarms = settingsClient.getAlarms().sortedWith(
+        val alarms = settingsClient.peekAlarms().sortedWith(
             compareBy<AlarmSetting> { it.hour }
                 .thenBy { it.minute }
                 .thenBy { it.action.ordinal }
@@ -85,7 +85,7 @@ class AlarmSchedulerService(
     private fun reloadTriggerHistory() {
         synchronized(stateLock) {
             lastTriggeredDates.clear()
-            lastTriggeredDates.putAll(settingsClient.getAlarmLastTriggeredDates())
+            lastTriggeredDates.putAll(settingsClient.peekAlarmLastTriggeredDates())
             lastTriggeredDates.keys.retainAll(activeAlarms.map { it.id }.toSet())
         }
     }

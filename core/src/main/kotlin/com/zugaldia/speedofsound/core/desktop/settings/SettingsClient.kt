@@ -246,8 +246,24 @@ class SettingsClient(val settingsStore: SettingsStore) {
                 ?.let { parsedDate -> alarmId to parsedDate }
         }.toMap()
 
+    fun peekAlarmLastTriggeredDates(): Map<String, LocalDate> =
+        peekAlarmSchedulerState().lastTriggeredDates.mapNotNull { (alarmId, dateValue) ->
+            runCatching { LocalDate.parse(dateValue) }
+                .getOrNull()
+                ?.let { parsedDate -> alarmId to parsedDate }
+        }.toMap()
+
     fun getAlarmLastCheckAt(): LocalDateTime? {
         val value = getAlarmSchedulerState().lastCheckAt ?: return null
+        return runCatching { LocalDateTime.parse(value) }
+            .getOrElse { error ->
+                logger.error("Failed to decode alarm last check timestamp", error)
+                null
+            }
+    }
+
+    fun peekAlarmLastCheckAt(): LocalDateTime? {
+        val value = peekAlarmSchedulerState().lastCheckAt ?: return null
         return runCatching { LocalDateTime.parse(value) }
             .getOrElse { error ->
                 logger.error("Failed to decode alarm last check timestamp", error)
