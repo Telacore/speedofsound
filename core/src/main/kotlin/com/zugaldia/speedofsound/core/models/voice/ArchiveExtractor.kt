@@ -32,7 +32,7 @@ class ArchiveExtractor {
                             val outputFile = outputPath.toFile()
                             if (entry.isDirectory) {
                                 log.info("Creating directory: ${outputFile.absolutePath}")
-                                outputFile.mkdirs()
+                                ensureOutputDirectory(outputFile)
                             } else if (entry.isFile) {
                                 log.info("Extracting file: ${outputFile.absolutePath}")
                                 outputFile.parentFile?.mkdirs()
@@ -47,6 +47,17 @@ class ArchiveExtractor {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private fun ensureOutputDirectory(outputFile: File) {
+        when {
+            outputFile.exists() && !outputFile.isDirectory -> {
+                throw IllegalArgumentException("Archive directory entry collides with a file: ${outputFile.absolutePath}")
+            }
+            !outputFile.exists() && !outputFile.mkdirs() -> {
+                throw IllegalStateException("Could not create archive directory: ${outputFile.absolutePath}")
             }
         }
     }

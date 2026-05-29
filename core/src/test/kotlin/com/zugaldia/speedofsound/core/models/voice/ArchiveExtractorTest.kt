@@ -106,6 +106,27 @@ class ArchiveExtractorTest {
         }
     }
 
+    @Test
+    fun `extractTarBz2 rejects directory entries colliding with files`() {
+        val tempDir = createTempDirectory("sos-archive-dir-collision")
+        try {
+            val destinationDir = tempDir.resolve("dest").toFile()
+            val collisionFile = destinationDir.toPath().resolve("model").toFile()
+            collisionFile.parentFile?.mkdirs()
+            collisionFile.writeText("not-a-directory")
+            val archiveFile = tempDir.resolve("archive.tar.bz2").toFile()
+            createTarBz2ArchiveWithDirectory(archiveFile, "model/")
+
+            val extractor = ArchiveExtractor()
+            val result = extractor.extractTarBz2(archiveFile, destinationDir)
+
+            assertTrue(result.isFailure)
+            assertTrue(collisionFile.exists())
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
     private fun createTarBz2Archive(archiveFile: File, entries: Map<String, ByteArray>) {
         archiveFile.parentFile?.mkdirs()
         FileOutputStream(archiveFile).use { fileOut ->
@@ -119,6 +140,25 @@ class ArchiveExtractorTest {
                         tarOut.write(bytes)
                         tarOut.closeArchiveEntry()
                     }
+                    tarOut.finish()
+                }
+            }
+        }
+    }
+
+    private fun createTarBz2ArchiveWithDirectory(
+        archiveFile: File,
+        directoryName: String,
+    ) {
+        archiveFile.parentFile?.mkdirs()
+        FileOutputStream(archiveFile).use { fileOut ->
+            BZip2CompressorOutputStream(fileOut).use { bzOut ->
+                TarArchiveOutputStream(bzOut).use { tarOut ->
+                    tarOut.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX)
+                    val entry = TarArchiveEntry(directoryName, TarConstants.LF_DIR)
+                    entry.setSize(0L)
+                    tarOut.putArchiveEntry(entry)
+                    tarOut.closeArchiveEntry()
                     tarOut.finish()
                 }
             }
