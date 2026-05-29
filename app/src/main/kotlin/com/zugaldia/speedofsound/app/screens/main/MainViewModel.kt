@@ -513,7 +513,7 @@ class MainViewModel(
             .onFailure { error ->
                 logger.error("Failed to apply ASR settings after {} change: {}", key, error.message)
                 if (error is FatalStartupException) {
-                    handleFatalStartupError(error)
+                    handleFatalStartupError(error, snapshot)
                 }
                 updateModelLabels(snapshot)
             }
@@ -630,7 +630,7 @@ class MainViewModel(
             .onFailure { error ->
                 logger.error("Failed to refresh ASR provider configuration: {}", error.message)
                 if (error is FatalStartupException) {
-                    handleFatalStartupError(error)
+                    handleFatalStartupError(error, snapshot)
                 }
             }
         if (hasFatalStartupError) {
