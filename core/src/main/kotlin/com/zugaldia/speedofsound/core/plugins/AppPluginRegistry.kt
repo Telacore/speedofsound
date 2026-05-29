@@ -16,8 +16,8 @@ class AppPluginRegistry {
      */
     fun register(category: AppPluginCategory, plugin: AppPlugin<*>) {
         log.info("Registering plugin ${plugin.id} for category $category")
-        plugins.getOrPut(category) { mutableListOf() }.add(plugin)
         plugin.initialize()
+        plugins.getOrPut(category) { mutableListOf() }.add(plugin)
     }
 
     /**
