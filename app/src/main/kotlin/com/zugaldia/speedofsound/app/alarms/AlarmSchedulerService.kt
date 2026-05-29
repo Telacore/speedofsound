@@ -88,7 +88,7 @@ class AlarmSchedulerService(
     internal fun reloadSchedulerState(): Boolean {
         val schedulerState = settingsClient.loadAlarmSchedulerState()
         val now = LocalDateTime.now(clock)
-        return synchronized(stateLock) {
+        val changed = synchronized(stateLock) {
             val activeIds = activeAlarms.map { it.id }.toSet()
             val nextTriggeredDates = schedulerState.lastTriggeredDates.mapNotNull { (alarmId, dateValue) ->
                 runCatching { LocalDate.parse(dateValue) }
@@ -106,6 +106,7 @@ class AlarmSchedulerService(
             changed
         }
         logger.info("Loaded alarm scheduler state.")
+        return changed
     }
 
     internal fun onSettingsChanged(key: String) {
