@@ -157,7 +157,55 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         currentProviders = providers
         currentTextProcessingEnabled = textProcessingEnabled
         providersListBox.removeAll()
-        providers.sortedBy { it.name.lowercase() }.forEach { provider -> addProviderToUI(provider) }
+        providers.sortedBy { it.name.lowercase() }.forEach { providerSetting ->
+            val providerLabel = providerSetting.provider.displayName
+            val modelLabel = providerSetting.modelId
+            val subtitle = "$providerLabel • $modelLabel"
+
+            val row = ActionRow().apply {
+                title = providerSetting.name
+                this.subtitle = subtitle
+            }
+
+            // Credential indicator
+            if (providerSetting.credentialId != null) {
+                row.addSuffix(Button.fromIconName(ICON_PASSWORD).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                    sensitive = false
+                    tooltipText = "Custom Credentials Set"
+                })
+            }
+
+            // Base URL indicator
+            if (providerSetting.baseUrl != null) {
+                row.addSuffix(Button.fromIconName(ICON_SERVER).apply {
+                    addCssClass(STYLE_CLASS_FLAT)
+                    valign = Align.CENTER
+                    sensitive = false
+                    tooltipText = "Custom URL: ${providerSetting.baseUrl}"
+                })
+            }
+
+            // Delete button
+            val deleteButton = Button.fromIconName(ICON_TRASH).apply {
+                addCssClass(STYLE_CLASS_FLAT)
+                valign = Align.CENTER
+                onClicked {
+                    val updatedProviders = currentProviders.filter { it.id != providerSetting.id }
+                    logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
+                    if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
+                        logger.warn("Failed to persist text provider deletion '${providerSetting.id}'")
+                        refreshProviders()
+                    } else {
+                        renderProviders(updatedProviders, currentTextProcessingEnabled)
+                    }
+                }
+            }
+
+            row.addSuffix(deleteButton)
+            providersListBox.append(row)
+        }
         activeProviderComboRow.updateProviders(providers)
         val hasProviders = providers.isNotEmpty()
         val atLimit = providers.size >= MAX_TEXT_MODEL_PROVIDERS
@@ -208,58 +256,8 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
                         }
                         false
                     }
-                }
-        }
-    }
-
-    private fun addProviderToUI(providerSetting: TextModelProviderSetting) {
-        val providerLabel = providerSetting.provider.displayName
-        val modelLabel = providerSetting.modelId
-        val subtitle = "$providerLabel • $modelLabel"
-
-        val row = ActionRow().apply {
-            title = providerSetting.name
-            this.subtitle = subtitle
-        }
-
-        // Credential indicator
-        if (providerSetting.credentialId != null) {
-            row.addSuffix(Button.fromIconName(ICON_PASSWORD).apply {
-                addCssClass(STYLE_CLASS_FLAT)
-                valign = Align.CENTER
-                sensitive = false
-                tooltipText = "Custom Credentials Set"
-            })
-        }
-
-        // Base URL indicator
-        if (providerSetting.baseUrl != null) {
-            row.addSuffix(Button.fromIconName(ICON_SERVER).apply {
-                addCssClass(STYLE_CLASS_FLAT)
-                valign = Align.CENTER
-                sensitive = false
-                tooltipText = "Custom URL: ${providerSetting.baseUrl}"
-            })
-        }
-
-        // Delete button
-        val deleteButton = Button.fromIconName(ICON_TRASH).apply {
-            addCssClass(STYLE_CLASS_FLAT)
-            valign = Align.CENTER
-            onClicked {
-                val updatedProviders = currentProviders.filter { it.id != providerSetting.id }
-                logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
-                if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
-                    logger.warn("Failed to persist text provider deletion '${providerSetting.id}'")
-                    refreshProviders()
-                } else {
-                    renderProviders(updatedProviders, currentTextProcessingEnabled)
-                }
             }
         }
-
-        row.addSuffix(deleteButton)
-        providersListBox.append(row)
     }
 
     private fun updateActiveProviderSensitivity(
