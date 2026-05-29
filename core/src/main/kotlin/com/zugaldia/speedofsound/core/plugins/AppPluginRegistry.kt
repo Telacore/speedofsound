@@ -33,19 +33,30 @@ class AppPluginRegistry {
 
         val plugin = getPluginById(category, pluginId)
             ?: error("Plugin with ID $pluginId not found in category $category")
-
-        // Disable the currently active plugin if any
-        activePlugins[category]?.let { currentActiveId ->
-            getPluginById(category, currentActiveId)?.let { currentActive ->
-                log.info("Disabling currently active plugin ${currentActive.id}")
-                currentActive.disable()
-            }
-        }
+        val previousActiveId = activePlugins[category]
 
         // Enable the new plugin
         log.info("Setting plugin ${plugin.id} as active for category $category")
         plugin.enable()
         activePlugins[category] = plugin.id
+
+        // Disable the previously active plugin after the new one has been enabled successfully.
+        previousActiveId
+            ?.takeIf { it != plugin.id }
+            ?.let { currentActiveId ->
+                getPluginById(category, currentActiveId)?.let { currentActive ->
+                    runCatching {
+                        log.info("Disabling currently active plugin ${currentActive.id}")
+                        currentActive.disable()
+                    }.onFailure { error ->
+                        log.error(
+                            "Failed to disable currently active plugin ${currentActive.id}: {}",
+                            error.message,
+                            error,
+                        )
+                    }
+                }
+            }
     }
 
     /**
