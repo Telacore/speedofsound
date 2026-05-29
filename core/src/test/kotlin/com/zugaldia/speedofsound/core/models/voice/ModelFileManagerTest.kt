@@ -6,6 +6,7 @@ import java.io.InputStream
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -73,6 +74,7 @@ class ModelFileManagerTest {
         val tempDir = createTempDirectory("sos-test")
         try {
             val manager = createFileManager(tempDir)
+            val outputFile = manager.getModelPath("test-model").resolve("model.onnx").toFile()
             val lfsPointerResourceLoader = object : ResourceLoader {
                 override fun loadResource(path: String): InputStream =
                     lfsPointerPath.toFile().inputStream()
@@ -86,6 +88,29 @@ class ModelFileManagerTest {
             assertNotNull(exception.message)
             assertTrue(exception.message?.contains("Git LFS") == true)
             assertTrue(exception.message?.contains("CONTRIBUTING.md") == true)
+            assertFalse(outputFile.exists())
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `extractDefaultModelFromResources writes complete file atomically`() {
+        val tempDir = createTempDirectory("sos-test")
+        try {
+            val manager = createFileManager(tempDir)
+            val outputFile = manager.getModelPath("test-model").resolve("model.onnx").toFile()
+            val modelBytes = ByteArray(1024) { it.toByte() }
+            val resourceLoader = object : ResourceLoader {
+                override fun loadResource(path: String): InputStream = modelBytes.inputStream()
+            }
+
+            val result = manager.extractDefaultModelFromResources("test-model", testModel, resourceLoader)
+            assertTrue(result.isSuccess)
+            assertTrue(outputFile.exists())
+            assertEquals(modelBytes.size.toLong(), outputFile.length())
+            assertTrue(outputFile.readBytes().contentEquals(modelBytes))
+            assertTrue(manager.isModelDownloaded("test-model", testModel))
         } finally {
             tempDir.toFile().deleteRecursively()
         }
