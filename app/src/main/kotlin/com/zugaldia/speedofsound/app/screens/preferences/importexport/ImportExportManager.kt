@@ -37,6 +37,11 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         val schedulerState = viewModel.peekAlarmSchedulerState()
         val credentials = viewModel.peekCredentials()
         val credentialIds = credentials.map { it.id }.toSet()
+        val voiceModelProviders = viewModel.peekVoiceModelProviders(credentialIds)
+            .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+            .normalizedCredentialRefs(credentialIds)
+        val textModelProviders = viewModel.peekTextModelProviders(credentialIds)
+            .normalizedCredentialRefs(credentialIds)
         val exportData = SettingsExport(
             defaultLanguage = viewModel.peekDefaultLanguage(),
             secondaryLanguage = viewModel.peekSecondaryLanguage(),
@@ -51,11 +56,8 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
                 lastTriggeredDates = schedulerState.lastTriggeredDates,
             ),
             credentials = credentials,
-            voiceModelProviders = viewModel.peekVoiceModelProviders(credentialIds)
-                .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
-                .normalizedCredentialRefs(credentialIds),
-            textModelProviders = viewModel.peekTextModelProviders(credentialIds)
-                .normalizedCredentialRefs(credentialIds),
+            voiceModelProviders = voiceModelProviders,
+            textModelProviders = textModelProviders,
             sanitizeSpecialChars = viewModel.peekSanitizeSpecialChars(),
             postHideDelayMs = viewModel.peekPostHideDelayMs(),
             typingDelayMs = viewModel.peekTypingDelayMs(),
@@ -119,7 +121,7 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             if (newCredentials.isNotEmpty()) {
                 requireWrite(viewModel.setCredentials(existingCredentials + newCredentials), "credentials")
             }
-            val importedCredentialIds = viewModel.peekCredentials().map { it.id }.toSet()
+            val importedCredentialIds = (existingCredentials + newCredentials).map { it.id }.toSet()
             val credentialsAdded = importedCredentialIds.count { it !in existingCredentialIds }
 
             val existingVoiceProviders = snapshot.voiceProviders
@@ -133,13 +135,13 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             if (normalizedVoiceProviders != existingVoiceProviders) {
                 requireWrite(viewModel.setVoiceModelProviders(normalizedVoiceProviders), "voice model providers")
             }
-            val importedVoiceIds = viewModel.peekVoiceModelProviders()
+            val importedVoiceIds = normalizedVoiceProviders
                 .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
                 .map { it.id }
                 .toSet()
             val voiceProvidersAdded = importedVoiceIds.count { it !in existingCustomVoiceIds }
             requireWrite(
-                persistExactVoiceProviderSelection(snapshot.selectedVoiceProviderIdExact),
+                persistExactVoiceProviderSelection(snapshot.selectedVoiceProviderIdExact, normalizedVoiceProviders),
                 "selected voice model provider",
             )
 
@@ -150,13 +152,13 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             if (normalizedTextProviders != existingTextProviders) {
                 requireWrite(viewModel.setTextModelProviders(normalizedTextProviders), "text model providers")
             }
-            val importedTextIds = viewModel.peekTextModelProviders().map { it.id }.toSet()
+            val importedTextIds = normalizedTextProviders.map { it.id }.toSet()
             val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
             requireWrite(
                 viewModel.setSelectedTextModelProviderId(snapshot.selectedTextProviderId),
                 "selected text model provider",
             )
-            if (snapshot.textProcessingEnabled && viewModel.peekTextModelProviders().isNotEmpty()) {
+            if (snapshot.textProcessingEnabled && normalizedTextProviders.isNotEmpty()) {
                 requireWrite(viewModel.setTextProcessingEnabled(true), "text processing enabled")
             }
 
@@ -221,9 +223,11 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             }
         }
 
-    private fun persistExactVoiceProviderSelection(selectedProviderId: String): Boolean {
+    private fun persistExactVoiceProviderSelection(
+        selectedProviderId: String,
+        availableVoiceProviders: List<VoiceModelProviderSetting>,
+    ): Boolean {
         val exactSelectedProviderId = selectedProviderId.trim()
-        val availableVoiceProviders = viewModel.peekVoiceModelProviders()
         return if (shouldPreserveExactWhisperSelection(exactSelectedProviderId, availableVoiceProviders)) {
             viewModel.setSelectedVoiceModelProviderIdExact(exactSelectedProviderId)
         } else {
@@ -278,7 +282,10 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         restoreWrite("credentials") { viewModel.setCredentials(snapshot.credentials) }
         restoreWrite("voice model providers") { viewModel.setVoiceModelProviders(snapshot.voiceProviders) }
         restoreWrite("selected voice model provider") {
-            persistExactVoiceProviderSelection(snapshot.selectedVoiceProviderIdExact)
+            persistExactVoiceProviderSelection(
+                snapshot.selectedVoiceProviderIdExact,
+                snapshot.voiceProviders,
+            )
         }
         restoreWrite("text model providers") { viewModel.setTextModelProviders(snapshot.textProviders) }
         restoreWrite("selected text model provider") {
