@@ -80,7 +80,16 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
             addCssClass(STYLE_CLASS_SUGGESTED_ACTION)
             onClicked {
                 val dialog = AddTextModelProviderDialog(viewModel) { provider ->
-                    onProviderAdded(provider)
+                    val updatedProviders = currentProviders + provider
+                    logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
+                    if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
+                        logger.warn("Failed to persist text provider '${provider.name}'")
+                        refreshProviders()
+                        false
+                    } else {
+                        renderProviders(updatedProviders, currentTextProcessingEnabled)
+                        true
+                    }
                 }
 
                 dialog.present(this@TextModelsPage)
@@ -259,22 +268,6 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     ) {
         val hasProviders = providers.isNotEmpty()
         activeProviderComboRow.sensitive = textProcessingEnabled && hasProviders
-    }
-
-    /*
-     * Dialog logic
-     */
-
-    private fun onProviderAdded(provider: TextModelProviderSetting): Boolean {
-        val updatedProviders = currentProviders + provider
-        logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
-            logger.warn("Failed to persist text provider '${provider.name}'")
-            refreshProviders()
-            return false
-        }
-        renderProviders(updatedProviders, currentTextProcessingEnabled)
-        return true
     }
 
     private fun refreshSnapshots() {
