@@ -44,14 +44,6 @@ class LlmProviderManager(
         )
     }
 
-    fun activateSelectedProvider(credentials: List<CredentialSetting>) {
-        applySelectedProviderConfig(
-            setActive = true,
-            credentials = credentials,
-            availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
-        )
-    }
-
     fun activateSelectedProvider(
         credentials: List<CredentialSetting>,
         availableProviders: List<TextModelProviderSetting>,
@@ -69,14 +61,6 @@ class LlmProviderManager(
      */
     fun refreshProviderConfiguration() {
         val credentials = settingsClient.peekCredentials()
-        applySelectedProviderConfig(
-            setActive = false,
-            credentials = credentials,
-            availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet()),
-        )
-    }
-
-    fun refreshProviderConfiguration(credentials: List<CredentialSetting>) {
         applySelectedProviderConfig(
             setActive = false,
             credentials = credentials,
@@ -231,16 +215,7 @@ class LlmProviderManager(
      * Gets the name of the currently selected LLM provider.
      */
     fun peekCurrentProviderName(runtimeTextProcessingEnabled: Boolean? = null): String {
-        return peekCurrentProviderName(
-            credentials = settingsClient.peekCredentials(),
-            runtimeTextProcessingEnabled = runtimeTextProcessingEnabled,
-        )
-    }
-
-    fun peekCurrentProviderName(
-        credentials: List<CredentialSetting>,
-        runtimeTextProcessingEnabled: Boolean? = null,
-    ): String {
+        val credentials = settingsClient.peekCredentials()
         val availableProviders = settingsClient.peekTextModelProviders(credentials.map { it.id }.toSet())
         return peekCurrentProviderName(availableProviders, runtimeTextProcessingEnabled)
     }
