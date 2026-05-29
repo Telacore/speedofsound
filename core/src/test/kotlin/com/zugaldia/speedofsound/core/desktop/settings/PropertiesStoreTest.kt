@@ -54,14 +54,16 @@ class PropertiesStoreTest {
     }
 
     @Test
-    fun `constructor rejects traversal filenames`() {
+    fun `constructor rejects invalid filenames`() {
         val baseDir = Files.createTempDirectory("speedofsound-properties-store-path")
         try {
-            val exception = assertFailsWith<IllegalArgumentException> {
-                PropertiesStore(filename = "../outside.properties", baseDir = baseDir)
-            }
+            listOf("", ".", "..", "../outside.properties", "/outside.properties").forEach { filename ->
+                val exception = assertFailsWith<IllegalArgumentException> {
+                    PropertiesStore(filename = filename, baseDir = baseDir)
+                }
 
-            assertTrue(exception.message?.contains("escapes model directory") == true)
+                assertTrue(exception.message?.contains("escapes model directory") == true)
+            }
         } finally {
             baseDir.toFile().deleteRecursively()
         }
