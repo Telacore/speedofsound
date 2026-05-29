@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.app.settings
 
 import com.zugaldia.speedofsound.core.Language
+import com.zugaldia.speedofsound.core.FatalStartupException
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
@@ -82,6 +83,32 @@ class AsrProviderManager(
                     )
                 }
         }
+
+        if (registry.getActive(AppPluginCategory.ASR) != null) {
+            return
+        }
+
+        if (pluginId == SherpaWhisperAsr.ID) {
+            throw FatalStartupException("Failed to activate default ASR provider ${SherpaWhisperAsr.ID}")
+        }
+
+        logger.warn(
+            "No active ASR provider after applying {}; falling back to local whisper",
+            pluginId
+        )
+        settingsClient.setSelectedVoiceModelProviderId(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID)
+        runCatching { registry.setActiveById(AppPluginCategory.ASR, SherpaWhisperAsr.ID) }
+            .onFailure { error ->
+                logger.error(
+                    "Failed to activate fallback ASR provider {}: {}",
+                    SherpaWhisperAsr.ID,
+                    error.message,
+                    error,
+                )
+                throw FatalStartupException(
+                    "Failed to activate fallback ASR provider ${SherpaWhisperAsr.ID}"
+                )
+            }
     }
 
     /**

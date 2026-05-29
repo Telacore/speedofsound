@@ -90,6 +90,41 @@ class AsrProviderManagerTest {
     }
 
     @Test
+    fun `activateSelectedProvider falls back to whisper when selected provider activation leaves no active plugin`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val failingPlugin = ThrowingEnablePlugin(id = OpenAiAsr.ID)
+        val fallbackPlugin = RecordingPlugin(id = SherpaWhisperAsr.ID)
+
+        registry.register(AppPluginCategory.ASR, failingPlugin)
+        registry.register(AppPluginCategory.ASR, fallbackPlugin)
+
+        AsrProviderManager(registry, settingsClient).activateSelectedProvider()
+
+        assertEquals(DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID, settingsClient.loadSelectedVoiceModelProviderId())
+        assertSame(fallbackPlugin, registry.getActive(AppPluginCategory.ASR))
+        assertEquals(1, failingPlugin.enableCount)
+        assertEquals(1, failingPlugin.disableCount)
+        assertEquals(1, fallbackPlugin.enableCount)
+        assertEquals(0, fallbackPlugin.disableCount)
+    }
+
+    @Test
     fun `refreshProviderConfiguration reactivates the selected provider when active plugin is stale`() {
         val settingsStore = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -192,6 +227,24 @@ class AsrProviderManagerTest {
         override fun disable() {
             disableCount += 1
             throw IllegalStateException("disable failed")
+        }
+    }
+
+    private class ThrowingEnablePlugin(
+        override val id: String,
+    ) : AppPlugin<EmptyOptions>(EmptyOptions) {
+        var enableCount: Int = 0
+            private set
+        var disableCount: Int = 0
+            private set
+
+        override fun enable() {
+            enableCount += 1
+            throw IllegalStateException("enable failed")
+        }
+
+        override fun disable() {
+            disableCount += 1
         }
     }
 
