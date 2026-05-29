@@ -3,6 +3,7 @@ package com.zugaldia.speedofsound.app.alarms
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.stargate.sdk.notification.NotificationPriority
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Locale
 
@@ -80,6 +81,12 @@ fun formatAlarmOverview(now: LocalDateTime, alarms: List<AlarmSetting>): String 
     val label = occurrence.alarm.name.trim().ifBlank { "alarm" }
     val daySuffix = if (occurrence.nextRun.toLocalDate().isEqual(now.toLocalDate())) "" else " tomorrow"
     return "$activeLabel · next $label$daySuffix at ${formatAlarmTime(occurrence.alarm)}"
+}
+
+fun millisUntilNextAlarmSummaryRefresh(now: LocalDateTime): Long {
+    val reference = now.withSecond(0).withNano(0)
+    val nextMinute = reference.plusMinutes(1)
+    return Duration.between(now, nextMinute).toMillis().coerceAtLeast(1)
 }
 
 fun isAlarmDue(now: LocalDateTime, alarm: AlarmSetting): Boolean {

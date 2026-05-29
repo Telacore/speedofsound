@@ -84,4 +84,11 @@ class AlarmScheduleTest {
 
         assertEquals("All alarms disabled", formatAlarmOverview(now, alarms))
     }
+
+    @Test
+    fun `alarm summary refresh delay rolls to the next minute`() {
+        val now = LocalDateTime.of(2026, 5, 29, 9, 0, 30)
+
+        assertEquals(30000L, millisUntilNextAlarmSummaryRefresh(now))
+    }
 }

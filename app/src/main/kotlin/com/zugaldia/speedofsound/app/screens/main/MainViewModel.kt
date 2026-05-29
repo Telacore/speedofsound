@@ -2,6 +2,7 @@ package com.zugaldia.speedofsound.app.screens.main
 
 import com.zugaldia.speedofsound.app.APPEND_SPACE_TEXT
 import com.zugaldia.speedofsound.app.alarms.formatAlarmOverview
+import com.zugaldia.speedofsound.app.alarms.millisUntilNextAlarmSummaryRefresh
 import com.zugaldia.speedofsound.app.isGStreamerDisabled
 import com.zugaldia.speedofsound.app.plugins.recorder.GStreamerRecorder
 import com.zugaldia.speedofsound.app.plugins.textoutput.ClipboardTextOutput
@@ -112,6 +113,7 @@ class MainViewModel(
     private val viewModelJob = SupervisorJob()
     private val viewModelScope = CoroutineScope(Dispatchers.Default + viewModelJob)
     private var currentPipelineJob: Job? = null
+    private var alarmSummaryJob: Job? = null
     private var lastToggleTime = 0L
 
     fun start() {
@@ -134,6 +136,7 @@ class MainViewModel(
         onPrimaryLanguageSelected(forceUpdate = true)
         updateModelLabels()
         updateAlarmSummary()
+        startAlarmSummaryRefreshLoop()
 
         // Phase 2 (async, IO thread): Enable plugins (heavy: model extraction + ONNX load).
         state.updateStage(AppStage.LOADING)
@@ -357,6 +360,24 @@ class MainViewModel(
         state.updateAlarmSummary(
             formatAlarmOverview(LocalDateTime.now(), settingsClient.getAlarms())
         )
+    }
+
+    private fun startAlarmSummaryRefreshLoop() {
+        if (alarmSummaryJob != null) return
+        alarmSummaryJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                while (true) {
+                    val delayMs = millisUntilNextAlarmSummaryRefresh(LocalDateTime.now())
+                    delay(delayMs)
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        refreshAlarmSummary()
+                        false
+                    }
+                }
+            } finally {
+                alarmSummaryJob = null
+            }
+        }
     }
 
     private fun refreshAsrSetting(key: String) {
