@@ -124,6 +124,42 @@ class AsrProviderManagerTest {
         assertEquals(0, selectedPlugin.disableCount)
     }
 
+    @Test
+    fun `refreshProviderConfiguration tolerates failing asr disable when selected provider changes`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "voice-a",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val activePlugin = ThrowingPlugin(id = "ASR_ACTIVE")
+        val selectedPlugin = RecordingPlugin(id = OpenAiAsr.ID)
+
+        registry.register(AppPluginCategory.ASR, activePlugin)
+        registry.register(AppPluginCategory.ASR, selectedPlugin)
+        registry.setActiveById(AppPluginCategory.ASR, activePlugin.id)
+
+        AsrProviderManager(registry, settingsClient).refreshProviderConfiguration()
+
+        assertEquals("voice-a", settingsClient.loadSelectedVoiceModelProviderId())
+        assertSame(activePlugin, registry.getActive(AppPluginCategory.ASR))
+        assertEquals(1, activePlugin.enableCount)
+        assertEquals(1, activePlugin.disableCount)
+        assertEquals(0, selectedPlugin.enableCount)
+        assertEquals(0, selectedPlugin.disableCount)
+    }
+
     private class RecordingPlugin(
         override val id: String,
     ) : AppPlugin<EmptyOptions>(EmptyOptions) {
@@ -138,6 +174,24 @@ class AsrProviderManagerTest {
 
         override fun disable() {
             disableCount += 1
+        }
+    }
+
+    private class ThrowingPlugin(
+        override val id: String,
+    ) : AppPlugin<EmptyOptions>(EmptyOptions) {
+        var enableCount: Int = 0
+            private set
+        var disableCount: Int = 0
+            private set
+
+        override fun enable() {
+            enableCount += 1
+        }
+
+        override fun disable() {
+            disableCount += 1
+            throw IllegalStateException("disable failed")
         }
     }
 

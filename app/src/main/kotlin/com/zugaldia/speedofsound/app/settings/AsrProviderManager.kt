@@ -72,7 +72,15 @@ class AsrProviderManager(
         val shouldActivate = setActive || selectedProvider == null || currentActiveId != pluginId
 
         if (shouldActivate) {
-            registry.setActiveById(AppPluginCategory.ASR, pluginId)
+            runCatching { registry.setActiveById(AppPluginCategory.ASR, pluginId) }
+                .onFailure { error ->
+                    logger.error(
+                        "Failed to activate ASR provider {}: {}",
+                        pluginId,
+                        error.message,
+                        error,
+                    )
+                }
         }
     }
 
