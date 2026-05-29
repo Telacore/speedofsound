@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption
 object AtomicFileWriter {
     fun write(destination: File, writeAction: (File) -> Unit): Result<Unit> = runCatching {
         ensureParentDirectoryExists(destination)
+        ensureDestinationIsWritable(destination)
         val tempFile = createTempSiblingFile(destination)
         try {
             writeAction(tempFile)
@@ -37,6 +38,12 @@ object AtomicFileWriter {
             !parent.exists() && !parent.mkdirs() -> {
                 throw IOException("Could not create parent directory: ${parent.absolutePath}")
             }
+        }
+    }
+
+    private fun ensureDestinationIsWritable(destination: File) {
+        if (destination.exists() && destination.isDirectory) {
+            throw IOException("Destination path is a directory: ${destination.absolutePath}")
         }
     }
 

@@ -58,4 +58,18 @@ class AtomicFileWriterTest {
         assertTrue(parentPath.exists())
         assertTrue(!destination.exists())
     }
+
+    @Test
+    fun `write fails when destination is a directory`() {
+        val destination = tempDir.resolve("settings.json")
+        destination.mkdirs()
+
+        val result = AtomicFileWriter.write(destination) { tempFile ->
+            tempFile.writeText("new")
+        }
+
+        assertTrue(result.isFailure)
+        assertTrue(destination.exists())
+        assertTrue(destination.isDirectory)
+    }
 }
