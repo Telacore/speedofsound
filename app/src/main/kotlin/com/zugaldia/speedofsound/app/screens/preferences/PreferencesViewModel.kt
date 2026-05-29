@@ -38,7 +38,6 @@ class PreferencesViewModel(
      * General page
      */
 
-    fun getShortcutConfigured(): Boolean = settingsClient.getShortcutConfigured()
     fun peekShortcutConfigured(): Boolean = settingsClient.peekShortcutConfigured()
     fun setShortcutConfigured(value: Boolean): Boolean = settingsClient.setShortcutConfigured(value)
 
@@ -50,31 +49,24 @@ class PreferencesViewModel(
     fun configureGlobalShortcuts(): Result<Unit> = portalsClient.configureGlobalShortcuts()
     suspend fun openDocumentationUri() = portalsClient.openUri(APPLICATION_URL_KEYBOARD_SHORTCUT)
 
-    fun getBackgroundRecording(): Boolean = settingsClient.getBackgroundRecording()
     fun peekBackgroundRecording(): Boolean = settingsClient.peekBackgroundRecording()
     fun setBackgroundRecording(value: Boolean): Boolean = settingsClient.setBackgroundRecording(value)
 
-    fun getHideInsteadOfMinimize(): Boolean = settingsClient.getHideInsteadOfMinimize()
     fun peekHideInsteadOfMinimize(): Boolean = settingsClient.peekHideInsteadOfMinimize()
     fun setHideInsteadOfMinimize(value: Boolean): Boolean = settingsClient.setHideInsteadOfMinimize(value)
 
-    fun getStayHiddenOnActivation(): Boolean = settingsClient.getStayHiddenOnActivation()
     fun peekStayHiddenOnActivation(): Boolean = settingsClient.peekStayHiddenOnActivation()
     fun setStayHiddenOnActivation(value: Boolean): Boolean = settingsClient.setStayHiddenOnActivation(value)
 
-    fun getDefaultLanguage(): String = settingsClient.getDefaultLanguage()
     fun peekDefaultLanguage(): String = settingsClient.peekDefaultLanguage()
     fun setDefaultLanguage(value: String): Boolean = settingsClient.setDefaultLanguage(value)
 
-    fun getSecondaryLanguage(): String = settingsClient.getSecondaryLanguage()
     fun peekSecondaryLanguage(): String = settingsClient.peekSecondaryLanguage()
     fun setSecondaryLanguage(value: String): Boolean = settingsClient.setSecondaryLanguage(value)
 
-    fun getAppendSpace(): Boolean = settingsClient.getAppendSpace()
     fun peekAppendSpace(): Boolean = settingsClient.peekAppendSpace()
     fun setAppendSpace(value: Boolean): Boolean = settingsClient.setAppendSpace(value)
 
-    fun getTextOutputMethod(): String = settingsClient.getTextOutputMethod()
     fun peekTextOutputMethod(): String = settingsClient.peekTextOutputMethod()
     fun setTextOutputMethod(value: String): Boolean = settingsClient.setTextOutputMethod(value)
 
@@ -84,7 +76,6 @@ class PreferencesViewModel(
 
     fun peekAlarms(): List<AlarmSetting> = settingsClient.peekAlarms()
     fun setAlarms(value: List<AlarmSetting>): Boolean = settingsClient.setAlarms(value)
-    fun getMaxAlarms(): Int = settingsClient.getMaxAlarms()
     fun peekMaxAlarms(): Int = settingsClient.peekMaxAlarms()
     fun setMaxAlarms(value: Int): Boolean = settingsClient.setMaxAlarms(value)
     fun setAlarmSchedulerState(value: AlarmSchedulerState): Boolean = settingsClient.setAlarmSchedulerState(value)
@@ -94,7 +85,6 @@ class PreferencesViewModel(
      * Cloud Credentials page
      */
 
-    fun getCredentials(): List<CredentialSetting> = settingsClient.getCredentials()
     fun peekCredentials(): List<CredentialSetting> = settingsClient.peekCredentials()
     fun setCredentials(value: List<CredentialSetting>): Boolean =
         settingsClient.setCredentials(value)
@@ -103,14 +93,10 @@ class PreferencesViewModel(
      * Voice Models page
      */
 
-    fun getVoiceModelProviders(): List<VoiceModelProviderSetting> =
-        settingsClient.getVoiceModelProviders()
     fun peekVoiceModelProviders(): List<VoiceModelProviderSetting> = settingsClient.peekVoiceModelProviders()
     fun setVoiceModelProviders(value: List<VoiceModelProviderSetting>): Boolean =
         settingsClient.setVoiceModelProviders(value)
 
-    fun getSelectedVoiceModelProviderId(): String =
-        settingsClient.getSelectedVoiceModelProviderId()
     fun peekSelectedVoiceModelProviderId(): String =
         settingsClient.peekSelectedVoiceModelProviderId()
     fun setSelectedVoiceModelProviderId(value: String): Boolean =
@@ -120,18 +106,13 @@ class PreferencesViewModel(
      * Text Models page
      */
 
-    fun getTextProcessingEnabled(): Boolean = settingsClient.getTextProcessingEnabled()
     fun peekTextProcessingEnabled(): Boolean = settingsClient.peekTextProcessingEnabled()
     fun setTextProcessingEnabled(value: Boolean): Boolean = settingsClient.setTextProcessingEnabled(value)
 
-    fun getTextModelProviders(): List<TextModelProviderSetting> =
-        settingsClient.getTextModelProviders()
     fun peekTextModelProviders(): List<TextModelProviderSetting> = settingsClient.peekTextModelProviders()
     fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean =
         settingsClient.setTextModelProviders(value)
 
-    fun getSelectedTextModelProviderId(): String =
-        settingsClient.getSelectedTextModelProviderId()
     fun peekSelectedTextModelProviderId(): String =
         settingsClient.peekSelectedTextModelProviderId()
     fun setSelectedTextModelProviderId(value: String): Boolean =
@@ -141,11 +122,9 @@ class PreferencesViewModel(
      * Personalization page
      */
 
-    fun getCustomContext(): String = settingsClient.getCustomContext()
     fun peekCustomContext(): String = settingsClient.peekCustomContext()
     fun setCustomContext(value: String): Boolean = settingsClient.setCustomContext(value)
 
-    fun getCustomVocabulary(): List<String> = settingsClient.getCustomVocabulary()
     fun peekCustomVocabulary(): List<String> = settingsClient.peekCustomVocabulary()
     fun setCustomVocabulary(value: List<String>): Boolean = settingsClient.setCustomVocabulary(value)
 
@@ -153,15 +132,12 @@ class PreferencesViewModel(
      * Advanced page
      */
 
-    fun getSanitizeSpecialChars(): Boolean = settingsClient.getSanitizeSpecialChars()
     fun peekSanitizeSpecialChars(): Boolean = settingsClient.peekSanitizeSpecialChars()
     fun setSanitizeSpecialChars(value: Boolean): Boolean = settingsClient.setSanitizeSpecialChars(value)
 
-    fun getPostHideDelayMs(): Int = settingsClient.getPostHideDelayMs()
     fun peekPostHideDelayMs(): Int = settingsClient.peekPostHideDelayMs()
     fun setPostHideDelayMs(value: Int): Boolean = settingsClient.setPostHideDelayMs(value)
 
-    fun getTypingDelayMs(): Int = settingsClient.getTypingDelayMs()
     fun peekTypingDelayMs(): Int = settingsClient.peekTypingDelayMs()
     fun setTypingDelayMs(value: Int): Boolean = settingsClient.setTypingDelayMs(value)
 }
