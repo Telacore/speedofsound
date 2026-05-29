@@ -58,6 +58,7 @@ class MainViewModelTextOutputRestoreTest {
         assertEquals(1, failingPortal.disableCount)
         assertSame(activeClipboard, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
         assertEquals(com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL, settingsClient.loadTextOutputMethod())
+        assertEquals(true, getPrivateField<Any?>(viewModel, "currentPipelineJob") != null)
         assertEquals(AppStage.IDLE, viewModel.state.currentStage())
     }
 
