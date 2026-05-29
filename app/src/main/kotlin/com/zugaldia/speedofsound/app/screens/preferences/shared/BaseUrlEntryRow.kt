@@ -17,10 +17,6 @@ class BaseUrlEntryRow(
 ) : EntryRow() {
     init {
         title = "Base URL (optional)"
-        setupSuffixButton()
-    }
-
-    private fun setupSuffixButton() {
         val menu = Menu()
         servicePresets.forEach { preset ->
             menu.append(preset.displayName, "baseurl.${preset.actionName}")
