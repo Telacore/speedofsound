@@ -144,7 +144,10 @@ class AlarmEditorDialog(
                         minute = minuteRow.value.toInt(),
                         action = ACTIONS.getOrNull(actionRow.selected) ?: AlarmAction.NORMAL,
                         enabled = enabledRow.active,
-                        repeatDays = selectedRepeatDays(),
+                        repeatDays = repeatDayRows
+                            .filter { (_, row) -> row.active }
+                            .map { (day, _) -> day }
+                            .ifEmpty { allAlarmRepeatDays() },
                     )
                 )) {
                     close()
@@ -171,12 +174,6 @@ class AlarmEditorDialog(
             append(buttonBox)
         }
     }
-
-    private fun selectedRepeatDays(): List<AlarmRepeatDay> =
-        repeatDayRows
-            .filter { (_, row) -> row.active }
-            .map { (day, _) -> day }
-            .ifEmpty { allAlarmRepeatDays() }
 
     private fun selectRepeatDays(repeatDays: List<AlarmRepeatDay>) {
         val selectedDays = repeatDays.toSet()
