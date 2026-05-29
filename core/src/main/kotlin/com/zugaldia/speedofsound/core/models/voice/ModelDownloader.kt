@@ -17,6 +17,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.io.File
+import java.io.IOException
 
 /**
  * Handles downloading files from URLs with progress reporting.
@@ -73,7 +74,7 @@ class ModelDownloader : Closeable {
         url: String,
         destination: File
     ): Result<Unit> = runCatching {
-        if (destination.exists()) {
+        if (shouldSkipExistingDownload(destination)) {
             log.info("File already exists at: ${destination.absolutePath}")
             return@runCatching
         }
@@ -124,5 +125,23 @@ class ModelDownloader : Closeable {
 
     override fun close() {
         client.close()
+    }
+
+    internal companion object {
+        internal fun shouldSkipExistingDownload(destination: File): Boolean {
+            if (!destination.exists()) {
+                return false
+            }
+
+            if (destination.isDirectory) {
+                throw IOException("Destination path is a directory: ${destination.absolutePath}")
+            }
+
+            if (!destination.isFile) {
+                throw IOException("Destination path is not a regular file: ${destination.absolutePath}")
+            }
+
+            return destination.length() > 0
+        }
     }
 }
