@@ -5,12 +5,16 @@ import org.slf4j.LoggerFactory
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Path
 import java.util.Properties
 
-class PropertiesStore(filename: String = DEFAULT_PROPERTIES_FILENAME) : SettingsStore {
+open class PropertiesStore(
+    filename: String = DEFAULT_PROPERTIES_FILENAME,
+    private val baseDir: Path = getDataDir(),
+) : SettingsStore {
     private val logger = LoggerFactory.getLogger(PropertiesStore::class.java)
     private val properties = Properties()
-    private val filePath = getDataDir().resolve(filename).toFile()
+    private val filePath = baseDir.resolve(filename).toFile()
 
     init {
         load()
@@ -30,7 +34,7 @@ class PropertiesStore(filename: String = DEFAULT_PROPERTIES_FILENAME) : Settings
         }
     }
 
-    private fun save(): Boolean = try {
+    protected open fun save(): Boolean = try {
         filePath.parentFile?.mkdirs()
         FileOutputStream(filePath).use { properties.store(it, null) }
         true
@@ -45,8 +49,7 @@ class PropertiesStore(filename: String = DEFAULT_PROPERTIES_FILENAME) : Settings
         properties.getProperty(key, defaultValue)
 
     override fun setString(key: String, value: String): Boolean {
-        properties.setProperty(key, value)
-        return save()
+        return writeIfChanged(key, value)
     }
 
     override fun getStringArray(key: String, defaultValue: List<String>): List<String> {
@@ -59,23 +62,29 @@ class PropertiesStore(filename: String = DEFAULT_PROPERTIES_FILENAME) : Settings
     }
 
     override fun setStringArray(key: String, value: List<String>): Boolean {
-        properties.setProperty(key, value.joinToString(ARRAY_DELIMITER))
-        return save()
+        return writeIfChanged(key, value.joinToString(ARRAY_DELIMITER))
     }
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean =
         properties.getProperty(key)?.toBoolean() ?: defaultValue
 
     override fun setBoolean(key: String, value: Boolean): Boolean {
-        properties.setProperty(key, value.toString())
-        return save()
+        return writeIfChanged(key, value.toString())
     }
 
     override fun getInt(key: String, defaultValue: Int): Int =
         properties.getProperty(key)?.toIntOrNull() ?: defaultValue
 
     override fun setInt(key: String, value: Int): Boolean {
-        properties.setProperty(key, value.toString())
+        return writeIfChanged(key, value.toString())
+    }
+
+    private fun writeIfChanged(key: String, value: String): Boolean {
+        if (properties.getProperty(key) == value) {
+            return true
+        }
+
+        properties.setProperty(key, value)
         return save()
     }
 
