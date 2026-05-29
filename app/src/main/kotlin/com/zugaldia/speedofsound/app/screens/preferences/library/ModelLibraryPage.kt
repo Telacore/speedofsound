@@ -4,7 +4,6 @@ import com.zugaldia.speedofsound.app.ICON_DOWNLOAD
 import com.zugaldia.speedofsound.app.ICON_TRASH
 import com.zugaldia.speedofsound.app.STYLE_CLASS_BOXED_LIST
 import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
-import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
 import com.zugaldia.speedofsound.core.models.voice.ModelManager
 import com.zugaldia.speedofsound.core.models.voice.ModelManagerEvent
@@ -28,7 +27,6 @@ import org.gnome.gtk.Spinner
 import org.slf4j.LoggerFactory
 
 class ModelLibraryPage(
-    private val viewModel: PreferencesViewModel,
     private val onOperationsStateChanged: (Boolean) -> Unit
 ) : PreferencesPage() {
     private val logger = LoggerFactory.getLogger(ModelLibraryPage::class.java)

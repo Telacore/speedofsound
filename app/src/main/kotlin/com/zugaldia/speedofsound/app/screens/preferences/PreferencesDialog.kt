@@ -52,7 +52,7 @@ class PreferencesDialog(settingsClient: SettingsClient, portalsClient: PortalsCl
 
         generalPage = GeneralPage(viewModel)
         alarmsPage = AlarmsPage(viewModel)
-        modelLibraryPage = ModelLibraryPage(viewModel) { hasOperations -> operationsBanner.revealed = hasOperations }
+        modelLibraryPage = ModelLibraryPage { hasOperations -> operationsBanner.revealed = hasOperations }
         cloudCredentialsPage = CloudCredentialsPage(viewModel)
         voiceModelsPage = VoiceModelsPage(viewModel)
         textModelsPage = TextModelsPage(viewModel)
