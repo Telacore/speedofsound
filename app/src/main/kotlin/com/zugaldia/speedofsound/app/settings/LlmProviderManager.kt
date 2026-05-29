@@ -60,6 +60,7 @@ class LlmProviderManager(
             if (settingsClient.getTextProcessingEnabled()) {
                 settingsClient.setTextProcessingEnabled(false)
             }
+            registry.clearActive(AppPluginCategory.LLM)
             if (selectedProviderId.isNotEmpty()) {
                 settingsClient.setSelectedTextModelProviderId(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID)
             }

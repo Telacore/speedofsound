@@ -98,6 +98,27 @@ class AppPluginRegistry {
         return getPluginById(category, activeId)
     }
 
+    /**
+     * Clears the active plugin for a category without selecting a replacement.
+     * If an active plugin exists, it is disabled first.
+     */
+    @Synchronized
+    fun clearActive(category: AppPluginCategory) {
+        check(!isShutdown) { "Registry has been shut down" }
+        val activeId = activePlugins.remove(category) ?: return
+        val activePlugin = plugins[category]?.find { it.id == activeId } ?: return
+
+        runCatching {
+            activePlugin.disable()
+        }.onFailure { error ->
+            log.error(
+                "Failed to disable active plugin ${activePlugin.id} while clearing category $category: {}",
+                error.message,
+                error,
+            )
+        }
+    }
+
     @Synchronized
     fun isShutdown(): Boolean = isShutdown
 

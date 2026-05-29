@@ -21,6 +21,7 @@ class PreferencesViewModel(
 ) {
     private val logger = LoggerFactory.getLogger(PreferencesViewModel::class.java)
     val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val settingsChanged = settingsClient.settingsChanged
 
     init {
         logger.info("Initializing.")

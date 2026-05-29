@@ -12,7 +12,6 @@ import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.EmptyOptions
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertSame
 
 class LlmProviderManagerTest {
 
@@ -36,9 +35,9 @@ class LlmProviderManagerTest {
 
         assertEquals(DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID, settingsClient.getSelectedTextModelProviderId())
         assertEquals(false, settingsClient.getTextProcessingEnabled())
-        assertSame(activePlugin, registry.getActive(AppPluginCategory.LLM))
+        assertEquals(null, registry.getActive(AppPluginCategory.LLM))
         assertEquals(1, activePlugin.enableCount)
-        assertEquals(0, activePlugin.disableCount)
+        assertEquals(1, activePlugin.disableCount)
     }
 
     private class RecordingPlugin(

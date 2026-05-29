@@ -12,7 +12,13 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ActiveProviderComboRow
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_PROCESSING_ENABLED
 import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import org.gnome.adw.ActionRow
 import org.gnome.adw.PreferencesGroup
 import org.gnome.adw.PreferencesPage
@@ -24,16 +30,19 @@ import org.gnome.gtk.Label
 import org.gnome.gtk.ListBox
 import org.gnome.gtk.Orientation
 import org.gnome.gtk.SelectionMode
+import org.gnome.glib.GLib
 import org.slf4j.LoggerFactory
 
 class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesPage() {
     private val logger = LoggerFactory.getLogger(TextModelsPage::class.java)
+    private val scope = viewModel.viewModelScope
 
     private val enableSwitch: SwitchRow
     private val activeProviderComboRow: ActiveProviderComboRow<TextModelProviderSetting>
     private val providersListBox: ListBox
     private val placeholderBox: Box
     private val addProviderButton: Button
+    private var suppressEnableSwitchNotify = false
 
     init {
         title = "Text Models"
@@ -106,6 +115,17 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
         loadProviders()
     }
 
+    private fun syncEnableSwitch() {
+        val enabled = viewModel.getTextProcessingEnabled()
+        if (enableSwitch.active == enabled) return
+        suppressEnableSwitchNotify = true
+        try {
+            enableSwitch.active = enabled
+        } finally {
+            suppressEnableSwitchNotify = false
+        }
+    }
+
     private fun loadProviders() {
         val providers = viewModel.getTextModelProviders()
         providers.sortedBy { it.name.lowercase() }.forEach { provider -> addProviderToUI(provider) }
@@ -117,10 +137,35 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     private fun setupNotifications() {
         activeProviderComboRow.setupNotifications()
         enableSwitch.onNotify("active") {
+            if (suppressEnableSwitchNotify) return@onNotify
             val enabled = enableSwitch.active
             logger.info("Text processing enabled: $enabled")
             viewModel.setTextProcessingEnabled(enabled)
             updateActiveProviderSensitivity()
+        }
+        scope.launch {
+            viewModel.settingsChanged
+                .filter {
+                    it == KEY_TEXT_PROCESSING_ENABLED ||
+                        it == KEY_SELECTED_TEXT_MODEL_PROVIDER_ID ||
+                        it == KEY_TEXT_MODEL_PROVIDERS
+                }
+                .collect {
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        when (it) {
+                            KEY_TEXT_PROCESSING_ENABLED -> {
+                                syncEnableSwitch()
+                                updateActiveProviderSensitivity()
+                            }
+                            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
+                            KEY_TEXT_MODEL_PROVIDERS -> {
+                                refreshProviders()
+                                syncEnableSwitch()
+                            }
+                        }
+                        false
+                    }
+                }
         }
     }
 
