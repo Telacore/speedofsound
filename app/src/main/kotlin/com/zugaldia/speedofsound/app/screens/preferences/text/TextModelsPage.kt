@@ -11,6 +11,7 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ActiveProviderComboRow
+import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_TEXT_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
@@ -44,6 +45,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     private val placeholderBox: Box
     private val addProviderButton: Button
     private var suppressEnableSwitchNotify = false
+    private var currentCredentials: List<CredentialSetting> = emptyList()
     private var currentProviders: List<TextModelProviderSetting> = emptyList()
     private var currentTextProcessingEnabled: Boolean = false
 
@@ -236,7 +238,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     private fun onProviderDeleted(providerId: String): Boolean {
         val updatedProviders = currentProviders.filter { it.id != providerId }
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setTextModelProviders(updatedProviders)) {
+        if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds(), updatedProviders)) {
             logger.warn("Failed to persist text provider deletion '$providerId'")
             refreshProviders()
             return false
@@ -276,7 +278,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     private fun onProviderAdded(provider: TextModelProviderSetting): Boolean {
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setTextModelProviders(updatedProviders)) {
+        if (!viewModel.setTextModelProviders(updatedProviders, currentCredentialIds(), updatedProviders)) {
             logger.warn("Failed to persist text provider '${provider.name}'")
             refreshProviders()
             return false
@@ -286,6 +288,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     }
 
     private fun refreshSnapshots() {
+        currentCredentials = viewModel.peekCredentials()
         currentProviders = viewModel.peekTextModelProviders()
         currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
     }
@@ -293,4 +296,6 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
     private fun refreshTextProcessingState() {
         currentTextProcessingEnabled = viewModel.peekTextProcessingEnabled()
     }
+
+    private fun currentCredentialIds(): Set<String> = currentCredentials.map { it.id }.toSet()
 }

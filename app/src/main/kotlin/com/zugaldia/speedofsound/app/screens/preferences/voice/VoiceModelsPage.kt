@@ -10,6 +10,7 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ActiveProviderComboRow
+import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
@@ -37,6 +38,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     private val activeProviderComboRow: ActiveProviderComboRow<VoiceModelProviderSetting>
     private val providersListBox: ListBox
     private val addProviderButton: Button
+    private var currentCredentials: List<CredentialSetting> = emptyList()
     private var currentProviders: List<VoiceModelProviderSetting> = emptyList()
 
     init {
@@ -165,7 +167,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     private fun onProviderDeleted(providerId: String): Boolean {
         val updatedProviders = currentProviders.filter { it.id != providerId }
         logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setVoiceModelProviders(updatedProviders)) {
+        if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds(), updatedProviders)) {
             logger.warn("Failed to persist voice provider deletion '$providerId'")
             refreshProviders()
             return false
@@ -196,7 +198,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     private fun onProviderAdded(provider: VoiceModelProviderSetting): Boolean {
         val updatedProviders = currentProviders + provider
         logger.info("Adding provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setVoiceModelProviders(updatedProviders)) {
+        if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds(), updatedProviders)) {
             logger.warn("Failed to persist voice provider '${provider.name}'")
             refreshProviders()
             return false
@@ -206,6 +208,9 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
     }
 
     private fun refreshSnapshots() {
+        currentCredentials = viewModel.peekCredentials()
         currentProviders = viewModel.peekVoiceModelProviders()
     }
+
+    private fun currentCredentialIds(): Set<String> = currentCredentials.map { it.id }.toSet()
 }
