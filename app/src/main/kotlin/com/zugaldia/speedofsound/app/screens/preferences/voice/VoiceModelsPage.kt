@@ -77,6 +77,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
 
         add(textProcessingGroup)
         add(providersGroup)
+        renderProviders(viewModel.peekVoiceModelProviders())
         setupNotifications()
     }
 
@@ -100,12 +101,14 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
 
     fun refreshProviders() {
         logger.info("Refreshing voice model providers")
-        providersListBox.removeAll()
+        renderProviders(viewModel.peekVoiceModelProviders())
+    }
 
-        val providers = viewModel.peekVoiceModelProviders()
+    private fun renderProviders(providers: List<VoiceModelProviderSetting>) {
+        providersListBox.removeAll()
         providers.sortedBy { it.name.lowercase() }.forEach { provider -> addProviderToUI(provider) }
         activeProviderComboRow.updateProviders(providers)
-        updateAddProviderButtonState()
+        updateAddProviderButtonState(providers)
     }
 
     private fun addProviderToUI(providerSetting: VoiceModelProviderSetting) {
@@ -164,13 +167,11 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
             refreshProviders()
             return false
         }
-        activeProviderComboRow.updateProviders(updatedProviders)
-        updateAddProviderButtonState()
+        renderProviders(updatedProviders)
         return true
     }
 
-    private fun updateAddProviderButtonState() {
-        val providers = viewModel.peekVoiceModelProviders()
+    private fun updateAddProviderButtonState(providers: List<VoiceModelProviderSetting> = viewModel.peekVoiceModelProviders()) {
         // Subtract 1 to account for the default provider when checking the limit
         val customProviderCount = providers.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
         val atLimit = customProviderCount >= MAX_VOICE_MODEL_PROVIDERS
@@ -198,9 +199,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
             refreshProviders()
             return false
         }
-        addProviderToUI(provider)
-        activeProviderComboRow.updateProviders(updatedProviders)
-        updateAddProviderButtonState()
+        renderProviders(updatedProviders)
         return true
     }
 }
