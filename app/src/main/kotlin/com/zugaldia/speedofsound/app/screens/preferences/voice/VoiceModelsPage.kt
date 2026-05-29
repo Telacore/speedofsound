@@ -163,8 +163,13 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
                     addCssClass(STYLE_CLASS_FLAT)
                     valign = Align.CENTER
                     onClicked {
-                        if (onProviderDeleted(providerSetting.id)) {
-                            providersListBox.remove(row)
+                        val updatedProviders = currentProviders.filter { it.id != providerSetting.id }
+                        logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
+                        if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
+                            logger.warn("Failed to persist voice provider deletion '${providerSetting.id}'")
+                            refreshProviders()
+                        } else {
+                            renderProviders(updatedProviders)
                         }
                     }
                 }
@@ -176,18 +181,6 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
         activeProviderComboRow.updateProviders(providers)
         val customProviderCount = providers.count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
         addProviderButton.sensitive = customProviderCount < MAX_VOICE_MODEL_PROVIDERS
-    }
-
-    private fun onProviderDeleted(providerId: String): Boolean {
-        val updatedProviders = currentProviders.filter { it.id != providerId }
-        logger.info("Removing provider, total is now ${updatedProviders.size} entries.")
-        if (!viewModel.setVoiceModelProviders(updatedProviders, currentCredentialIds, updatedProviders)) {
-            logger.warn("Failed to persist voice provider deletion '$providerId'")
-            refreshProviders()
-            return false
-        }
-        renderProviders(updatedProviders)
-        return true
     }
 
     private fun refreshSnapshots() {
