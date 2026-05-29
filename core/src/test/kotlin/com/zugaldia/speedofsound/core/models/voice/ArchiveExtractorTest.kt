@@ -62,6 +62,29 @@ class ArchiveExtractorTest {
     }
 
     @Test
+    fun `extractTarBz2 rejects dot entries`() {
+        val tempDir = createTempDirectory("sos-archive-dot-entry")
+        try {
+            val destinationDir = tempDir.resolve("dest").toFile()
+            val archiveFile = tempDir.resolve("archive.tar.bz2").toFile()
+            createTarBz2Archive(
+                archiveFile,
+                mapOf("." to byteArrayOf(1, 2, 3))
+            )
+
+            val extractor = ArchiveExtractor()
+
+            val exception = assertFailsWith<IllegalArgumentException> {
+                extractor.extractTarBz2(archiveFile, destinationDir).getOrThrow()
+            }
+
+            assertTrue(exception.message?.contains("Archive entry escapes destination directory") == true)
+        } finally {
+            tempDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `extractTarBz2 rejects symlink entries`() {
         val tempDir = createTempDirectory("sos-archive-symlink")
         try {

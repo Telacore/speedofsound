@@ -74,6 +74,9 @@ class ArchiveExtractor {
     }
 
     private fun resolveSafeOutputPath(basePath: Path, entryName: String): Path {
+        require(entryName.isNotBlank() && entryName != "." && entryName != "..") {
+            "Archive entry escapes destination directory: $entryName"
+        }
         val resolved = basePath.resolve(entryName).normalize()
         if (!resolved.startsWith(basePath)) {
             throw IllegalArgumentException("Archive entry escapes destination directory: $entryName")
