@@ -221,19 +221,33 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun loadAlarmSchedulerState(): AlarmSchedulerState {
         val rawJson = settingsStore.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
         readAlarmSchedulerState()?.let { return it }
-        val legacyState = loadLegacyAlarmSchedulerState()
-        if (legacyState.lastCheckAt != null || legacyState.lastTriggeredDates.isNotEmpty()) {
-            setAlarmSchedulerState(legacyState, emitChange = false)
+        val legacyLoad = loadLegacyAlarmSchedulerState()
+        if (legacyLoad.state.lastCheckAt != null || legacyLoad.state.lastTriggeredDates.isNotEmpty()) {
+            setAlarmSchedulerState(
+                legacyLoad.state,
+                emitChange = false,
+                forceLegacyWrite = legacyLoad.dirty,
+            )
+        } else if (legacyLoad.dirty) {
+            setAlarmSchedulerState(
+                AlarmSchedulerState(),
+                emitChange = false,
+                forceLegacyWrite = true,
+            )
         } else if (rawJson.isNotBlank() && rawJson != DEFAULT_ALARM_SCHEDULER_STATE) {
             setAlarmSchedulerState(AlarmSchedulerState(), emitChange = false)
         }
-        return legacyState
+        return legacyLoad.state
     }
 
     fun peekAlarmSchedulerState(): AlarmSchedulerState =
-        readAlarmSchedulerState() ?: loadLegacyAlarmSchedulerState()
+        readAlarmSchedulerState() ?: loadLegacyAlarmSchedulerState().state
 
-    fun setAlarmSchedulerState(value: AlarmSchedulerState, emitChange: Boolean = true): Boolean {
+    fun setAlarmSchedulerState(
+        value: AlarmSchedulerState,
+        emitChange: Boolean = true,
+        forceLegacyWrite: Boolean = false,
+    ): Boolean {
         val normalized = value.copy(
             lastCheckAt = value.lastCheckAt?.takeIf { it.isNotBlank() },
             lastTriggeredDates = value.lastTriggeredDates
@@ -247,17 +261,17 @@ class SettingsClient(val settingsStore: SettingsStore) {
         val currentLegacy = loadLegacyAlarmSchedulerState()
         val rawJson = settingsStore.getString(KEY_ALARM_SCHEDULER_STATE, DEFAULT_ALARM_SCHEDULER_STATE)
         val alreadyStored = when {
-            currentCombined != null -> currentCombined == normalized && currentLegacy == normalized
+            currentCombined != null -> currentCombined == normalized && currentLegacy.state == normalized
             rawJson.isBlank() || rawJson == DEFAULT_ALARM_SCHEDULER_STATE ->
-                normalized == AlarmSchedulerState() && currentLegacy == AlarmSchedulerState()
+                normalized == AlarmSchedulerState() && currentLegacy.state == AlarmSchedulerState()
             else -> false
         }
-        if (alreadyStored) {
+        if (alreadyStored && !forceLegacyWrite) {
             return true
         }
         val json = Json.encodeToString(normalized)
         val combinedChanged = currentCombined != normalized
-        val legacyChanged = currentLegacy != normalized
+        val legacyChanged = forceLegacyWrite || currentLegacy.state != normalized
         val combinedSaved = if (combinedChanged) {
             settingsStore.setString(KEY_ALARM_SCHEDULER_STATE, json).also { success ->
                 if (success && emitChange) {
@@ -268,7 +282,11 @@ class SettingsClient(val settingsStore: SettingsStore) {
             true
         }
         val legacySaved = if (legacyChanged) {
-            persistLegacyAlarmSchedulerState(normalized, currentLegacy)
+            persistLegacyAlarmSchedulerState(
+                state = normalized,
+                currentState = currentLegacy.state,
+                forceWrite = forceLegacyWrite,
+            )
         } else {
             true
         }
@@ -445,50 +463,60 @@ class SettingsClient(val settingsStore: SettingsStore) {
         }
     }
 
-    private fun loadLegacyAlarmSchedulerState(): AlarmSchedulerState {
-        val legacyTriggeredDates = readLegacyAlarmLastTriggeredDates().mapValues { (_, date) -> date.toString() }
-        val legacyCheckAt = readLegacyAlarmLastCheckAt()?.toString()
-        return AlarmSchedulerState(
-            lastCheckAt = legacyCheckAt,
-            lastTriggeredDates = legacyTriggeredDates,
+    private fun loadLegacyAlarmSchedulerState(): LegacyAlarmSchedulerStateLoad {
+        val legacyTriggeredDates = readLegacyAlarmLastTriggeredDates()
+        val legacyCheckAt = readLegacyAlarmLastCheckAt()
+        return LegacyAlarmSchedulerStateLoad(
+            state = AlarmSchedulerState(
+                lastCheckAt = legacyCheckAt.value?.toString(),
+                lastTriggeredDates = legacyTriggeredDates.value.mapValues { (_, date) -> date.toString() },
+            ),
+            dirty = legacyTriggeredDates.dirty || legacyCheckAt.dirty,
         )
     }
 
-    private fun readLegacyAlarmLastTriggeredDates(): Map<String, LocalDate> {
+    private fun readLegacyAlarmLastTriggeredDates(): LegacyAlarmTriggeredDatesLoad {
         val json = settingsStore.getString(KEY_ALARM_LAST_TRIGGERED_DATES, DEFAULT_ALARM_LAST_TRIGGERED_DATES)
         return if (json.isBlank() || json == DEFAULT_ALARM_LAST_TRIGGERED_DATES) {
-            emptyMap()
+            LegacyAlarmTriggeredDatesLoad(emptyMap(), false)
         } else {
             runCatching {
-                Json.decodeFromString<Map<String, String>>(json).mapNotNull { (alarmId, dateValue) ->
+                val decoded = Json.decodeFromString<Map<String, String>>(json)
+                val parsed = decoded.mapNotNull { (alarmId, dateValue) ->
                     runCatching { LocalDate.parse(dateValue) }
                         .getOrNull()
                         ?.let { parsedDate -> alarmId to parsedDate }
                 }.toMap()
+                LegacyAlarmTriggeredDatesLoad(parsed, parsed.size != decoded.size)
             }.getOrElse { error ->
                 logger.error("Failed to decode alarm trigger dates from JSON", error)
-                emptyMap()
+                LegacyAlarmTriggeredDatesLoad(emptyMap(), true)
             }
         }
     }
 
-    private fun readLegacyAlarmLastCheckAt(): LocalDateTime? {
+    private fun readLegacyAlarmLastCheckAt(): LegacyAlarmCheckAtLoad {
         val value = settingsStore.getString(KEY_ALARM_LAST_CHECK_AT, DEFAULT_ALARM_LAST_CHECK_AT)
         return if (value.isBlank()) {
-            null
+            LegacyAlarmCheckAtLoad(null, false)
         } else {
             runCatching { LocalDateTime.parse(value) }
+                .map { LegacyAlarmCheckAtLoad(it, false) }
                 .getOrElse { error ->
                     logger.error("Failed to decode alarm last check timestamp", error)
-                    null
+                    LegacyAlarmCheckAtLoad(null, true)
                 }
         }
     }
 
-    private fun persistLegacyAlarmSchedulerState(state: AlarmSchedulerState, currentState: AlarmSchedulerState): Boolean {
+    private fun persistLegacyAlarmSchedulerState(
+        state: AlarmSchedulerState,
+        currentState: AlarmSchedulerState,
+        forceWrite: Boolean = false,
+    ): Boolean {
         var saved = true
 
-        if (currentState.lastTriggeredDates != state.lastTriggeredDates) {
+        if (forceWrite || currentState.lastTriggeredDates != state.lastTriggeredDates) {
             val triggerDatesJson = Json.encodeToString(state.lastTriggeredDates)
             val triggeredDatesSaved = settingsStore.setString(KEY_ALARM_LAST_TRIGGERED_DATES, triggerDatesJson)
             if (!triggeredDatesSaved) {
@@ -497,7 +525,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
             }
         }
 
-        if (currentState.lastCheckAt != state.lastCheckAt) {
+        if (forceWrite || currentState.lastCheckAt != state.lastCheckAt) {
             val checkAtSaved = settingsStore.setString(KEY_ALARM_LAST_CHECK_AT, state.lastCheckAt ?: DEFAULT_ALARM_LAST_CHECK_AT)
             if (!checkAtSaved) {
                 logger.warn("Failed to persist legacy alarm last check timestamp.")
@@ -771,4 +799,19 @@ class SettingsClient(val settingsStore: SettingsStore) {
             emptyList()
         }
     }
+
+    private data class LegacyAlarmSchedulerStateLoad(
+        val state: AlarmSchedulerState,
+        val dirty: Boolean,
+    )
+
+    private data class LegacyAlarmTriggeredDatesLoad(
+        val value: Map<String, LocalDate>,
+        val dirty: Boolean,
+    )
+
+    private data class LegacyAlarmCheckAtLoad(
+        val value: LocalDateTime?,
+        val dirty: Boolean,
+    )
 }
