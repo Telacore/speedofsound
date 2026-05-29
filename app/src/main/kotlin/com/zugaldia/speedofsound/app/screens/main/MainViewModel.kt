@@ -39,6 +39,7 @@ import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.director.DefaultDirector
 import com.zugaldia.speedofsound.core.plugins.director.DirectorEvent
+import com.zugaldia.speedofsound.core.plugins.recorder.RecorderOptions
 import com.zugaldia.speedofsound.core.plugins.director.PipelineStage
 import com.zugaldia.speedofsound.core.plugins.recorder.JvmRecorder
 import com.zugaldia.speedofsound.core.plugins.recorder.RecorderEvent
@@ -71,9 +72,9 @@ class MainViewModel(
     private val registry = AppPluginRegistry()
 
     private val recorder = if (isGStreamerDisabled()) {
-        JvmRecorder(settingsClient.getRecorderOptions())
+        JvmRecorder(RecorderOptions(computeVolumeLevel = true))
     } else {
-        GStreamerRecorder(settingsClient.getRecorderOptions())
+        GStreamerRecorder(RecorderOptions(computeVolumeLevel = true))
     }
 
     private val director = DefaultDirector(registry, settingsClient.peekDirectorOptions())

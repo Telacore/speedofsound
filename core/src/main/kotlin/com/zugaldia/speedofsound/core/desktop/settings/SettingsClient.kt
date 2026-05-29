@@ -14,7 +14,6 @@ import com.zugaldia.speedofsound.core.plugins.llm.GoogleLlmOptions
 import com.zugaldia.speedofsound.core.plugins.llm.LlmPluginOptions
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
 import com.zugaldia.speedofsound.core.plugins.llm.OpenAiLlmOptions
-import com.zugaldia.speedofsound.core.plugins.recorder.RecorderOptions
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -29,13 +28,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     private val _settingsChanged = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val settingsChanged: SharedFlow<String> = _settingsChanged.asSharedFlow()
-
-    /*
-     * Utility functions to build options objects
-     */
-
-    fun getRecorderOptions(): RecorderOptions =
-        RecorderOptions(computeVolumeLevel = true)
 
     /**
      * Resolves a VoiceModelProviderSetting into the appropriate AsrPluginOptions
@@ -96,13 +88,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
             )
         }
     }
-
-    fun getDirectorOptions(): DirectorOptions = DirectorOptions(
-        enableTextProcessing = getTextProcessingEnabled(),
-        language = languageFromIso2(getDefaultLanguage()) ?: DEFAULT_LANGUAGE,
-        customVocabulary = getCustomVocabulary(),
-        customContext = getCustomContext()
-    )
 
     fun peekDirectorOptions(): DirectorOptions = DirectorOptions(
         enableTextProcessing = peekTextProcessingEnabled(),
