@@ -189,8 +189,16 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
                 .map { it.id }
                 .toSet()
             val voiceProvidersAdded = importedVoiceIds.count { it !in existingCustomVoiceIds }
+            val exactSelectedVoiceProviderId = snapshot.selectedVoiceProviderIdExact.trim()
             requireWrite(
-                persistExactVoiceProviderSelection(snapshot.selectedVoiceProviderIdExact, normalizedVoiceProviders),
+                if (shouldPreserveExactWhisperSelection(exactSelectedVoiceProviderId, normalizedVoiceProviders)) {
+                    viewModel.setSelectedVoiceModelProviderIdExact(exactSelectedVoiceProviderId)
+                } else {
+                    viewModel.setSelectedVoiceModelProviderId(
+                        snapshot.selectedVoiceProviderIdExact,
+                        normalizedVoiceProviders,
+                    )
+                },
                 "selected voice model provider",
             )
 
@@ -268,18 +276,6 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             }
         }
 
-    private fun persistExactVoiceProviderSelection(
-        selectedProviderId: String,
-        availableVoiceProviders: List<VoiceModelProviderSetting>,
-    ): Boolean {
-        val exactSelectedProviderId = selectedProviderId.trim()
-        return if (shouldPreserveExactWhisperSelection(exactSelectedProviderId, availableVoiceProviders)) {
-            viewModel.setSelectedVoiceModelProviderIdExact(exactSelectedProviderId)
-        } else {
-            viewModel.setSelectedVoiceModelProviderId(selectedProviderId, availableVoiceProviders)
-        }
-    }
-
     private fun requireWrite(wrote: Boolean, operation: String) {
         if (!wrote) {
             throw IllegalStateException("Failed to save $operation during import")
@@ -316,10 +312,15 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             )
         }
         restoreWrite("selected voice model provider") {
-            persistExactVoiceProviderSelection(
-                snapshot.selectedVoiceProviderIdExact,
-                snapshot.voiceProviders,
-            )
+            val exactSelectedVoiceProviderId = snapshot.selectedVoiceProviderIdExact.trim()
+            if (shouldPreserveExactWhisperSelection(exactSelectedVoiceProviderId, snapshot.voiceProviders)) {
+                viewModel.setSelectedVoiceModelProviderIdExact(exactSelectedVoiceProviderId)
+            } else {
+                viewModel.setSelectedVoiceModelProviderId(
+                    snapshot.selectedVoiceProviderIdExact,
+                    snapshot.voiceProviders,
+                )
+            }
         }
         restoreWrite("text model providers") {
             viewModel.setTextModelProviders(
