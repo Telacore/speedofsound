@@ -11,11 +11,11 @@ import java.time.LocalDateTime
 
 class AlarmScheduleTest {
     @Test
-    fun `alarm is due only within the matching minute`() {
+    fun `alarm is due within the grace window`() {
         val alarm = AlarmSetting(id = "alarm-1", hour = 7, minute = 30)
-        val dueMoment = LocalDateTime.of(2026, 5, 29, 7, 30, 15)
+        val dueMoment = LocalDateTime.of(2026, 5, 29, 7, 34, 59)
         val beforeWindow = LocalDateTime.of(2026, 5, 29, 7, 29, 59)
-        val afterWindow = LocalDateTime.of(2026, 5, 29, 7, 31, 0)
+        val afterWindow = LocalDateTime.of(2026, 5, 29, 7, 35, 1)
 
         assertTrue(isAlarmDue(dueMoment, alarm))
         assertFalse(isAlarmDue(beforeWindow, alarm))
@@ -83,6 +83,19 @@ class AlarmScheduleTest {
         )
 
         assertEquals("All alarms disabled", formatAlarmOverview(now, alarms))
+    }
+
+    @Test
+    fun `alarm overview marks a recently missed alarm as due now`() {
+        val now = LocalDateTime.of(2026, 5, 29, 9, 3, 15)
+        val alarms = listOf(
+            AlarmSetting(id = "alarm-1", name = "Morning", hour = 9, minute = 0),
+        )
+
+        assertEquals(
+            "1 active alarm · next Morning due now",
+            formatAlarmOverview(now, alarms)
+        )
     }
 
     @Test

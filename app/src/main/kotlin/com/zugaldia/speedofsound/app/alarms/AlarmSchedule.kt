@@ -7,6 +7,8 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Locale
 
+private const val ALARM_TRIGGER_GRACE_MINUTES = 5L
+
 fun formatAlarmTime(alarm: AlarmSetting): String =
     String.format(Locale.ROOT, "%02d:%02d", alarm.hour, alarm.minute)
 
@@ -51,6 +53,7 @@ fun shouldNotifyAlarm(action: AlarmAction): Boolean =
 data class AlarmOccurrence(
     val alarm: AlarmSetting,
     val nextRun: LocalDateTime,
+    val dueNow: Boolean,
 )
 
 fun nextAlarmOccurrence(now: LocalDateTime, alarms: List<AlarmSetting>): AlarmOccurrence? {
@@ -59,8 +62,9 @@ fun nextAlarmOccurrence(now: LocalDateTime, alarms: List<AlarmSetting>): AlarmOc
         .filter { it.enabled }
         .map { alarm ->
             val candidate = reference.toLocalDate().atTime(alarm.hour, alarm.minute)
-            val nextRun = if (candidate.isBefore(reference)) candidate.plusDays(1) else candidate
-            AlarmOccurrence(alarm = alarm, nextRun = nextRun)
+            val dueNow = isWithinAlarmGraceWindow(now, candidate)
+            val nextRun = if (candidate.isBefore(reference) && !dueNow) candidate.plusDays(1) else candidate
+            AlarmOccurrence(alarm = alarm, nextRun = nextRun, dueNow = dueNow)
         }
         .minByOrNull { it.nextRun }
 }
@@ -80,7 +84,12 @@ fun formatAlarmOverview(now: LocalDateTime, alarms: List<AlarmSetting>): String 
     val activeLabel = if (activeCount == 1) "1 active alarm" else "$activeCount active alarms"
     val label = occurrence.alarm.name.trim().ifBlank { "alarm" }
     val daySuffix = if (occurrence.nextRun.toLocalDate().isEqual(now.toLocalDate())) "" else " tomorrow"
-    return "$activeLabel · next $label$daySuffix at ${formatAlarmTime(occurrence.alarm)}"
+    val timing = if (occurrence.dueNow) {
+        "due now"
+    } else {
+        "$daySuffix at ${formatAlarmTime(occurrence.alarm)}"
+    }
+    return "$activeLabel · next $label $timing".replace("  ", " ").trim()
 }
 
 fun millisUntilNextAlarmSummaryRefresh(now: LocalDateTime): Long {
@@ -91,6 +100,9 @@ fun millisUntilNextAlarmSummaryRefresh(now: LocalDateTime): Long {
 
 fun isAlarmDue(now: LocalDateTime, alarm: AlarmSetting): Boolean {
     val alarmStart = now.toLocalDate().atTime(alarm.hour, alarm.minute)
-    val alarmEnd = alarmStart.plusMinutes(1)
-    return !now.isBefore(alarmStart) && now.isBefore(alarmEnd)
+    val alarmEnd = alarmStart.plusMinutes(ALARM_TRIGGER_GRACE_MINUTES)
+    return !now.isBefore(alarmStart) && !now.isAfter(alarmEnd)
 }
+
+private fun isWithinAlarmGraceWindow(now: LocalDateTime, candidate: LocalDateTime): Boolean =
+    !now.isBefore(candidate) && !now.isAfter(candidate.plusMinutes(ALARM_TRIGGER_GRACE_MINUTES))
