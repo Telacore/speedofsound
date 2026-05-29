@@ -57,10 +57,6 @@ class ModelComboRow<T : SelectableModel>(
 
     private fun updateCurrentModels(models: Map<String, T>) {
         currentModels = models
-        refreshComboRowsInternal()
-    }
-
-    private fun refreshComboRowsInternal() {
         val modelList = currentModels.values.toList()
         val modelNames = modelList.map { it.name }.toMutableList()
         modelNames.add(CUSTOM_MODEL_LABEL) // Add the custom option at the end
