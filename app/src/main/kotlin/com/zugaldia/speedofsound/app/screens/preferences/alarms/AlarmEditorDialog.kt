@@ -5,9 +5,12 @@ import com.zugaldia.speedofsound.app.DEFAULT_ADD_ALARM_DIALOG_WIDTH
 import com.zugaldia.speedofsound.app.DEFAULT_BOX_SPACING
 import com.zugaldia.speedofsound.app.DEFAULT_MARGIN
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
+import com.zugaldia.speedofsound.app.ADW_MAX_LENGTH_MIN_MAJOR_VERSION
+import com.zugaldia.speedofsound.app.ADW_MAX_LENGTH_MIN_MINOR_VERSION
 import com.zugaldia.speedofsound.app.alarms.formatAlarmAction
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_ALARM_NAME_LENGTH
 import com.zugaldia.speedofsound.core.generateUniqueId
 import org.gnome.adw.ComboRow
 import org.gnome.adw.Dialog
@@ -36,10 +39,18 @@ class AlarmEditorDialog(
         contentWidth = DEFAULT_ADD_ALARM_DIALOG_WIDTH
         contentHeight = DEFAULT_ADD_ALARM_DIALOG_HEIGHT
 
+        val supportsMaxLength = com.zugaldia.speedofsound.app.isAdwVersionAtLeast(
+            ADW_MAX_LENGTH_MIN_MAJOR_VERSION,
+            ADW_MAX_LENGTH_MIN_MINOR_VERSION,
+        )
+
         nameRow = EntryRow().apply {
             title = "Name"
             subtitle = "Optional label shown in the list and notifications"
             text = existingAlarm?.name ?: ""
+            if (supportsMaxLength) {
+                maxLength = MAX_ALARM_NAME_LENGTH
+            }
         }
         hourRow = SpinRow.withRange(0.0, 23.0, 1.0).apply {
             title = "Hour"

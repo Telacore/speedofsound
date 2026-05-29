@@ -87,6 +87,9 @@ data class AlarmSetting(
 fun AlarmSetting.isValid(): Boolean =
     id.isNotBlank() && hour in 0..23 && minute in 0..59
 
+fun AlarmSetting.normalized(): AlarmSetting =
+    copy(name = name.trim().take(MAX_ALARM_NAME_LENGTH))
+
 /**
  * A serializable snapshot of all exportable user preferences.
  * Instance-specific settings (portal token, selected provider IDs, text processing toggle) are excluded.

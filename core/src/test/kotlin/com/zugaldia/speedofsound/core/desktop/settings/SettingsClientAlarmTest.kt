@@ -55,6 +55,23 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `setAlarms trims alarm names to the supported maximum`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        val longName = "A".repeat(MAX_ALARM_NAME_LENGTH + 25)
+        client.setAlarms(
+            listOf(
+                AlarmSetting(id = "alarm-1", name = longName, hour = 6, minute = 0),
+            )
+        )
+
+        assertEquals(1, client.getAlarms().size)
+        assertEquals(MAX_ALARM_NAME_LENGTH, client.getAlarms().first().name.length)
+        assertEquals(longName.take(MAX_ALARM_NAME_LENGTH), client.getAlarms().first().name)
+    }
+
+    @Test
     fun `setAlarms filters invalid entries before persisting`() {
         val store = MapSettingsStore()
         val client = SettingsClient(store)

@@ -234,6 +234,7 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     private fun normalizeAlarms(value: List<AlarmSetting>): List<AlarmSetting> {
         val sortedUniqueAlarms = value.asSequence()
+            .map { it.normalized() }
             .filter { it.isValid() }
             .sortedWith(
                 compareBy<AlarmSetting> { it.hour }
