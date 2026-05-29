@@ -88,6 +88,12 @@ class PreferencesViewModel(
     fun peekCredentials(): List<CredentialSetting> = settingsClient.peekCredentials()
     fun setCredentials(value: List<CredentialSetting>): Boolean =
         settingsClient.setCredentials(value)
+    fun setCredentials(
+        value: List<CredentialSetting>,
+        availableVoiceProviders: List<VoiceModelProviderSetting>,
+        availableTextProviders: List<TextModelProviderSetting>,
+    ): Boolean =
+        settingsClient.setCredentials(value, availableVoiceProviders, availableTextProviders)
 
     /*
      * Voice Models page

@@ -120,7 +120,14 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             val existingCredentialIds = existingCredentials.map { it.id }.toSet()
             val newCredentials = exportData.credentials.filter { it.id !in existingCredentialIds }
             if (newCredentials.isNotEmpty()) {
-                requireWrite(viewModel.setCredentials(existingCredentials + newCredentials), "credentials")
+                requireWrite(
+                    viewModel.setCredentials(
+                        existingCredentials + newCredentials,
+                        snapshot.voiceProviders,
+                        snapshot.textProviders,
+                    ),
+                    "credentials",
+                )
             }
             val importedCredentialIds = (existingCredentials + newCredentials).map { it.id }.toSet()
             val credentialsAdded = importedCredentialIds.count { it !in existingCredentialIds }
@@ -302,7 +309,13 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         restoreWrite("post hide delay") { viewModel.setPostHideDelayMs(snapshot.postHideDelayMs) }
         restoreWrite("typing delay") { viewModel.setTypingDelayMs(snapshot.typingDelayMs) }
         restoreWrite("custom context") { viewModel.setCustomContext(snapshot.customContext) }
-        restoreWrite("credentials") { viewModel.setCredentials(snapshot.credentials) }
+        restoreWrite("credentials") {
+            viewModel.setCredentials(
+                snapshot.credentials,
+                snapshot.voiceProviders,
+                snapshot.textProviders,
+            )
+        }
         restoreWrite("voice model providers") {
             viewModel.setVoiceModelProviders(
                 snapshot.voiceProviders,

@@ -337,6 +337,80 @@ class SettingsClientNormalizationTest {
     }
 
     @Test
+    fun `credentials setter reuses provided provider snapshots`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_CREDENTIALS to Json.encodeToString(
+                    listOf(
+                        CredentialSetting(id = "cred-drop", type = CredentialType.API_KEY, name = "Drop", value = "drop"),
+                    )
+                ),
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-1",
+                            name = "Voice",
+                            provider = AsrProvider.SHERPA_WHISPER,
+                            modelId = "model-1",
+                            credentialId = "cred-drop",
+                        ),
+                    )
+                ),
+                KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-1",
+                            name = "Text",
+                            provider = LlmProvider.OPENAI,
+                            modelId = "model-2",
+                            credentialId = "cred-drop",
+                        ),
+                    )
+                ),
+            )
+        )
+        val client = SettingsClient(store)
+        val voiceProviders = listOf(
+            VoiceModelProviderSetting(
+                id = "voice-1",
+                name = "Voice",
+                provider = AsrProvider.SHERPA_WHISPER,
+                modelId = "model-1",
+                credentialId = "cred-drop",
+            )
+        )
+        val textProviders = listOf(
+            TextModelProviderSetting(
+                id = "text-1",
+                name = "Text",
+                provider = LlmProvider.OPENAI,
+                modelId = "model-2",
+                credentialId = "cred-drop",
+            )
+        )
+
+        assertEquals(
+            true,
+            client.setCredentials(
+                listOf(CredentialSetting(id = "cred-keep", type = CredentialType.API_KEY, name = "Keep", value = "keep")),
+                voiceProviders,
+                textProviders,
+            )
+        )
+        assertEquals(1, store.stringReadCount(KEY_CREDENTIALS))
+        assertEquals(1, store.stringReadCount(KEY_VOICE_MODEL_PROVIDERS))
+        assertEquals(1, store.stringReadCount(KEY_TEXT_MODEL_PROVIDERS))
+        assertEquals(
+            null,
+            Json.decodeFromString<List<VoiceModelProviderSetting>>(store.rawString(KEY_VOICE_MODEL_PROVIDERS)!!).first().credentialId
+        )
+        assertEquals(
+            null,
+            Json.decodeFromString<List<TextModelProviderSetting>>(store.rawString(KEY_TEXT_MODEL_PROVIDERS)!!).first().credentialId
+        )
+    }
+
+    @Test
     fun `setting credentials stops when credential write fails`() {
         val store = MapSettingsStore(
             initialValues = mutableMapOf(
@@ -671,6 +745,8 @@ class SettingsClientNormalizationTest {
             stringReadCounts[key] = (stringReadCounts[key] ?: 0) + 1
             return values[key] ?: defaultValue
         }
+
+        fun rawString(key: String): String? = values[key]
 
         override fun setString(key: String, value: String): Boolean {
             if (key in failingKeys) {

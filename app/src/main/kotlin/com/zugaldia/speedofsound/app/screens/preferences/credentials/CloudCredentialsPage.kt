@@ -13,7 +13,11 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_CREDENTIALS
+import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
+import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -38,6 +42,8 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     private val placeholderBox: Box
     private val addButton: Button
     private var currentCredentials: List<CredentialSetting> = emptyList()
+    private var currentVoiceProviders: List<VoiceModelProviderSetting> = emptyList()
+    private var currentTextProviders: List<TextModelProviderSetting> = emptyList()
 
     init {
         title = "Cloud Credentials"
@@ -93,7 +99,11 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     private fun setupNotifications() {
         scope.launch {
             viewModel.settingsChanged
-                .filter { it == KEY_CREDENTIALS }
+                .filter {
+                    it == KEY_CREDENTIALS ||
+                        it == KEY_VOICE_MODEL_PROVIDERS ||
+                        it == KEY_TEXT_MODEL_PROVIDERS
+                }
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                         refresh()
@@ -131,7 +141,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
 
         val updatedCredentials = currentCredentials + credential
         logger.info("Adding credential, total is now ${updatedCredentials.size} entries.")
-        if (!viewModel.setCredentials(updatedCredentials)) {
+        if (!viewModel.setCredentials(updatedCredentials, currentVoiceProviders, currentTextProviders)) {
             logger.warn("Failed to persist credential '${credential.name}'")
             refresh()
             return false
@@ -173,14 +183,11 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     private fun onCredentialDeleted(credentialId: String, credentialName: String): Boolean {
         val credentialToDelete = currentCredentials.find { it.id == credentialId }
         if (credentialToDelete != null) {
-            val currentCredentialIds = currentCredentials.map { it.id }.toSet()
-            val textProviders = viewModel.peekTextModelProviders(currentCredentialIds)
-            val voiceProviders = viewModel.peekVoiceModelProviders(currentCredentialIds)
             val referencingProviders = buildList {
-                addAll(textProviders.filter { it.credentialId == credentialToDelete.id }.map {
+                addAll(currentTextProviders.filter { it.credentialId == credentialToDelete.id }.map {
                     "Text: ${it.name}"
                 })
-                addAll(voiceProviders.filter { it.credentialId == credentialToDelete.id }.map {
+                addAll(currentVoiceProviders.filter { it.credentialId == credentialToDelete.id }.map {
                     "Voice: ${it.name}"
                 })
             }
@@ -194,7 +201,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         // Proceed with deletion
         val updatedCredentials = currentCredentials.filter { it.id != credentialId }
         logger.info("Removing credential '$credentialName', total is now ${updatedCredentials.size} entries.")
-        if (!viewModel.setCredentials(updatedCredentials)) {
+        if (!viewModel.setCredentials(updatedCredentials, currentVoiceProviders, currentTextProviders)) {
             logger.warn("Failed to persist credential deletion '$credentialName'")
             refresh()
             return false
@@ -217,5 +224,8 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
 
     private fun refreshSnapshots() {
         currentCredentials = viewModel.peekCredentials()
+        val currentCredentialIds = currentCredentials.map { it.id }.toSet()
+        currentVoiceProviders = viewModel.peekVoiceModelProviders(currentCredentialIds)
+        currentTextProviders = viewModel.peekTextModelProviders(currentCredentialIds)
     }
 }

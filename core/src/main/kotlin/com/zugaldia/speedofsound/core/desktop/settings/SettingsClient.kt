@@ -687,18 +687,27 @@ class SettingsClient(val settingsStore: SettingsStore) {
     fun setCredentials(value: List<CredentialSetting>): Boolean {
         val normalized = value.normalizedCredentials()
         val validCredentialIds = normalized.map { it.id }.toSet()
-        val json = Json.encodeToString(normalized)
-        val credentialsSaved = setStringSettingIfChanged(
-            KEY_CREDENTIALS,
-            settingsStore.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS),
-            json,
-            KEY_CREDENTIALS
+        return setCredentialsInternal(
+            normalized = normalized,
+            validCredentialIds = validCredentialIds,
+            availableVoiceProviders = peekVoiceModelProviders(validCredentialIds),
+            availableTextProviders = peekTextModelProviders(validCredentialIds),
         )
-        if (!credentialsSaved) {
-            return false
-        }
-        val providersSaved = normalizeStoredProviderCredentialRefs(validCredentialIds)
-        return providersSaved
+    }
+
+    fun setCredentials(
+        value: List<CredentialSetting>,
+        availableVoiceProviders: List<VoiceModelProviderSetting>,
+        availableTextProviders: List<TextModelProviderSetting>,
+    ): Boolean {
+        val normalized = value.normalizedCredentials()
+        val validCredentialIds = normalized.map { it.id }.toSet()
+        return setCredentialsInternal(
+            normalized = normalized,
+            validCredentialIds = validCredentialIds,
+            availableVoiceProviders = availableVoiceProviders,
+            availableTextProviders = availableTextProviders,
+        )
     }
 
     /*
@@ -1303,11 +1312,36 @@ class SettingsClient(val settingsStore: SettingsStore) {
         return selectionSaved
     }
 
-    private fun normalizeStoredProviderCredentialRefs(validCredentialIds: Set<String>): Boolean {
-        val voiceProviders = peekVoiceModelProviders(validCredentialIds)
-        val textProviders = peekTextModelProviders(validCredentialIds)
-        val voiceSaved = setVoiceModelProvidersInternal(voiceProviders, validCredentialIds, voiceProviders)
-        val textSaved = setTextModelProvidersInternal(textProviders, validCredentialIds, textProviders)
+    private fun setCredentialsInternal(
+        normalized: List<CredentialSetting>,
+        validCredentialIds: Set<String>,
+        availableVoiceProviders: List<VoiceModelProviderSetting>,
+        availableTextProviders: List<TextModelProviderSetting>,
+    ): Boolean {
+        val json = Json.encodeToString(normalized)
+        val credentialsSaved = setStringSettingIfChanged(
+            KEY_CREDENTIALS,
+            settingsStore.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS),
+            json,
+            KEY_CREDENTIALS
+        )
+        if (!credentialsSaved) {
+            return false
+        }
+        return normalizeStoredProviderCredentialRefs(
+            validCredentialIds = validCredentialIds,
+            availableVoiceProviders = availableVoiceProviders,
+            availableTextProviders = availableTextProviders,
+        )
+    }
+
+    private fun normalizeStoredProviderCredentialRefs(
+        validCredentialIds: Set<String>,
+        availableVoiceProviders: List<VoiceModelProviderSetting>,
+        availableTextProviders: List<TextModelProviderSetting>,
+    ): Boolean {
+        val voiceSaved = setVoiceModelProvidersInternal(availableVoiceProviders, validCredentialIds, availableVoiceProviders)
+        val textSaved = setTextModelProvidersInternal(availableTextProviders, validCredentialIds, availableTextProviders)
         return voiceSaved && textSaved
     }
 
