@@ -17,6 +17,7 @@ import com.zugaldia.speedofsound.core.plugins.asr.OpenAiAsr
 import com.zugaldia.speedofsound.core.plugins.asr.OpenAiAsrOptions
 import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.asr.pluginIdForProvider
+import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import org.slf4j.LoggerFactory
 
 /**
@@ -56,8 +57,8 @@ class AsrProviderManager(
      * Optionally activates the provider if setActive is true.
      */
     private fun applySelectedProviderConfig(setActive: Boolean) {
-        val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderId()
-        val selectedProvider = settingsClient.peekSelectedVoiceModelProvider()
+        val selectedProviderId = settingsClient.peekSelectedVoiceModelProviderIdExact()
+        val selectedProvider = selectedVoiceProvider()
         val currentActiveId = registry.getActive(AppPluginCategory.ASR)?.id
         val selectedProviderMissing = selectedProvider == null
         val pluginId = if (selectedProvider != null) {
@@ -135,13 +136,16 @@ class AsrProviderManager(
      * Gets the name of the currently selected ASR provider.
      */
     fun peekCurrentProviderName(): String {
-        val selectedProvider = settingsClient.peekSelectedVoiceModelProvider()
+        val selectedProvider = selectedVoiceProvider()
         if (selectedProvider != null) {
             return selectedProvider.name
         }
         val activeProviderId = registry.getActive(AppPluginCategory.ASR)?.id ?: return ""
         return AsrProvider.entries.firstOrNull { pluginIdForProvider(it) == activeProviderId }?.displayName ?: ""
     }
+
+    private fun selectedVoiceProvider(): VoiceModelProviderSetting? =
+        settingsClient.peekVoiceModelProviders().find { it.id == settingsClient.peekSelectedVoiceModelProviderIdExact() }
 
     private fun applyAsrOptions(pluginId: String, options: AsrPluginOptions) {
         val plugin = registry.getPluginById(AppPluginCategory.ASR, pluginId) ?: return

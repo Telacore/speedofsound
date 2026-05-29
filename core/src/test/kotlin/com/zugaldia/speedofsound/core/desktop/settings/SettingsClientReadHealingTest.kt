@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.core.desktop.settings
 
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
+import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -124,6 +125,30 @@ class SettingsClientReadHealingTest {
 
         assertEquals(expectedVoiceProvider, client.peekSelectedVoiceModelProvider())
         assertEquals(expectedTextProvider, client.peekSelectedTextModelProvider())
+        assertEquals(0, store.writeCount)
+    }
+
+    @Test
+    fun `exact voice provider id is preserved when provider is not visible`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID,
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val client = SettingsClient(store)
+
+        assertEquals(DEFAULT_ASR_SHERPA_WHISPER_MODEL_ID, client.peekSelectedVoiceModelProviderIdExact())
+        assertEquals("voice-a", client.peekSelectedVoiceModelProviderId())
         assertEquals(0, store.writeCount)
     }
 

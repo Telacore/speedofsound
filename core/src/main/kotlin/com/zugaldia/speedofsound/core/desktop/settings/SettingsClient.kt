@@ -747,6 +747,15 @@ class SettingsClient(val settingsStore: SettingsStore) {
             availableProviders = peekVoiceModelProviders(),
         )
 
+    /**
+     * Reads the stored ASR selection exactly as persisted, without normalizing it against the
+     * visible provider list.
+     *
+     * Used by the Whisper fallback path while the local ASR model may still be hidden.
+     */
+    fun peekSelectedVoiceModelProviderIdExact(): String =
+        settingsStore.getString(KEY_SELECTED_VOICE_MODEL_PROVIDER_ID, DEFAULT_SELECTED_VOICE_MODEL_PROVIDER_ID).trim()
+
     fun peekSelectedVoiceModelProvider(): VoiceModelProviderSetting? =
         peekSelectedProvider(
             key = KEY_SELECTED_VOICE_MODEL_PROVIDER_ID,
