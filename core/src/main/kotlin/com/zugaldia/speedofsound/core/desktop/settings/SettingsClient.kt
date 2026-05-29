@@ -513,17 +513,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
      */
 
     fun getCredentials(): List<CredentialSetting> {
-        val json = settingsStore.getString(KEY_CREDENTIALS, DEFAULT_CREDENTIALS)
-        return if (json.isEmpty() || json == DEFAULT_CREDENTIALS) {
-            emptyList()
-        } else {
-            runCatching {
-                Json.decodeFromString<List<CredentialSetting>>(json)
-            }.getOrElse { error ->
-                logger.error("Failed to decode credentials from JSON", error)
-                emptyList()
-            }
-        }
+        return readJsonListSetting(
+            key = KEY_CREDENTIALS,
+            defaultValue = DEFAULT_CREDENTIALS,
+            label = "credentials",
+            heal = true,
+        )
     }
 
     fun setCredentials(value: List<CredentialSetting>): Boolean {
@@ -551,17 +546,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
     }
 
     fun getVoiceModelProviders(): List<VoiceModelProviderSetting> {
-        val json = settingsStore.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS)
-        val customProviders = if (json.isEmpty() || json == DEFAULT_VOICE_MODEL_PROVIDERS) {
-            emptyList()
-        } else {
-            runCatching {
-                Json.decodeFromString<List<VoiceModelProviderSetting>>(json)
-            }.getOrElse { error ->
-                logger.error("Failed to decode voice model providers from JSON", error)
-                emptyList()
-            }
-        }
+        val customProviders = readJsonListSetting(
+            key = KEY_VOICE_MODEL_PROVIDERS,
+            defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
+            label = "voice model providers",
+            heal = true,
+        )
 
         // Include the local provider first
         return getLocalVoiceModelProviders() + customProviders
@@ -606,17 +596,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
 
     fun getTextModelProviders(): List<TextModelProviderSetting> {
-        val json = settingsStore.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS)
-        return if (json.isEmpty() || json == DEFAULT_TEXT_MODEL_PROVIDERS) {
-            emptyList()
-        } else {
-            runCatching {
-                Json.decodeFromString<List<TextModelProviderSetting>>(json)
-            }.getOrElse { error ->
-                logger.error("Failed to decode text model providers from JSON", error)
-                emptyList()
-            }
-        }
+        return readJsonListSetting(
+            key = KEY_TEXT_MODEL_PROVIDERS,
+            defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,
+            label = "text model providers",
+            heal = true,
+        )
     }
 
     fun setTextModelProviders(value: List<TextModelProviderSetting>): Boolean {
@@ -762,6 +747,28 @@ class SettingsClient(val settingsStore: SettingsStore) {
             if (success && emitChangeKey != null) {
                 _settingsChanged.tryEmit(emitChangeKey)
             }
+        }
+    }
+
+    private inline fun <reified T> readJsonListSetting(
+        key: String,
+        defaultValue: String,
+        label: String,
+        heal: Boolean,
+    ): List<T> {
+        val json = settingsStore.getString(key, defaultValue)
+        if (json.isEmpty() || json == defaultValue) {
+            return emptyList()
+        }
+
+        return runCatching {
+            Json.decodeFromString<List<T>>(json)
+        }.getOrElse { error ->
+            logger.error("Failed to decode {} from JSON", label, error)
+            if (heal) {
+                settingsStore.setString(key, Json.encodeToString(emptyList<T>()))
+            }
+            emptyList()
         }
     }
 }
