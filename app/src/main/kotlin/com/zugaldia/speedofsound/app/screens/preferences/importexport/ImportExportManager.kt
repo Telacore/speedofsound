@@ -3,7 +3,6 @@ package com.zugaldia.speedofsound.app.screens.preferences.importexport
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.core.APPLICATION_SHORT
 import com.zugaldia.speedofsound.core.io.AtomicFileWriter
-import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
@@ -94,7 +93,32 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             throw IllegalStateException("Unsupported export version: ${exportData.version}")
         }
 
-        val snapshot = captureImportSnapshot(viewModel.peekCredentials())
+        val credentials = viewModel.peekCredentials()
+        val credentialIds = credentials.map { it.id }.toSet()
+        val voiceProviders = viewModel.peekVoiceModelProviders(credentialIds)
+        val textProviders = viewModel.peekTextModelProviders(credentialIds)
+        val snapshot = ImportSnapshot(
+            defaultLanguage = viewModel.peekDefaultLanguage(),
+            secondaryLanguage = viewModel.peekSecondaryLanguage(),
+            backgroundRecording = viewModel.peekBackgroundRecording(),
+            hideInsteadOfMinimize = viewModel.peekHideInsteadOfMinimize(),
+            stayHiddenOnActivation = viewModel.peekStayHiddenOnActivation(),
+            appendSpace = viewModel.peekAppendSpace(),
+            maxAlarms = viewModel.peekMaxAlarms(),
+            alarms = viewModel.peekAlarms(),
+            sanitizeSpecialChars = viewModel.peekSanitizeSpecialChars(),
+            postHideDelayMs = viewModel.peekPostHideDelayMs(),
+            typingDelayMs = viewModel.peekTypingDelayMs(),
+            customContext = viewModel.peekCustomContext(),
+            credentials = credentials,
+            voiceProviders = voiceProviders,
+            selectedVoiceProviderIdExact = viewModel.peekSelectedVoiceModelProviderIdExact(),
+            textProviders = textProviders,
+            selectedTextProviderId = viewModel.peekSelectedTextModelProviderId(credentialIds),
+            textProcessingEnabled = viewModel.peekTextProcessingEnabled(),
+            customVocabulary = viewModel.peekCustomVocabulary(),
+            alarmSchedulerState = viewModel.peekAlarmSchedulerState(),
+        )
 
         try {
             requireWrite(viewModel.setDefaultLanguage(exportData.defaultLanguage), "default language")
@@ -260,34 +284,6 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         if (!wrote) {
             throw IllegalStateException("Failed to save $operation during import")
         }
-    }
-
-    private fun captureImportSnapshot(credentials: List<CredentialSetting>): ImportSnapshot {
-        val credentialIds = credentials.map { it.id }.toSet()
-        val voiceProviders = viewModel.peekVoiceModelProviders(credentialIds)
-        val textProviders = viewModel.peekTextModelProviders(credentialIds)
-        ImportSnapshot(
-            defaultLanguage = viewModel.peekDefaultLanguage(),
-            secondaryLanguage = viewModel.peekSecondaryLanguage(),
-            backgroundRecording = viewModel.peekBackgroundRecording(),
-            hideInsteadOfMinimize = viewModel.peekHideInsteadOfMinimize(),
-            stayHiddenOnActivation = viewModel.peekStayHiddenOnActivation(),
-            appendSpace = viewModel.peekAppendSpace(),
-            maxAlarms = viewModel.peekMaxAlarms(),
-            alarms = viewModel.peekAlarms(),
-            sanitizeSpecialChars = viewModel.peekSanitizeSpecialChars(),
-            postHideDelayMs = viewModel.peekPostHideDelayMs(),
-            typingDelayMs = viewModel.peekTypingDelayMs(),
-            customContext = viewModel.peekCustomContext(),
-            credentials = credentials,
-            voiceProviders = voiceProviders,
-            selectedVoiceProviderIdExact = viewModel.peekSelectedVoiceModelProviderIdExact(),
-            textProviders = textProviders,
-            selectedTextProviderId = viewModel.peekSelectedTextModelProviderId(credentialIds),
-            textProcessingEnabled = viewModel.peekTextProcessingEnabled(),
-            customVocabulary = viewModel.peekCustomVocabulary(),
-            alarmSchedulerState = viewModel.peekAlarmSchedulerState(),
-        )
     }
 
     private fun restoreImportSnapshot(snapshot: ImportSnapshot) {
