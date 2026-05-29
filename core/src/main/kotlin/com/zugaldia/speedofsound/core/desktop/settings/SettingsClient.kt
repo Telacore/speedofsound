@@ -181,13 +181,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
     }
 
-    private fun loadSelectedTextModelProviderId(availableProviders: List<SelectableProviderSetting>): String =
-        readSelectedProviderId(
-            KEY_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            DEFAULT_SELECTED_TEXT_MODEL_PROVIDER_ID,
-            availableProviders
-        )
-
     fun setPortalsRestoreToken(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_PORTALS_RESTORE_TOKEN,
