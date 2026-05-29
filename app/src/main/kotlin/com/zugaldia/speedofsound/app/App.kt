@@ -90,7 +90,6 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
             logger.info("Application shutting down.")
             statusNotifierService?.close()
             mainViewModel.shutdown()
-            portalsClient.close()
         }
     }
 
@@ -126,7 +125,13 @@ class SosApplication(applicationId: String, flags: Set<ApplicationFlags>) : Appl
 
     private fun ensureMainWindow() {
         if (mainWindow == null) {
-            mainWindow = MainWindow(this, mainViewModel, settingsClient, portalsClient)
+            mainWindow = MainWindow(
+                this,
+                mainViewModel,
+                settingsClient,
+                portalsClient,
+                onClosed = { mainWindow = null },
+            )
         }
     }
 

@@ -680,6 +680,13 @@ class MainViewModel(
                     shutdownError.message
                 )
             }
+        runCatching { portalsClient.close() }
+            .onFailure { shutdownError ->
+                logger.error(
+                    "Failed to close portal client after startup failure: {}",
+                    shutdownError.message
+                )
+            }
         GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
             state.updateAsrModel("ASR unavailable")
             state.updateLlmModel(llmProviderManager.getCurrentProviderName())

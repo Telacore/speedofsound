@@ -42,6 +42,7 @@ class MainWindow(
     private val viewModel: MainViewModel,
     private val settingsClient: SettingsClient,
     private val portalsClient: PortalsClient,
+    private val onClosed: () -> Unit = {},
 ) : ApplicationWindow() {
     private val audioWidget: AudioWidget
     private val portalsBanner: Banner
@@ -90,6 +91,10 @@ class MainWindow(
             content = contentBox
         }
 
+        onCloseRequest {
+            onClosed()
+            false
+        }
         connectSignals()
         viewModel.start()
     }
