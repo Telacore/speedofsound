@@ -148,8 +148,9 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         row.addSuffix(deleteButton)
         credentialsListBox.append(row)
         deleteButton.onClicked {
-            credentialsListBox.remove(row)
-            onCredentialDeleted(credential.name)
+            if (onCredentialDeleted(credential.name)) {
+                credentialsListBox.remove(row)
+            }
         }
     }
 
@@ -160,7 +161,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
             "${value.take(CREDENTIAL_MASK_PREFIX_LENGTH)}...${value.takeLast(CREDENTIAL_MASK_SUFFIX_LENGTH)}"
         }
 
-    private fun onCredentialDeleted(credentialName: String) {
+    private fun onCredentialDeleted(credentialName: String): Boolean {
         val currentCredentials = viewModel.peekCredentials()
         val credentialToDelete = currentCredentials.find { it.name == credentialName }
         if (credentialToDelete != null) {
@@ -169,7 +170,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
             if (referencingProviders.isNotEmpty()) {
                 val providerNames = referencingProviders.joinToString(", ") { it.name }
                 logger.warn("Cannot delete credential '$credentialName': used by providers: $providerNames")
-                return
+                return false
             }
         }
 
@@ -178,6 +179,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
         logger.info("Removing credential, total is now ${updatedCredentials.size} entries.")
         viewModel.setCredentials(updatedCredentials)
         updatePlaceholderVisibility()
+        return true
     }
 
     private fun updatePlaceholderVisibility() {

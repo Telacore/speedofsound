@@ -17,6 +17,7 @@ import com.zugaldia.speedofsound.app.screens.preferences.shared.ProviderComboRow
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_PROVIDER_CONFIG_NAME_LENGTH
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
 import com.zugaldia.speedofsound.core.isValidUrl
@@ -25,6 +26,7 @@ import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_SHERPA_WHISPER_MOD
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.asr.DEFAULT_ASR_OPENAI_MODEL_ID
 import com.zugaldia.speedofsound.core.plugins.asr.getModelsForProvider
+import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -249,6 +251,8 @@ class AddVoiceModelProviderDialog(
     private fun validateInput(name: String, baseUrl: String?, modelId: String?): Boolean {
         if (name.isEmpty()) { return false }
         if (name.length > MAX_PROVIDER_CONFIG_NAME_LENGTH) { return false }
+        val customProviderCount = viewModel.peekVoiceModelProviders().count { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+        if (customProviderCount >= MAX_VOICE_MODEL_PROVIDERS) { return false }
         if (viewModel.peekVoiceModelProviders().any { it.name == name }) { return false }
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }

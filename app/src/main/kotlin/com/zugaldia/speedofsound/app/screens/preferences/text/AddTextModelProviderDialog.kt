@@ -18,6 +18,7 @@ import com.zugaldia.speedofsound.app.screens.preferences.shared.ProviderComboRow
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_PROVIDER_CONFIG_NAME_LENGTH
+import com.zugaldia.speedofsound.core.desktop.settings.MAX_TEXT_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
 import com.zugaldia.speedofsound.core.isValidUrl
@@ -370,6 +371,7 @@ class AddTextModelProviderDialog(
     private fun validateInput(name: String, baseUrl: String?, modelId: String?): Boolean {
         if (name.isEmpty()) { return false }
         if (name.length > MAX_PROVIDER_CONFIG_NAME_LENGTH) { return false }
+        if (viewModel.peekTextModelProviders().size >= MAX_TEXT_MODEL_PROVIDERS) { return false }
         if (viewModel.peekTextModelProviders().any { it.name == name }) { return false }
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }

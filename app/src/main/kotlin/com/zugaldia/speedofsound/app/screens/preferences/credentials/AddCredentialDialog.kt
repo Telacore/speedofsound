@@ -5,6 +5,7 @@ import com.zugaldia.speedofsound.app.DEFAULT_ADD_CREDENTIAL_DIALOG_WIDTH
 import com.zugaldia.speedofsound.app.DEFAULT_BOX_SPACING
 import com.zugaldia.speedofsound.app.DEFAULT_MARGIN
 import com.zugaldia.speedofsound.app.MAX_CREDENTIAL_NAME_LENGTH
+import com.zugaldia.speedofsound.app.MAX_CREDENTIALS
 import com.zugaldia.speedofsound.app.MAX_CREDENTIAL_VALUE_LENGTH
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.ADW_MAX_LENGTH_MIN_MAJOR_VERSION
@@ -146,6 +147,10 @@ class AddCredentialDialog(
         }
         if (apiKey.length > MAX_CREDENTIAL_VALUE_LENGTH) {
             logger.warn("Credential value too long: ${apiKey.length} > $MAX_CREDENTIAL_VALUE_LENGTH")
+            return false
+        }
+        if (viewModel.peekCredentials().size >= MAX_CREDENTIALS) {
+            logger.warn("Credential limit reached: $MAX_CREDENTIALS")
             return false
         }
         if (viewModel.peekCredentials().any { it.name == name }) {
