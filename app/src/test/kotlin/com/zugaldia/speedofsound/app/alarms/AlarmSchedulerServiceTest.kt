@@ -257,7 +257,16 @@ class AlarmSchedulerServiceTest {
     @Test
     fun `scheduler loop starts and stops with active alarms`() {
         val clock = Clock.fixed(Instant.parse("2026-05-29T09:00:00Z"), ZoneOffset.UTC)
-        val store = MapSettingsStore()
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_ALARM_SCHEDULER_STATE to Json.encodeToString(
+                    AlarmSchedulerState(
+                        lastCheckAt = "2026-05-29T08:00:00",
+                        lastTriggeredDates = mapOf("alarm-1" to "2026-05-28"),
+                    )
+                )
+            )
+        )
         val settingsClient = SettingsClient(store)
         val service = AlarmSchedulerService(
             settingsClient = settingsClient,
@@ -270,6 +279,10 @@ class AlarmSchedulerServiceTest {
         service.connect()
 
         assertFalse(service.isSchedulerRunning())
+        assertEquals(
+            AlarmSchedulerState(),
+            service.snapshotSchedulerState()
+        )
 
         settingsClient.setAlarms(
             listOf(
@@ -286,6 +299,10 @@ class AlarmSchedulerServiceTest {
         )
         service.onSettingsChanged(KEY_ALARMS)
         assertFalse(service.isSchedulerRunning())
+        assertEquals(
+            AlarmSchedulerState(),
+            service.snapshotSchedulerState()
+        )
 
         service.close()
     }

@@ -182,6 +182,21 @@ class AlarmSchedulerService(
         } else {
             schedulerJob?.cancel()
             schedulerJob = null
+            clearIdleSchedulerState()
+        }
+    }
+
+    private fun clearIdleSchedulerState() {
+        val changed = synchronized(stateLock) {
+            if (lastCheckAt == null) {
+                false
+            } else {
+                lastCheckAt = null
+                true
+            }
+        }
+        if (changed) {
+            persistSchedulerState()
         }
     }
 
