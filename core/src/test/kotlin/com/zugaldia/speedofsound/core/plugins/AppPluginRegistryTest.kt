@@ -48,6 +48,27 @@ class AppPluginRegistryTest {
     }
 
     @Test
+    fun `setActiveById keeps previous plugin active when disable of current plugin fails`() {
+        val registry = AppPluginRegistry()
+        val first = RecordingPlugin(id = "first", failOnDisable = true)
+        val second = RecordingPlugin(id = "second")
+
+        registry.register(AppPluginCategory.TEXT_OUTPUT, first)
+        registry.register(AppPluginCategory.TEXT_OUTPUT, second)
+        registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, first.id)
+
+        assertFailsWith<IllegalStateException> {
+            registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, second.id)
+        }
+
+        assertSame(first, registry.getActive(AppPluginCategory.TEXT_OUTPUT))
+        assertEquals(1, first.enableCount)
+        assertEquals(1, first.disableCount)
+        assertEquals(1, second.enableCount)
+        assertEquals(1, second.disableCount)
+    }
+
+    @Test
     fun `register does not retain plugin when initialize fails`() {
         val registry = AppPluginRegistry()
         val broken = RecordingPlugin(id = "broken", failOnInitialize = true)

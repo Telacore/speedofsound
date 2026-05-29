@@ -42,25 +42,39 @@ class AppPluginRegistry {
         // Enable the new plugin
         log.info("Setting plugin ${plugin.id} as active for category $category")
         plugin.enable()
-        activePlugins[category] = plugin.id
 
-        // Disable the previously active plugin after the new one has been enabled successfully.
         previousActiveId
             ?.takeIf { it != plugin.id }
             ?.let { currentActiveId ->
-                getPluginById(category, currentActiveId)?.let { currentActive ->
+                val currentActive = getPluginById(category, currentActiveId)
+                if (currentActive != null) {
                     runCatching {
                         log.info("Disabling currently active plugin ${currentActive.id}")
                         currentActive.disable()
-                    }.onFailure { error ->
+                    }.onFailure { disableError ->
                         log.error(
                             "Failed to disable currently active plugin ${currentActive.id}: {}",
-                            error.message,
-                            error,
+                            disableError.message,
+                            disableError,
+                        )
+                        runCatching {
+                            plugin.disable()
+                        }.onFailure { rollbackError ->
+                            log.error(
+                                "Failed to roll back newly enabled plugin ${plugin.id}: {}",
+                                rollbackError.message,
+                                rollbackError,
+                            )
+                        }
+                        throw IllegalStateException(
+                            "Failed to disable currently active plugin ${currentActive.id} " +
+                                "while switching to ${plugin.id}",
+                            disableError,
                         )
                     }
                 }
             }
+        activePlugins[category] = plugin.id
     }
 
     /**
