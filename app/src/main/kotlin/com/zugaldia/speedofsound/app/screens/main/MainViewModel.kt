@@ -31,6 +31,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_PROCESSING_ENABL
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_TYPING_DELAY_MS
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
+import com.zugaldia.speedofsound.core.desktop.settings.hasActiveAlarms
 import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_CLIPBOARD
 import com.zugaldia.speedofsound.core.desktop.settings.TEXT_OUTPUT_METHOD_PORTAL
 import com.zugaldia.speedofsound.core.languageFromIso2
@@ -136,8 +137,7 @@ class MainViewModel(
         // Initialize status UI labels
         onPrimaryLanguageSelected(forceUpdate = true)
         updateModelLabels()
-        updateAlarmSummary()
-        startAlarmSummaryRefreshLoop()
+        refreshAlarmSummary()
 
         // Phase 2 (async, IO thread): Enable plugins (heavy: model extraction + ONNX load).
         state.updateStage(AppStage.LOADING)
@@ -358,9 +358,15 @@ class MainViewModel(
     }
 
     private fun refreshAlarmSummary() {
+        val alarms = settingsClient.peekAlarms()
         state.updateAlarmSummary(
-            formatAlarmOverview(LocalDateTime.now(), settingsClient.peekAlarms())
+            formatAlarmOverview(LocalDateTime.now(), alarms)
         )
+        if (hasActiveAlarms(alarms)) {
+            startAlarmSummaryRefreshLoop()
+        } else {
+            stopAlarmSummaryRefreshLoop()
+        }
     }
 
     private fun startAlarmSummaryRefreshLoop() {
@@ -379,6 +385,11 @@ class MainViewModel(
                 alarmSummaryJob = null
             }
         }
+    }
+
+    private fun stopAlarmSummaryRefreshLoop() {
+        alarmSummaryJob?.cancel()
+        alarmSummaryJob = null
     }
 
     private fun refreshAsrSetting(key: String) {

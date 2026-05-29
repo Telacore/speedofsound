@@ -4,6 +4,7 @@ import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmRepeatDay
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.allAlarmRepeatDays
+import com.zugaldia.speedofsound.core.desktop.settings.hasActiveAlarms
 import com.zugaldia.stargate.sdk.notification.NotificationPriority
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -169,6 +170,25 @@ class AlarmScheduleTest {
         )
 
         assertEquals("All alarms disabled", formatAlarmOverview(now, alarms))
+    }
+
+    @Test
+    fun `active alarm helper only counts enabled alarms`() {
+        assertTrue(
+            hasActiveAlarms(
+                listOf(
+                    AlarmSetting(id = "alarm-1", hour = 7, minute = 30, enabled = false),
+                    AlarmSetting(id = "alarm-2", hour = 8, minute = 0, enabled = true),
+                )
+            )
+        )
+        assertFalse(
+            hasActiveAlarms(
+                listOf(
+                    AlarmSetting(id = "alarm-3", hour = 9, minute = 0, enabled = false),
+                )
+            )
+        )
     }
 
     @Test

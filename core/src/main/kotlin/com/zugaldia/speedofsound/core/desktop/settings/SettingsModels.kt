@@ -113,6 +113,9 @@ fun AlarmSetting.normalized(): AlarmSetting =
 fun AlarmSetting.isScheduledOn(date: LocalDate): Boolean =
     repeatDays.normalizedRepeatDays().any { it.matches(date.dayOfWeek) }
 
+fun hasActiveAlarms(alarms: List<AlarmSetting>): Boolean =
+    alarms.any { it.enabled }
+
 fun AlarmRepeatDay.matches(dayOfWeek: DayOfWeek): Boolean = when (dayOfWeek) {
     DayOfWeek.MONDAY -> this == AlarmRepeatDay.MONDAY
     DayOfWeek.TUESDAY -> this == AlarmRepeatDay.TUESDAY
