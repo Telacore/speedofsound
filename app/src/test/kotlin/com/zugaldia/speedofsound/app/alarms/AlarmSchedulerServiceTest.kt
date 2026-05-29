@@ -12,6 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 
 class AlarmSchedulerServiceTest {
@@ -189,6 +190,39 @@ class AlarmSchedulerServiceTest {
     }
 
     @Test
+    fun `scheduler persistence writes once per minute when state is otherwise unchanged`() {
+        val clock = MutableClock(
+            Instant.parse("2026-05-29T09:00:05Z"),
+            ZoneOffset.UTC,
+        )
+        val store = MapSettingsStore()
+        val settingsClient = SettingsClient(store)
+        val service = AlarmSchedulerService(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+            clock = clock,
+            checkIntervalSeconds = 60,
+        )
+
+        service.reloadAlarms()
+
+        service.checkAlarms()
+        val writesAfterFirstTick = store.stringWriteCount
+
+        clock.advanceSeconds(30)
+        service.checkAlarms()
+        val writesAfterSecondTick = store.stringWriteCount
+
+        clock.advanceSeconds(35)
+        service.checkAlarms()
+
+        assertEquals(writesAfterFirstTick, writesAfterSecondTick)
+        assertEquals(writesAfterFirstTick + 3, store.stringWriteCount)
+    }
+
+    @Test
     fun `scheduler state changes are normalized back to the store`() {
         val clock = Clock.fixed(Instant.parse("2026-05-29T09:00:00Z"), ZoneOffset.UTC)
         val store = MapSettingsStore()
@@ -289,6 +323,21 @@ class AlarmSchedulerServiceTest {
         override fun setInt(key: String, value: Int): Boolean {
             values[key] = value.toString()
             return true
+        }
+    }
+
+    private class MutableClock(
+        private var currentInstant: Instant,
+        private val zone: ZoneId,
+    ) : Clock() {
+        override fun getZone(): ZoneId = zone
+
+        override fun withZone(zone: ZoneId): Clock = MutableClock(currentInstant, zone)
+
+        override fun instant(): Instant = currentInstant
+
+        fun advanceSeconds(seconds: Long) {
+            currentInstant = currentInstant.plusSeconds(seconds)
         }
     }
 }

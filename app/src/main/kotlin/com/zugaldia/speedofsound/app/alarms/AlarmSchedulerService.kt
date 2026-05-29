@@ -127,7 +127,7 @@ class AlarmSchedulerService(
         )
     }
 
-    private fun checkAlarms() {
+    internal fun checkAlarms() {
         val now = LocalDateTime.now(clock)
         val previousCheck = synchronized(stateLock) {
             resolveAlarmCheckWindowStart(lastCheckAt, now, checkIntervalSeconds)
@@ -163,9 +163,15 @@ class AlarmSchedulerService(
     private fun persistSchedulerState() {
         val snapshot = synchronized(stateLock) {
             AlarmSchedulerState(
-                lastCheckAt = lastCheckAt?.toString(),
+                lastCheckAt = lastCheckAt
+                    ?.withSecond(0)
+                    ?.withNano(0)
+                    ?.toString(),
                 lastTriggeredDates = lastTriggeredDates.mapValues { (_, date) -> date.toString() },
             )
+        }
+        if (snapshot == settingsClient.peekAlarmSchedulerState()) {
+            return
         }
         if (!settingsClient.setAlarmSchedulerState(snapshot, emitChange = false)) {
             logger.warn("Failed to persist alarm scheduler state.")
