@@ -3,6 +3,8 @@ package com.zugaldia.speedofsound.core.desktop.settings
 import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
 import com.zugaldia.speedofsound.core.plugins.llm.LlmProvider
 import kotlinx.serialization.Serializable
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 /**
  * The type of credential. Currently, the only supported credential type is an API key. Prepared for future expansion
@@ -72,7 +74,23 @@ enum class AlarmAction {
 }
 
 /**
- * A repeating daily alarm.
+ * Days on which an alarm can repeat.
+ */
+@Serializable
+enum class AlarmRepeatDay {
+    MONDAY,
+    TUESDAY,
+    WEDNESDAY,
+    THURSDAY,
+    FRIDAY,
+    SATURDAY,
+    SUNDAY
+}
+
+private val DEFAULT_REPEAT_DAYS: List<AlarmRepeatDay> = AlarmRepeatDay.values().toList()
+
+/**
+ * A repeating alarm.
  */
 @Serializable
 data class AlarmSetting(
@@ -81,14 +99,70 @@ data class AlarmSetting(
     val hour: Int,
     val minute: Int,
     val action: AlarmAction = AlarmAction.NORMAL,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    val repeatDays: List<AlarmRepeatDay> = DEFAULT_REPEAT_DAYS
 )
 
 fun AlarmSetting.isValid(): Boolean =
     id.isNotBlank() && hour in 0..23 && minute in 0..59
 
 fun AlarmSetting.normalized(): AlarmSetting =
-    copy(name = name.trim().take(MAX_ALARM_NAME_LENGTH))
+    copy(
+        name = name.trim().take(MAX_ALARM_NAME_LENGTH),
+        repeatDays = repeatDays.normalizedRepeatDays(),
+    )
+
+fun AlarmSetting.isScheduledOn(date: LocalDate): Boolean =
+    repeatDays.normalizedRepeatDays().any { it.matches(date.dayOfWeek) }
+
+fun AlarmRepeatDay.matches(dayOfWeek: DayOfWeek): Boolean = when (dayOfWeek) {
+    DayOfWeek.MONDAY -> this == AlarmRepeatDay.MONDAY
+    DayOfWeek.TUESDAY -> this == AlarmRepeatDay.TUESDAY
+    DayOfWeek.WEDNESDAY -> this == AlarmRepeatDay.WEDNESDAY
+    DayOfWeek.THURSDAY -> this == AlarmRepeatDay.THURSDAY
+    DayOfWeek.FRIDAY -> this == AlarmRepeatDay.FRIDAY
+    DayOfWeek.SATURDAY -> this == AlarmRepeatDay.SATURDAY
+    DayOfWeek.SUNDAY -> this == AlarmRepeatDay.SUNDAY
+}
+
+fun DayOfWeek.toAlarmRepeatDay(): AlarmRepeatDay = when (this) {
+    DayOfWeek.MONDAY -> AlarmRepeatDay.MONDAY
+    DayOfWeek.TUESDAY -> AlarmRepeatDay.TUESDAY
+    DayOfWeek.WEDNESDAY -> AlarmRepeatDay.WEDNESDAY
+    DayOfWeek.THURSDAY -> AlarmRepeatDay.THURSDAY
+    DayOfWeek.FRIDAY -> AlarmRepeatDay.FRIDAY
+    DayOfWeek.SATURDAY -> AlarmRepeatDay.SATURDAY
+    DayOfWeek.SUNDAY -> AlarmRepeatDay.SUNDAY
+}
+
+fun DayOfWeek.shortLabel(): String = toAlarmRepeatDay().shortLabel()
+
+fun AlarmRepeatDay.shortLabel(): String = when (this) {
+    AlarmRepeatDay.MONDAY -> "Mon"
+    AlarmRepeatDay.TUESDAY -> "Tue"
+    AlarmRepeatDay.WEDNESDAY -> "Wed"
+    AlarmRepeatDay.THURSDAY -> "Thu"
+    AlarmRepeatDay.FRIDAY -> "Fri"
+    AlarmRepeatDay.SATURDAY -> "Sat"
+    AlarmRepeatDay.SUNDAY -> "Sun"
+}
+
+fun AlarmRepeatDay.longLabel(): String = when (this) {
+    AlarmRepeatDay.MONDAY -> "Monday"
+    AlarmRepeatDay.TUESDAY -> "Tuesday"
+    AlarmRepeatDay.WEDNESDAY -> "Wednesday"
+    AlarmRepeatDay.THURSDAY -> "Thursday"
+    AlarmRepeatDay.FRIDAY -> "Friday"
+    AlarmRepeatDay.SATURDAY -> "Saturday"
+    AlarmRepeatDay.SUNDAY -> "Sunday"
+}
+
+fun List<AlarmRepeatDay>.normalizedRepeatDays(): List<AlarmRepeatDay> =
+    if (isEmpty()) {
+        DEFAULT_REPEAT_DAYS
+    } else {
+        distinct().sortedBy { it.ordinal }
+    }
 
 /**
  * A serializable snapshot of all exportable user preferences.
@@ -99,7 +173,7 @@ fun AlarmSetting.normalized(): AlarmSetting =
  */
 @Serializable
 data class SettingsExport(
-    val version: Int = 4,
+    val version: Int = 5,
     val defaultLanguage: String = DEFAULT_LANGUAGE.iso2,
     val secondaryLanguage: String = DEFAULT_SECONDARY_LANGUAGE.iso2,
     val backgroundRecording: Boolean = DEFAULT_BACKGROUND_RECORDING,

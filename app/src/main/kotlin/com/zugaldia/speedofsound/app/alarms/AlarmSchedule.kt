@@ -2,6 +2,10 @@ package com.zugaldia.speedofsound.app.alarms
 
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
+import com.zugaldia.speedofsound.core.desktop.settings.AlarmRepeatDay
+import com.zugaldia.speedofsound.core.desktop.settings.isScheduledOn
+import com.zugaldia.speedofsound.core.desktop.settings.normalizedRepeatDays
+import com.zugaldia.speedofsound.core.desktop.settings.shortLabel
 import com.zugaldia.stargate.sdk.notification.NotificationPriority
 import java.time.Duration
 import java.time.LocalDateTime
@@ -36,8 +40,19 @@ fun formatAlarmSummary(alarm: AlarmSetting): String = buildString {
     if (!alarm.enabled) {
         append("Disabled • ")
     }
-    append("Daily • ")
+    append(formatRepeatDays(alarm.repeatDays))
+    append(" • ")
     append(formatAlarmAction(alarm.action))
+}
+
+fun formatRepeatDays(repeatDays: List<AlarmRepeatDay>): String {
+    val normalized = repeatDays.normalizedRepeatDays()
+    return when {
+        normalized == ALL_REPEAT_DAYS -> "Daily"
+        normalized == WEEKDAY_REPEAT_DAYS -> "Weekdays"
+        normalized == WEEKEND_REPEAT_DAYS -> "Weekends"
+        else -> normalized.joinToString(", ") { it.shortLabel() }
+    }
 }
 
 fun alarmNotificationPriority(action: AlarmAction): NotificationPriority = when (action) {
@@ -60,12 +75,7 @@ fun nextAlarmOccurrence(now: LocalDateTime, alarms: List<AlarmSetting>): AlarmOc
     val reference = now.withSecond(0).withNano(0)
     return alarms.asSequence()
         .filter { it.enabled }
-        .map { alarm ->
-            val candidate = reference.toLocalDate().atTime(alarm.hour, alarm.minute)
-            val dueNow = isWithinAlarmGraceWindow(now, candidate)
-            val nextRun = if (candidate.isBefore(reference) && !dueNow) candidate.plusDays(1) else candidate
-            AlarmOccurrence(alarm = alarm, nextRun = nextRun, dueNow = dueNow)
-        }
+        .mapNotNull { alarm -> nextAlarmOccurrenceForAlarm(reference, now, alarm) }
         .minByOrNull { it.nextRun }
 }
 
@@ -83,13 +93,8 @@ fun formatAlarmOverview(now: LocalDateTime, alarms: List<AlarmSetting>): String 
     val activeCount = activeAlarms.size
     val activeLabel = if (activeCount == 1) "1 active alarm" else "$activeCount active alarms"
     val label = occurrence.alarm.name.trim().ifBlank { "alarm" }
-    val daySuffix = if (occurrence.nextRun.toLocalDate().isEqual(now.toLocalDate())) "" else " tomorrow"
-    val timing = if (occurrence.dueNow) {
-        "due now"
-    } else {
-        "$daySuffix at ${formatAlarmTime(occurrence.alarm)}"
-    }
-    return "$activeLabel · next $label $timing".replace("  ", " ").trim()
+    val timing = formatOccurrenceTiming(now, occurrence)
+    return "$activeLabel · next $label $timing".trim()
 }
 
 fun millisUntilNextAlarmSummaryRefresh(now: LocalDateTime): Long {
@@ -99,10 +104,69 @@ fun millisUntilNextAlarmSummaryRefresh(now: LocalDateTime): Long {
 }
 
 fun isAlarmDue(now: LocalDateTime, alarm: AlarmSetting): Boolean {
+    if (!alarm.isScheduledOn(now.toLocalDate())) {
+        return false
+    }
     val alarmStart = now.toLocalDate().atTime(alarm.hour, alarm.minute)
     val alarmEnd = alarmStart.plusMinutes(ALARM_TRIGGER_GRACE_MINUTES)
     return !now.isBefore(alarmStart) && !now.isAfter(alarmEnd)
 }
 
+private fun nextAlarmOccurrenceForAlarm(
+    reference: LocalDateTime,
+    now: LocalDateTime,
+    alarm: AlarmSetting,
+): AlarmOccurrence? {
+    val today = reference.toLocalDate()
+    for (offset in 0..7) {
+        val date = today.plusDays(offset.toLong())
+        if (!alarm.isScheduledOn(date)) {
+            continue
+        }
+
+        val candidate = date.atTime(alarm.hour, alarm.minute)
+        if (offset == 0) {
+            if (isWithinAlarmGraceWindow(now, candidate)) {
+                return AlarmOccurrence(alarm = alarm, nextRun = candidate, dueNow = true)
+            }
+            if (!candidate.isBefore(reference)) {
+                return AlarmOccurrence(alarm = alarm, nextRun = candidate, dueNow = false)
+            }
+            continue
+        }
+
+        return AlarmOccurrence(alarm = alarm, nextRun = candidate, dueNow = false)
+    }
+
+    return null
+}
+
+private fun formatOccurrenceTiming(now: LocalDateTime, occurrence: AlarmOccurrence): String {
+    if (occurrence.dueNow) {
+        return "due now"
+    }
+
+    val alarmTime = formatAlarmTime(occurrence.alarm)
+    val occurrenceDate = occurrence.nextRun.toLocalDate()
+    return when {
+        occurrenceDate.isEqual(now.toLocalDate()) -> "at $alarmTime"
+        occurrenceDate.isEqual(now.toLocalDate().plusDays(1)) -> "tomorrow at $alarmTime"
+        else -> "on ${occurrence.nextRun.dayOfWeek.shortLabel()} at $alarmTime"
+    }
+}
+
 private fun isWithinAlarmGraceWindow(now: LocalDateTime, candidate: LocalDateTime): Boolean =
     !now.isBefore(candidate) && !now.isAfter(candidate.plusMinutes(ALARM_TRIGGER_GRACE_MINUTES))
+
+private val ALL_REPEAT_DAYS = AlarmRepeatDay.values().toList()
+private val WEEKDAY_REPEAT_DAYS = listOf(
+    AlarmRepeatDay.MONDAY,
+    AlarmRepeatDay.TUESDAY,
+    AlarmRepeatDay.WEDNESDAY,
+    AlarmRepeatDay.THURSDAY,
+    AlarmRepeatDay.FRIDAY,
+)
+private val WEEKEND_REPEAT_DAYS = listOf(
+    AlarmRepeatDay.SATURDAY,
+    AlarmRepeatDay.SUNDAY,
+)

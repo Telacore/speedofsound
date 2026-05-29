@@ -9,8 +9,10 @@ import com.zugaldia.speedofsound.app.ADW_MAX_LENGTH_MIN_MAJOR_VERSION
 import com.zugaldia.speedofsound.app.ADW_MAX_LENGTH_MIN_MINOR_VERSION
 import com.zugaldia.speedofsound.app.alarms.formatAlarmAction
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
+import com.zugaldia.speedofsound.core.desktop.settings.AlarmRepeatDay
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_ALARM_NAME_LENGTH
+import com.zugaldia.speedofsound.core.desktop.settings.longLabel
 import com.zugaldia.speedofsound.core.generateUniqueId
 import org.gnome.adw.ComboRow
 import org.gnome.adw.Dialog
@@ -33,6 +35,7 @@ class AlarmEditorDialog(
     private val minuteRow: SpinRow
     private val actionRow: ComboRow
     private val enabledRow: SwitchRow
+    private val repeatDayRows: List<Pair<AlarmRepeatDay, SwitchRow>>
 
     init {
         title = if (existingAlarm == null) "Add Alarm" else "Edit Alarm"
@@ -80,9 +83,17 @@ class AlarmEditorDialog(
             active = existingAlarm?.enabled ?: true
         }
 
+        repeatDayRows = AlarmRepeatDay.values().map { repeatDay ->
+            repeatDay to SwitchRow().apply {
+                title = repeatDay.longLabel()
+                subtitle = "Repeat on ${repeatDay.longLabel()}"
+                active = existingAlarm?.repeatDays?.contains(repeatDay) ?: true
+            }
+        }
+
         val group = PreferencesGroup().apply {
             title = if (existingAlarm == null) "New Alarm" else "Alarm"
-            description = "Alarms repeat every day at the chosen time. Add an optional name to " +
+            description = "Alarms repeat on the selected days at the chosen time. Add an optional name to " +
                 "make multiple alarms easier to tell apart. " +
                 "Silent skips the desktop notification entirely. Attention and Urgent " +
                 "increase notification urgency; true hardware vibration is not guaranteed on desktop Linux."
@@ -91,6 +102,12 @@ class AlarmEditorDialog(
             add(minuteRow)
             add(actionRow)
             add(enabledRow)
+        }
+
+        val repeatDaysGroup = PreferencesGroup().apply {
+            title = "Repeat Days"
+            description = "Choose which days this alarm repeats on. Leaving all switches off falls back to every day."
+            repeatDayRows.forEach { (_, row) -> add(row) }
         }
 
         val cancelButton = Button.withLabel("Cancel").apply {
@@ -108,6 +125,7 @@ class AlarmEditorDialog(
                         minute = minuteRow.value.toInt(),
                         action = selectedAction(),
                         enabled = enabledRow.active,
+                        repeatDays = selectedRepeatDays(),
                     )
                 )
                 close()
@@ -128,6 +146,7 @@ class AlarmEditorDialog(
             marginEnd = DEFAULT_MARGIN
             vexpand = true
             append(group)
+            append(repeatDaysGroup)
             append(buttonBox)
         }
     }
@@ -136,6 +155,12 @@ class AlarmEditorDialog(
         val selectedIndex = actionRow.selected
         return ACTIONS.getOrNull(selectedIndex) ?: AlarmAction.NORMAL
     }
+
+    private fun selectedRepeatDays(): List<AlarmRepeatDay> =
+        repeatDayRows
+            .filter { (_, row) -> row.active }
+            .map { (day, _) -> day }
+            .ifEmpty { AlarmRepeatDay.values().toList() }
 
     companion object {
         private val ACTIONS = AlarmAction.values().toList()

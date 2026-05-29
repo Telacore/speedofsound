@@ -101,6 +101,47 @@ class SettingsClientAlarmTest {
     }
 
     @Test
+    fun `setAlarms normalizes repeat days and falls back to daily when empty`() {
+        val store = MapSettingsStore()
+        val client = SettingsClient(store)
+
+        client.setAlarms(
+            listOf(
+                AlarmSetting(
+                    id = "alarm-1",
+                    name = "Gym",
+                    hour = 18,
+                    minute = 15,
+                    repeatDays = listOf(
+                        AlarmRepeatDay.FRIDAY,
+                        AlarmRepeatDay.MONDAY,
+                        AlarmRepeatDay.FRIDAY,
+                    )
+                ),
+                AlarmSetting(
+                    id = "alarm-2",
+                    name = "Fallback",
+                    hour = 7,
+                    minute = 0,
+                    repeatDays = emptyList(),
+                )
+            )
+        )
+
+        val gymAlarm = client.getAlarms().first { it.id == "alarm-1" }
+        val fallbackAlarm = client.getAlarms().first { it.id == "alarm-2" }
+
+        assertEquals(
+            listOf(AlarmRepeatDay.MONDAY, AlarmRepeatDay.FRIDAY),
+            gymAlarm.repeatDays
+        )
+        assertEquals(
+            AlarmRepeatDay.values().toList(),
+            fallbackAlarm.repeatDays
+        )
+    }
+
+    @Test
     fun `getAlarms filters invalid entries already stored`() {
         val validAlarm = AlarmSetting(id = "alarm-1", hour = 6, minute = 15, action = AlarmAction.NORMAL)
         val invalidAlarm = AlarmSetting(id = "", hour = 24, minute = -1, action = AlarmAction.SILENT)

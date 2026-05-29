@@ -1,6 +1,7 @@
 package com.zugaldia.speedofsound.app.alarms
 
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmAction
+import com.zugaldia.speedofsound.core.desktop.settings.AlarmRepeatDay
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSetting
 import com.zugaldia.stargate.sdk.notification.NotificationPriority
 import kotlin.test.Test
@@ -20,6 +21,21 @@ class AlarmScheduleTest {
         assertTrue(isAlarmDue(dueMoment, alarm))
         assertFalse(isAlarmDue(beforeWindow, alarm))
         assertFalse(isAlarmDue(afterWindow, alarm))
+    }
+
+    @Test
+    fun `alarm is due only on matching repeat days`() {
+        val fridayOnlyAlarm = AlarmSetting(
+            id = "alarm-1",
+            hour = 7,
+            minute = 30,
+            repeatDays = listOf(AlarmRepeatDay.FRIDAY)
+        )
+        val matchingDay = LocalDateTime.of(2026, 5, 29, 7, 34, 59)
+        val nonMatchingDay = LocalDateTime.of(2026, 6, 1, 7, 34, 59)
+
+        assertTrue(isAlarmDue(matchingDay, fridayOnlyAlarm))
+        assertFalse(isAlarmDue(nonMatchingDay, fridayOnlyAlarm))
     }
 
     @Test
@@ -61,6 +77,44 @@ class AlarmScheduleTest {
     }
 
     @Test
+    fun `alarm summary formats repeat days`() {
+        val alarm = AlarmSetting(
+            id = "alarm-7",
+            name = "Gym",
+            hour = 18,
+            minute = 15,
+            repeatDays = listOf(AlarmRepeatDay.MONDAY, AlarmRepeatDay.WEDNESDAY, AlarmRepeatDay.FRIDAY)
+        )
+
+        assertEquals("Mon, Wed, Fri • Normal", formatAlarmSummary(alarm))
+    }
+
+    @Test
+    fun `alarm repeat day formatter collapses common groups`() {
+        assertEquals(
+            "Weekdays",
+            formatRepeatDays(
+                listOf(
+                    AlarmRepeatDay.MONDAY,
+                    AlarmRepeatDay.TUESDAY,
+                    AlarmRepeatDay.WEDNESDAY,
+                    AlarmRepeatDay.THURSDAY,
+                    AlarmRepeatDay.FRIDAY,
+                )
+            )
+        )
+        assertEquals(
+            "Weekends",
+            formatRepeatDays(
+                listOf(
+                    AlarmRepeatDay.SATURDAY,
+                    AlarmRepeatDay.SUNDAY,
+                )
+            )
+        )
+    }
+
+    @Test
     fun `alarm overview highlights the next active alarm`() {
         val now = LocalDateTime.of(2026, 5, 29, 9, 0)
         val alarms = listOf(
@@ -71,6 +125,25 @@ class AlarmScheduleTest {
 
         assertEquals(
             "2 active alarms · next Lunch at 12:00",
+            formatAlarmOverview(now, alarms)
+        )
+    }
+
+    @Test
+    fun `alarm overview respects repeat days`() {
+        val now = LocalDateTime.of(2026, 5, 29, 9, 0)
+        val alarms = listOf(
+            AlarmSetting(
+                id = "alarm-1",
+                name = "Weekly",
+                hour = 9,
+                minute = 0,
+                repeatDays = listOf(AlarmRepeatDay.MONDAY),
+            ),
+        )
+
+        assertEquals(
+            "1 active alarm · next Weekly on Mon at 09:00",
             formatAlarmOverview(now, alarms)
         )
     }
