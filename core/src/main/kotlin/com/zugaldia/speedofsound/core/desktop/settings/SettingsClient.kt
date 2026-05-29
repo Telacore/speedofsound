@@ -299,13 +299,27 @@ class SettingsClient(val settingsStore: SettingsStore) {
         readTextOutputMethod()
 
     fun peekTextOutputMethod(): String =
-        peekTextOutputMethodValue()
+        validatedSetting(
+            key = KEY_TEXT_OUTPUT_METHOD,
+            defaultValue = DEFAULT_TEXT_OUTPUT_METHOD,
+            heal = false,
+            parse = { raw ->
+                val normalized = raw.trim().lowercase()
+                if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
+                    normalized
+                } else {
+                    null
+                }
+            },
+        )
 
     fun setTextOutputMethod(value: String): Boolean =
         setStringSettingIfChanged(
             KEY_TEXT_OUTPUT_METHOD,
             settingsStore.getString(KEY_TEXT_OUTPUT_METHOD, DEFAULT_TEXT_OUTPUT_METHOD),
-            normalizeTextOutputMethodForSave(value),
+            value.trim().lowercase().takeIf {
+                it == TEXT_OUTPUT_METHOD_PORTAL || it == TEXT_OUTPUT_METHOD_CLIPBOARD
+            } ?: DEFAULT_TEXT_OUTPUT_METHOD,
             KEY_TEXT_OUTPUT_METHOD
         )
 
@@ -916,7 +930,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         readCustomContext()
 
     fun peekCustomContext(): String =
-        peekCustomContextValue()
+        validatedSetting(
+            key = KEY_CUSTOM_CONTEXT,
+            defaultValue = DEFAULT_CUSTOM_CONTEXT,
+            heal = false,
+            parse = ::normalizeCustomContext,
+        )
 
     fun setCustomContext(value: String): Boolean =
         setStringSettingIfChanged(
@@ -930,7 +949,12 @@ class SettingsClient(val settingsStore: SettingsStore) {
         readCustomVocabulary()
 
     fun peekCustomVocabulary(): List<String> =
-        peekCustomVocabularyValue()
+        peekNormalizedJsonListSetting(
+            key = KEY_CUSTOM_VOCABULARY,
+            defaultValue = DEFAULT_CUSTOM_VOCABULARY,
+            label = "custom vocabulary",
+            normalize = List<String>::normalizedCustomVocabulary,
+        )
 
     fun setCustomVocabulary(value: List<String>): Boolean =
         setStringArraySettingIfChanged(
@@ -1196,22 +1220,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         )
     }
 
-    private fun peekTextOutputMethodValue(): String {
-        return validatedSetting(
-            key = KEY_TEXT_OUTPUT_METHOD,
-            defaultValue = DEFAULT_TEXT_OUTPUT_METHOD,
-            heal = false,
-            parse = { raw ->
-                val normalized = raw.trim().lowercase()
-                if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
-                    normalized
-                } else {
-                    null
-                }
-            },
-        )
-    }
-
     private fun readPortalsRestoreToken(): String {
         return validatedSetting(
             key = KEY_PORTALS_RESTORE_TOKEN,
@@ -1224,15 +1232,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
 
     private fun normalizePortalsRestoreToken(value: String): String = value.trim()
 
-    private fun normalizeTextOutputMethodForSave(value: String): String {
-        val normalized = value.trim().lowercase()
-        return if (normalized == TEXT_OUTPUT_METHOD_PORTAL || normalized == TEXT_OUTPUT_METHOD_CLIPBOARD) {
-            normalized
-        } else {
-            DEFAULT_TEXT_OUTPUT_METHOD
-        }
-    }
-
     private fun readCustomContext(): String {
         return validatedSetting(
             key = KEY_CUSTOM_CONTEXT,
@@ -1240,15 +1239,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
             heal = true,
             parse = ::normalizeCustomContext,
             write = { value -> settingsStore.setString(KEY_CUSTOM_CONTEXT, value) },
-        )
-    }
-
-    private fun peekCustomContextValue(): String {
-        return validatedSetting(
-            key = KEY_CUSTOM_CONTEXT,
-            defaultValue = DEFAULT_CUSTOM_CONTEXT,
-            heal = false,
-            parse = ::normalizeCustomContext,
         )
     }
 
@@ -1446,11 +1436,6 @@ class SettingsClient(val settingsStore: SettingsStore) {
         } else {
             raw
         }
-    }
-
-    private fun peekCustomVocabularyValue(): List<String> {
-        val raw = settingsStore.getStringArray(KEY_CUSTOM_VOCABULARY, DEFAULT_CUSTOM_VOCABULARY)
-        return raw.normalizedCustomVocabulary()
     }
 
     private fun readLanguageSetting(key: String, defaultValue: String): String {
