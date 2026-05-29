@@ -573,6 +573,75 @@ class ImportExportManagerTest {
     }
 
     @Test
+    fun `import clears provider credential refs that lose their credential during merge`() {
+        val settingsClient = SettingsClient(MapSettingsStore())
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        exportFile.writeText(
+            Json.encodeToString(
+                SettingsExport(
+                    version = 6,
+                    credentials = buildList {
+                        repeat(MAX_CREDENTIALS) { index ->
+                            add(
+                                CredentialSetting(
+                                    id = "cred-$index",
+                                    type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY,
+                                    name = "Credential $index",
+                                    value = "secret-$index",
+                                )
+                            )
+                        }
+                        add(
+                            CredentialSetting(
+                                id = "dangling-cred",
+                                type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY,
+                                name = "Dangling",
+                                value = "secret-dangling",
+                            )
+                        )
+                    },
+                    voiceModelProviders = listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-1",
+                            name = "Voice",
+                            provider = com.zugaldia.speedofsound.core.plugins.asr.AsrProvider.SHERPA_WHISPER,
+                            modelId = "model-1",
+                            credentialId = "dangling-cred",
+                        )
+                    ),
+                    textModelProviders = listOf(
+                        TextModelProviderSetting(
+                            id = "text-1",
+                            name = "Text",
+                            provider = com.zugaldia.speedofsound.core.plugins.llm.LlmProvider.OPENAI,
+                            modelId = "model-2",
+                            credentialId = "dangling-cred",
+                        )
+                    ),
+                )
+            )
+        )
+
+        val result = manager.importSettings().getOrThrow()
+
+        assertEquals(MAX_CREDENTIALS, result.credentialsAdded)
+        assertEquals(1, result.voiceProvidersAdded)
+        assertEquals(1, result.textProvidersAdded)
+        assertEquals(MAX_CREDENTIALS, settingsClient.loadCredentials().size)
+        assertEquals("voice-1", settingsClient.loadVoiceModelProviders().first().id)
+        assertEquals(null, settingsClient.loadVoiceModelProviders().first().credentialId)
+        assertEquals("text-1", settingsClient.loadTextModelProviders().first().id)
+        assertEquals(null, settingsClient.loadTextModelProviders().first().credentialId)
+    }
+
+    @Test
     fun `import rejects directory export paths`() {
         exportFile.mkdirs()
 

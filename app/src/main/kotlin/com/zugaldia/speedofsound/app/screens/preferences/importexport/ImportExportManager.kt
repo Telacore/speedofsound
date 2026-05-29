@@ -6,6 +6,8 @@ import com.zugaldia.speedofsound.core.io.AtomicFileWriter
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
 import com.zugaldia.speedofsound.core.desktop.settings.AlarmSchedulerState
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsExport
+import com.zugaldia.speedofsound.core.desktop.settings.TextModelProviderSetting
+import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import com.zugaldia.speedofsound.core.getDataDir
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -117,8 +119,9 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             .map { it.id }
             .toSet()
         val newVoiceProviders = exportData.voiceModelProviders.filter { it.id !in existingVoiceIds }
-        if (newVoiceProviders.isNotEmpty()) {
-            viewModel.setVoiceModelProviders(existingVoiceProviders + newVoiceProviders)
+        val normalizedVoiceProviders = (existingVoiceProviders + newVoiceProviders).normalizedCredentialRefs(importedCredentialIds)
+        if (normalizedVoiceProviders != existingVoiceProviders) {
+            viewModel.setVoiceModelProviders(normalizedVoiceProviders)
         }
         val importedVoiceIds = viewModel.peekVoiceModelProviders()
             .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
@@ -129,8 +132,9 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
         val existingTextProviders = viewModel.peekTextModelProviders()
         val existingTextIds = existingTextProviders.map { it.id }.toSet()
         val newTextProviders = exportData.textModelProviders.filter { it.id !in existingTextIds }
-        if (newTextProviders.isNotEmpty()) {
-            viewModel.setTextModelProviders(existingTextProviders + newTextProviders)
+        val normalizedTextProviders = (existingTextProviders + newTextProviders).normalizedCredentialRefs(importedCredentialIds)
+        if (normalizedTextProviders != existingTextProviders) {
+            viewModel.setTextModelProviders(normalizedTextProviders)
         }
         val importedTextIds = viewModel.peekTextModelProviders().map { it.id }.toSet()
         val textProvidersAdded = importedTextIds.count { it !in existingTextIds }
@@ -169,6 +173,28 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             throw IllegalStateException("Malformed export file: ${inputFile.absolutePath}", e)
         }
     }
+
+    private fun List<VoiceModelProviderSetting>.normalizedCredentialRefs(
+        validCredentialIds: Set<String>
+    ): List<VoiceModelProviderSetting> =
+        map { provider ->
+            if (provider.credentialId != null && provider.credentialId !in validCredentialIds) {
+                provider.copy(credentialId = null)
+            } else {
+                provider
+            }
+        }
+
+    private fun List<TextModelProviderSetting>.normalizedCredentialRefs(
+        validCredentialIds: Set<String>
+    ): List<TextModelProviderSetting> =
+        map { provider ->
+            if (provider.credentialId != null && provider.credentialId !in validCredentialIds) {
+                provider.copy(credentialId = null)
+            } else {
+                provider
+            }
+        }
 
     companion object {
         const val EXPORT_FILENAME = "$APPLICATION_SHORT-preferences.json"
