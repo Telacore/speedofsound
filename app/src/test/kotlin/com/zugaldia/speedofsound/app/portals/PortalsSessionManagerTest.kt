@@ -12,6 +12,7 @@ import com.zugaldia.stargate.sdk.session.CreateSessionResponse
 import com.zugaldia.stargate.sdk.session.SessionClosedEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import kotlin.test.Test
@@ -163,7 +164,6 @@ class PortalsSessionManagerTest {
         )
         val settingsClient = SettingsClient(
             FakeSettingsStore(
-                initialValues = mutableMapOf(KEY_PORTALS_RESTORE_TOKEN to "stale-restore-token"),
                 failOnSetStringKeys = setOf(KEY_PORTALS_RESTORE_TOKEN),
             )
         )
@@ -171,10 +171,17 @@ class PortalsSessionManagerTest {
 
         manager.startSession(this)
         awaitPortalsCalls(portalsClient, 1)
+        setPrivateStateFlowValue(manager, "_isSessionDisconnected", true)
+        setPrivateStateFlowValue(manager, "_remoteDesktopStatus", RemoteDesktopStatus.Ready)
+        manager.attemptReconnect(this)
+        awaitPortalsCalls(portalsClient, 2)
 
         assertEquals(RemoteDesktopStatus.Ready, manager.remoteDesktopStatus.value)
-        assertEquals("stale-restore-token", settingsClient.loadPortalsRestoreToken())
-        assertEquals(listOf<String?>(null), portalsClient.requestedRestoreTokens)
+        assertEquals("", settingsClient.loadPortalsRestoreToken())
+        assertEquals(
+            listOf<String?>(null, "fresh-restore-token"),
+            portalsClient.requestedRestoreTokens,
+        )
     }
 }
 
@@ -187,6 +194,14 @@ private suspend fun awaitPortalsCalls(
         yield()
     }
     error("Timed out waiting for $expectedCalls remote desktop session attempts")
+}
+
+private fun <T> setPrivateStateFlowValue(instance: Any, fieldName: String, value: T) {
+    val field = instance.javaClass.getDeclaredField(fieldName)
+    field.isAccessible = true
+    @Suppress("UNCHECKED_CAST")
+    val stateFlow = field.get(instance) as MutableStateFlow<T>
+    stateFlow.value = value
 }
 
 private class FakeSettingsStore : SettingsStore {

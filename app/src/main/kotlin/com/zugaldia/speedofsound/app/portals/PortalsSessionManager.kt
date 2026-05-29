@@ -27,6 +27,7 @@ class PortalsSessionManager(
     initialRemoteDesktopStatus: RemoteDesktopStatus = RemoteDesktopStatus.NeedToken,
 ) {
     private val logger = LoggerFactory.getLogger(PortalsSessionManager::class.java)
+    private var runtimeRestoreToken: String? = settingsClient.peekPortalsRestoreToken().ifBlank { null }
 
     private var portalsEventsJob: Job? = null
     private var startSessionJob: Job? = null
@@ -68,8 +69,8 @@ class PortalsSessionManager(
 
             // We can still use portals even if registration above fails.
             // (Some portals might not work, e.g. Global Shortcuts, or have degraded experience though).
-            val token = settingsClient.peekPortalsRestoreToken()
-            if (token.isNotBlank()) {
+            val token = runtimeRestoreToken ?: settingsClient.peekPortalsRestoreToken().ifBlank { null }
+            if (token != null) {
                 startSession(scope, token)
             } else {
                 logger.info("No previous session found.")
@@ -85,12 +86,13 @@ class PortalsSessionManager(
 
         startSessionJob = scope.launch {
             try {
-                val restoreToken = token?.ifBlank { null }
+                val restoreToken = token?.ifBlank { null } ?: runtimeRestoreToken
                 logger.info(restoreToken?.let { "Trying to restore previous session: $it" } ?: "Starting a new session")
                 portalsClient.startRemoteDesktopSession(restoreToken).onSuccess { response ->
                     val newToken = response.restoreToken
                     if (!newToken.isNullOrBlank()) {
                         logger.info("Got a fresh restore token: $newToken")
+                        runtimeRestoreToken = newToken
                         persistRestoreToken(newToken, reason = "store fresh restore token")
                     }
                     collectPortalsEvents(scope)
@@ -126,6 +128,7 @@ class PortalsSessionManager(
                     }
                     _isSessionDisconnected.value = true
                     if (isMissingRemoteDesktopInterface) {
+                        runtimeRestoreToken = null
                         persistRestoreToken("", reason = "clear restore token after unsupported portal")
                     }
                 }
@@ -142,8 +145,8 @@ class PortalsSessionManager(
         }
         if (_isSessionDisconnected.value && _remoteDesktopStatus.value != RemoteDesktopStatus.NotSupported) {
             logger.info("Portal session disconnected, attempting to reconnect.")
-            val restoreToken = settingsClient.peekPortalsRestoreToken()
-            startSession(scope, restoreToken.ifBlank { null })
+            val restoreToken = runtimeRestoreToken ?: settingsClient.peekPortalsRestoreToken().ifBlank { null }
+            startSession(scope, restoreToken)
         }
     }
 
