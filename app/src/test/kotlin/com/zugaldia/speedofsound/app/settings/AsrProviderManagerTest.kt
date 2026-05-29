@@ -5,11 +5,15 @@ import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsClient
 import com.zugaldia.speedofsound.core.desktop.settings.SettingsStore
+import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import com.zugaldia.speedofsound.core.plugins.AppPlugin
 import com.zugaldia.speedofsound.core.plugins.AppPluginCategory
 import com.zugaldia.speedofsound.core.plugins.AppPluginRegistry
 import com.zugaldia.speedofsound.core.plugins.EmptyOptions
+import com.zugaldia.speedofsound.core.plugins.asr.AsrProvider
+import com.zugaldia.speedofsound.core.plugins.asr.OpenAiAsr
 import com.zugaldia.speedofsound.core.plugins.asr.SherpaWhisperAsr
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -41,6 +45,48 @@ class AsrProviderManagerTest {
         assertEquals(1, activePlugin.disableCount)
         assertEquals(1, fallbackPlugin.enableCount)
         assertEquals(0, fallbackPlugin.disableCount)
+    }
+
+    @Test
+    fun `activateSelectedProvider uses the first visible provider when selection is stale`() {
+        val settingsStore = MapSettingsStore(
+            initialValues = mutableMapOf(
+                KEY_SELECTED_VOICE_MODEL_PROVIDER_ID to "stale-provider",
+                KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-z",
+                            name = "Zulu",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-z",
+                        ),
+                        VoiceModelProviderSetting(
+                            id = "voice-a",
+                            name = "Alpha",
+                            provider = AsrProvider.OPENAI,
+                            modelId = "model-a",
+                        ),
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(settingsStore)
+        val registry = AppPluginRegistry()
+        val inactivePlugin = RecordingPlugin(id = "ASR_INACTIVE")
+        val activePlugin = RecordingPlugin(id = OpenAiAsr.ID)
+
+        registry.register(AppPluginCategory.ASR, inactivePlugin)
+        registry.register(AppPluginCategory.ASR, activePlugin)
+        registry.setActiveById(AppPluginCategory.ASR, inactivePlugin.id)
+
+        AsrProviderManager(registry, settingsClient).activateSelectedProvider()
+
+        assertEquals("voice-a", settingsClient.loadSelectedVoiceModelProviderId())
+        assertSame(activePlugin, registry.getActive(AppPluginCategory.ASR))
+        assertEquals(1, inactivePlugin.enableCount)
+        assertEquals(1, inactivePlugin.disableCount)
+        assertEquals(1, activePlugin.enableCount)
+        assertEquals(0, activePlugin.disableCount)
     }
 
     private class RecordingPlugin(

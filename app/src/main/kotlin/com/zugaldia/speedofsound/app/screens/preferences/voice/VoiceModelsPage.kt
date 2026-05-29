@@ -10,9 +10,14 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_FLAT
 import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ActiveProviderComboRow
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_SELECTED_VOICE_MODEL_PROVIDER_ID
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.SUPPORTED_LOCAL_ASR_MODELS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import org.gnome.adw.ActionRow
 import org.gnome.adw.PreferencesGroup
 import org.gnome.adw.PreferencesPage
@@ -20,10 +25,12 @@ import org.gnome.gtk.Align
 import org.gnome.gtk.Button
 import org.gnome.gtk.ListBox
 import org.gnome.gtk.SelectionMode
+import org.gnome.glib.GLib
 import org.slf4j.LoggerFactory
 
 class VoiceModelsPage(private val viewModel: PreferencesViewModel) : PreferencesPage() {
     private val logger = LoggerFactory.getLogger(VoiceModelsPage::class.java)
+    private val scope = viewModel.viewModelScope
 
     private val activeProviderComboRow: ActiveProviderComboRow<VoiceModelProviderSetting>
     private val providersListBox: ListBox
@@ -70,6 +77,19 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
 
     private fun setupNotifications() {
         activeProviderComboRow.setupNotifications()
+        scope.launch {
+            viewModel.settingsChanged
+                .filter {
+                    it == KEY_SELECTED_VOICE_MODEL_PROVIDER_ID ||
+                        it == KEY_VOICE_MODEL_PROVIDERS
+                }
+                .collect {
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        refreshProviders()
+                        false
+                    }
+                }
+        }
     }
 
     fun refreshProviders() {
