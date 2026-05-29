@@ -76,4 +76,14 @@ class PortalRoutingTest {
             )
         )
     }
+
+    @Test
+    fun `shouldPersistClipboardFallback returns true for persistent fallback`() {
+        assertTrue(shouldPersistClipboardFallback(ClipboardFallbackPolicy.PERSIST_PREFERENCE))
+    }
+
+    @Test
+    fun `shouldPersistClipboardFallback returns false for runtime fallback`() {
+        assertFalse(shouldPersistClipboardFallback(ClipboardFallbackPolicy.RUNTIME_ONLY))
+    }
 }

@@ -140,7 +140,10 @@ class MainViewModel(
                 activateSelectedTextOutput()
                 registry.setActiveById(AppPluginCategory.DIRECTOR, DefaultDirector.ID)
                 if (shouldForceClipboardFallback(settingsClient.getTextOutputMethod(), portalsClient.isPortalAvailable)) {
-                    switchToClipboardFallback("Desktop portal is not available for this session.")
+                    switchToClipboardFallback(
+                        reason = "Desktop portal is not available for this session.",
+                        policy = ClipboardFallbackPolicy.PERSIST_PREFERENCE,
+                    )
                     updateRemoteDesktopStatusUi(activeRemoteDesktopStatus)
                 }
                 portalsSessionManager.initialize(viewModelScope)
@@ -244,7 +247,10 @@ class MainViewModel(
         viewModelScope.launch {
             portalsSessionManager.remoteDesktopStatus.collect { status ->
                 if (status == RemoteDesktopStatus.NotSupported) {
-                    switchToClipboardFallback("Remote desktop portal is not supported on this system.")
+                    switchToClipboardFallback(
+                        reason = "Remote desktop portal is not supported on this system.",
+                        policy = ClipboardFallbackPolicy.PERSIST_PREFERENCE,
+                    )
                 }
                 activeRemoteDesktopStatus = status
                 GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
@@ -339,7 +345,10 @@ class MainViewModel(
         runCatching { activateSelectedTextOutput() }
             .onSuccess {
                 if (shouldForceClipboardFallback(settingsClient.getTextOutputMethod(), portalsClient.isPortalAvailable)) {
-                    switchToClipboardFallback("Remote desktop portal is not supported on this system.")
+                    switchToClipboardFallback(
+                        reason = "Remote desktop portal is not supported on this system.",
+                        policy = ClipboardFallbackPolicy.PERSIST_PREFERENCE,
+                    )
                     return@onSuccess
                 }
                 if (shouldAutoStartPortalSession(
@@ -420,18 +429,23 @@ class MainViewModel(
         registry.setActiveById(AppPluginCategory.TEXT_OUTPUT, pluginId)
     }
 
-    private fun switchToClipboardFallback(reason: String) {
+    private fun switchToClipboardFallback(
+        reason: String,
+        policy: ClipboardFallbackPolicy = ClipboardFallbackPolicy.PERSIST_PREFERENCE,
+    ) {
         if (settingsClient.getTextOutputMethod() == TEXT_OUTPUT_METHOD_CLIPBOARD) return
 
         logger.warn("Falling back to Clipboard output: {}", reason)
         runCatching {
-            settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
-                .takeIf { !it }
-                ?.let {
-                    logger.warn(
-                        "Could not persist text output method preference; continuing with runtime fallback"
-                    )
-                }
+            if (shouldPersistClipboardFallback(policy)) {
+                settingsClient.setTextOutputMethod(TEXT_OUTPUT_METHOD_CLIPBOARD)
+                    .takeIf { !it }
+                    ?.let {
+                        logger.warn(
+                            "Could not persist text output method preference; continuing with runtime fallback"
+                        )
+                    }
+            }
             activateSelectedTextOutput()
         }
             .onFailure { error ->
@@ -611,7 +625,10 @@ class MainViewModel(
             if (primaryTextOutput is PortalTextOutput) {
                 logger.warn("Portal output failed, falling back to clipboard: {}", error.message)
                 runCatching {
-                    switchToClipboardFallback("Remote desktop portal output failed; using clipboard fallback.")
+                    switchToClipboardFallback(
+                        reason = "Remote desktop portal output failed; using clipboard fallback.",
+                        policy = ClipboardFallbackPolicy.RUNTIME_ONLY,
+                    )
                     val clipboardTextOutput = registry.getActive(AppPluginCategory.TEXT_OUTPUT) as? ClipboardTextOutput
                         ?: throw IllegalStateException("Clipboard text output plugin unavailable")
                     if (!isClipboardPreparedAhead) {

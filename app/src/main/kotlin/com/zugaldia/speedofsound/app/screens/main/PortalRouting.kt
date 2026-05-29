@@ -19,3 +19,11 @@ internal fun shouldAutoStartPortalSession(
 ): Boolean = textOutputMethod == TEXT_OUTPUT_METHOD_PORTAL &&
     isPortalAvailable &&
     remoteDesktopStatus != RemoteDesktopStatus.Ready
+
+internal enum class ClipboardFallbackPolicy {
+    PERSIST_PREFERENCE,
+    RUNTIME_ONLY,
+}
+
+internal fun shouldPersistClipboardFallback(policy: ClipboardFallbackPolicy): Boolean =
+    policy == ClipboardFallbackPolicy.PERSIST_PREFERENCE
