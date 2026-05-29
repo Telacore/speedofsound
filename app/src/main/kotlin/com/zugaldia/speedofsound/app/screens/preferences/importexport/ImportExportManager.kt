@@ -49,8 +49,10 @@ class ImportExportManager(private val viewModel: PreferencesViewModel) {
             ),
             credentials = viewModel.peekCredentials(),
             voiceModelProviders = viewModel.peekVoiceModelProviders()
-                .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys },
-            textModelProviders = viewModel.peekTextModelProviders(),
+                .filter { it.id !in SUPPORTED_LOCAL_ASR_MODELS.keys }
+                .normalizedCredentialRefs(viewModel.peekCredentials().map { it.id }.toSet()),
+            textModelProviders = viewModel.peekTextModelProviders()
+                .normalizedCredentialRefs(viewModel.peekCredentials().map { it.id }.toSet()),
             sanitizeSpecialChars = viewModel.peekSanitizeSpecialChars(),
             postHideDelayMs = viewModel.peekPostHideDelayMs(),
             typingDelayMs = viewModel.peekTypingDelayMs(),

@@ -421,6 +421,61 @@ class ImportExportManagerTest {
     }
 
     @Test
+    fun `export clears dangling provider credential refs`() {
+        val store = MapSettingsStore(
+            initialValues = mutableMapOf(
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS to Json.encodeToString(
+                    listOf(
+                        CredentialSetting(
+                            id = "cred-1",
+                            type = com.zugaldia.speedofsound.core.desktop.settings.CredentialType.API_KEY,
+                            name = "Primary",
+                            value = "secret",
+                        )
+                    )
+                ),
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        VoiceModelProviderSetting(
+                            id = "voice-1",
+                            name = "Voice",
+                            provider = com.zugaldia.speedofsound.core.plugins.asr.AsrProvider.SHERPA_WHISPER,
+                            modelId = "model-1",
+                            credentialId = "missing-cred",
+                        )
+                    )
+                ),
+                com.zugaldia.speedofsound.core.desktop.settings.KEY_TEXT_MODEL_PROVIDERS to Json.encodeToString(
+                    listOf(
+                        TextModelProviderSetting(
+                            id = "text-1",
+                            name = "Text",
+                            provider = com.zugaldia.speedofsound.core.plugins.llm.LlmProvider.OPENAI,
+                            modelId = "model-2",
+                            credentialId = "missing-cred",
+                        )
+                    )
+                ),
+            )
+        )
+        val settingsClient = SettingsClient(store)
+        val viewModel = PreferencesViewModel(
+            settingsClient = settingsClient,
+            portalsClient = PortalsClient(portalConnector = {
+                Result.failure<DesktopPortal>(IllegalStateException("no portal"))
+            }),
+        )
+        val manager = ImportExportManager(viewModel)
+
+        val exportPath = manager.export().getOrThrow()
+        val exported = Json.decodeFromString<SettingsExport>(File(exportPath).readText())
+
+        assertEquals(null, exported.voiceModelProviders.first().credentialId)
+        assertEquals(null, exported.textModelProviders.first().credentialId)
+        assertEquals(0, store.writeCount)
+    }
+
+    @Test
     fun `import heals malformed alarms during merge`() {
         val rawJson = "{not-json"
         val store = MapSettingsStore(
