@@ -1217,19 +1217,14 @@ class SettingsClient(val settingsStore: SettingsStore) {
         validCredentialIds: Set<String>,
         availableProviders: List<VoiceModelProviderSetting>,
     ): Boolean {
-        val customProviders = value.normalizedCustomVoiceModelProviders(validCredentialIds)
-        val json = Json.encodeToString(customProviders)
-        val providersSaved = setStringSettingIfChanged(
-            KEY_VOICE_MODEL_PROVIDERS,
-            settingsStore.getString(KEY_VOICE_MODEL_PROVIDERS, DEFAULT_VOICE_MODEL_PROVIDERS),
-            json,
-            KEY_VOICE_MODEL_PROVIDERS
+        val json = Json.encodeToString(value.normalizedCustomVoiceModelProviders(validCredentialIds))
+        return persistProviderListAndNormalizeSelection(
+            key = KEY_VOICE_MODEL_PROVIDERS,
+            defaultValue = DEFAULT_VOICE_MODEL_PROVIDERS,
+            json = json,
+            availableProviders = availableProviders,
+            normalizeSelection = ::normalizeSelectedVoiceModelProviderIdForCurrentProviders,
         )
-        if (!providersSaved) {
-            return false
-        }
-        val selectionSaved = normalizeSelectedVoiceModelProviderIdForCurrentProviders(availableProviders)
-        return selectionSaved
     }
 
     fun setTextModelProviders(
@@ -1251,17 +1246,32 @@ class SettingsClient(val settingsStore: SettingsStore) {
         availableProviders: List<TextModelProviderSetting>,
     ): Boolean {
         val json = Json.encodeToString(value.normalizedTextModelProviders(validCredentialIds))
+        return persistProviderListAndNormalizeSelection(
+            key = KEY_TEXT_MODEL_PROVIDERS,
+            defaultValue = DEFAULT_TEXT_MODEL_PROVIDERS,
+            json = json,
+            availableProviders = availableProviders,
+            normalizeSelection = ::normalizeSelectedTextModelProviderIdForCurrentProviders,
+        )
+    }
+
+    private fun persistProviderListAndNormalizeSelection(
+        key: String,
+        defaultValue: String,
+        json: String,
+        availableProviders: List<SelectableProviderSetting>,
+        normalizeSelection: (List<SelectableProviderSetting>) -> Boolean,
+    ): Boolean {
         val providersSaved = setStringSettingIfChanged(
-            KEY_TEXT_MODEL_PROVIDERS,
-            settingsStore.getString(KEY_TEXT_MODEL_PROVIDERS, DEFAULT_TEXT_MODEL_PROVIDERS),
+            key,
+            settingsStore.getString(key, defaultValue),
             json,
-            KEY_TEXT_MODEL_PROVIDERS
+            key
         )
         if (!providersSaved) {
             return false
         }
-        val selectionSaved = normalizeSelectedTextModelProviderIdForCurrentProviders(availableProviders)
-        return selectionSaved
+        return normalizeSelection(availableProviders)
     }
 
     private fun setCredentialsInternal(
