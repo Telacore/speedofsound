@@ -10,24 +10,35 @@ import com.zugaldia.speedofsound.app.STYLE_CLASS_SUGGESTED_ACTION
 import com.zugaldia.speedofsound.app.ADW_MAX_LENGTH_MIN_MAJOR_VERSION
 import com.zugaldia.speedofsound.app.ADW_MAX_LENGTH_MIN_MINOR_VERSION
 import com.zugaldia.speedofsound.app.isAdwVersionAtLeast
+import com.zugaldia.speedofsound.app.screens.preferences.PreferencesViewModel
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
 import com.zugaldia.speedofsound.core.desktop.settings.CredentialSetting
 import com.zugaldia.speedofsound.core.desktop.settings.CredentialType
 import com.zugaldia.speedofsound.core.generateUniqueId
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import org.gnome.adw.Dialog
 import org.gnome.adw.EntryRow
 import org.gnome.adw.PasswordEntryRow
 import org.gnome.adw.PreferencesGroup
 import org.gnome.gtk.Align
+import org.gnome.glib.GLib
 import org.gnome.gtk.Box
 import org.gnome.gtk.Button
 import org.gnome.gtk.Orientation
 import org.slf4j.LoggerFactory
 
 class AddCredentialDialog(
-    private val existingNames: Set<String>,
+    private val viewModel: PreferencesViewModel,
     private val onCredentialAdded: (CredentialSetting) -> Unit
 ) : Dialog() {
     private val logger = LoggerFactory.getLogger(AddCredentialDialog::class.java)
+    private val dialogScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private val nameEntry: EntryRow
     private val apiKeyEntry: PasswordEntryRow
@@ -101,6 +112,21 @@ class AddCredentialDialog(
         child = contentBox
         nameEntry.onNotify("text") { updateAddButtonState() }
         apiKeyEntry.onNotify("text") { updateAddButtonState() }
+        setupNotifications()
+        onClosed { dialogScope.cancel() }
+    }
+
+    private fun setupNotifications() {
+        dialogScope.launch {
+            viewModel.settingsChanged
+                .filter { it == KEY_CREDENTIALS }
+                .collect {
+                    GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
+                        updateAddButtonState()
+                        false
+                    }
+                }
+        }
     }
 
     private fun updateAddButtonState() {
@@ -122,7 +148,7 @@ class AddCredentialDialog(
             logger.warn("Credential value too long: ${apiKey.length} > $MAX_CREDENTIAL_VALUE_LENGTH")
             return false
         }
-        if (existingNames.contains(name)) {
+        if (viewModel.peekCredentials().any { it.name == name }) {
             logger.warn("Credential name already exists: $name")
             return false
         }

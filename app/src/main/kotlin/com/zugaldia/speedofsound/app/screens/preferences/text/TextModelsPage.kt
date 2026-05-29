@@ -248,8 +248,7 @@ class TextModelsPage(private val viewModel: PreferencesViewModel) : PreferencesP
      */
 
     private fun showAddProviderDialog() {
-        val existingNames = viewModel.peekTextModelProviders().map { it.name }.toSet()
-        val dialog = AddTextModelProviderDialog(existingNames, viewModel) { provider ->
+        val dialog = AddTextModelProviderDialog(viewModel) { provider ->
             onProviderAdded(provider)
         }
 

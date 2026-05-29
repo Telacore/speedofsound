@@ -172,8 +172,7 @@ class VoiceModelsPage(private val viewModel: PreferencesViewModel) : Preferences
      */
 
     private fun showAddProviderDialog() {
-        val existingNames = viewModel.peekVoiceModelProviders().map { it.name }.toSet()
-        val dialog = AddVoiceModelProviderDialog(existingNames, viewModel) { provider ->
+        val dialog = AddVoiceModelProviderDialog(viewModel) { provider ->
             onProviderAdded(provider)
         }
 

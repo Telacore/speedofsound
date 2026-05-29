@@ -15,6 +15,7 @@ import com.zugaldia.speedofsound.app.screens.preferences.shared.CustomServicePre
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ModelComboRow
 import com.zugaldia.speedofsound.app.screens.preferences.shared.ProviderComboRow
 import com.zugaldia.speedofsound.core.desktop.settings.KEY_CREDENTIALS
+import com.zugaldia.speedofsound.core.desktop.settings.KEY_VOICE_MODEL_PROVIDERS
 import com.zugaldia.speedofsound.core.desktop.settings.MAX_PROVIDER_CONFIG_NAME_LENGTH
 import com.zugaldia.speedofsound.core.desktop.settings.VoiceModelProviderSetting
 import com.zugaldia.speedofsound.core.generateUniqueId
@@ -46,7 +47,6 @@ import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
 class AddVoiceModelProviderDialog(
-    private val existingNames: Set<String>,
     private val viewModel: PreferencesViewModel,
     private val onProviderAdded: (VoiceModelProviderSetting) -> Unit
 ) : Dialog() {
@@ -184,7 +184,7 @@ class AddVoiceModelProviderDialog(
         }
         dialogScope.launch {
             viewModel.settingsChanged
-                .filter { it == KEY_CREDENTIALS }
+                .filter { it == KEY_CREDENTIALS || it == KEY_VOICE_MODEL_PROVIDERS }
                 .collect {
                     GLib.idleAdd(GLib.PRIORITY_DEFAULT) {
                         refreshCredentialList()
@@ -249,7 +249,7 @@ class AddVoiceModelProviderDialog(
     private fun validateInput(name: String, baseUrl: String?, modelId: String?): Boolean {
         if (name.isEmpty()) { return false }
         if (name.length > MAX_PROVIDER_CONFIG_NAME_LENGTH) { return false }
-        if (existingNames.contains(name)) { return false }
+        if (viewModel.peekVoiceModelProviders().any { it.name == name }) { return false }
         if (modelId == null) { return false }
         if (baseUrl != null && !isValidUrl(baseUrl)) { return false }
         return true

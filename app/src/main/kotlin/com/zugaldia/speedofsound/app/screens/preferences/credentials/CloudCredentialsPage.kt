@@ -109,8 +109,7 @@ class CloudCredentialsPage(private val viewModel: PreferencesViewModel) : Prefer
     }
 
     private fun showAddCredentialDialog() {
-        val existingNames = viewModel.peekCredentials().map { it.name }.toSet()
-        val dialog = AddCredentialDialog(existingNames) { credential -> onCredentialAdded(credential) }
+        val dialog = AddCredentialDialog(viewModel) { credential -> onCredentialAdded(credential) }
         dialog.present(this)
     }
 
