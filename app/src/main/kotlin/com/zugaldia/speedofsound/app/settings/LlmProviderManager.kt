@@ -57,19 +57,10 @@ class LlmProviderManager(
                 "Selected LLM provider {} is missing; disabling text processing",
                 selectedProviderId.ifBlank { "<empty>" }
             )
-            val disableSucceeded = if (settingsClient.peekTextProcessingEnabled()) {
-                if (!settingsClient.setTextProcessingEnabled(false)) {
-                    logger.warn(
-                        "Could not persist text processing disable while removing missing LLM provider {}",
-                        selectedProviderId.ifBlank { "<empty>" },
-                    )
-                    false
-                } else {
-                    true
-                }
-            } else {
-                true
-            }
+            val disableSucceeded = disableTextProcessing(
+                reason = "while removing missing LLM provider ${selectedProviderId.ifBlank { "<empty>" }}",
+                successMessage = "Disabled text processing while removing missing LLM provider ${selectedProviderId.ifBlank { "<empty>" }}",
+            )
             runCatching { registry.clearActive(AppPluginCategory.LLM) }
                 .onFailure { error ->
                     logger.error(
@@ -136,8 +127,11 @@ class LlmProviderManager(
             "No active LLM provider after applying {}; disabling text processing",
             pluginId
         )
-        if (!settingsClient.setTextProcessingEnabled(false)) {
-            logger.warn("Could not persist text processing disable after LLM activation left no active provider")
+        if (!disableTextProcessing(
+                reason = "after LLM activation left no active provider",
+                successMessage = "Disabled text processing after LLM activation left no active provider"
+            )
+        ) {
             return
         }
         if (selectedProviderId.isNotBlank()) {
@@ -146,6 +140,19 @@ class LlmProviderManager(
                     "Could not persist default LLM selection after activation left no active provider",
                 )
             }
+        }
+    }
+
+    private fun disableTextProcessing(reason: String, successMessage: String): Boolean {
+        if (!settingsClient.peekTextProcessingEnabled()) {
+            return true
+        }
+        return if (settingsClient.setTextProcessingEnabled(false)) {
+            logger.warn(successMessage)
+            true
+        } else {
+            logger.warn("Could not persist text processing disable {}", reason)
+            false
         }
     }
 
